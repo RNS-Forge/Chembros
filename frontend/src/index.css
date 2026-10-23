@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Conquera';
+  src: url('/fonts/Conquera-Medium.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Conquera';
+  src: url('/fonts/Conquera-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Conquera';
+  src: url('/fonts/Conquera-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Conquera';
+  src: url('/fonts/Conquera-Heavy.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Conquera';
+  src: url('/fonts/Conquera-Inline.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-conquera: 'Conquera', sans-serif;
+  --font-cinzel: 'Cinzel', serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-poppins: 'Poppins', sans-serif;
+  --page-margin: 172px;
+  --content-max-width: 1920px;
+  --content-inner-width: 1576px;
+}
+
+/* Root layout container with 172px margins on both left and right */
+.root-container {
+  width: 100%;
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 172px;
+  padding-right: 172px;
+}
+
+.root-container-fluid {
+  width: 100%;
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(20px, 8.958vw, 172px);
+  padding-right: clamp(20px, 8.958vw, 172px);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+  color: #000000;
+  font-family: var(--font-inter);
+  overflow-x: hidden;
+}
