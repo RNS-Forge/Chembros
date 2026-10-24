@@ -1,4 +1,4 @@
-import type { Product, Order, User, AdminStats } from '../types'
+﻿import type { Product, Order, User, AdminStats } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -32,6 +32,90 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // ----------------- Auth Endpoints -----------------
 
+export async function loginRequestApi(email: string, password: string): Promise<{ status: string; message: string; email: string }> {
+  return request<{ status: string; message: string; email: string }>('/api/auth/login-request', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+export async function verifyLoginOtpApi(email: string, otp_code: string): Promise<{ access_token: string; user: User }> {
+  return request<{ access_token: string; user: User }>('/api/auth/verify-login-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp_code }),
+  })
+}
+
+export async function registerRequestApi(data: {
+  name: string
+  email: string
+  password: string
+  phone?: string
+  shipping_address?: string
+  city?: string
+  state?: string
+  pincode?: string
+}): Promise<{ status: string; message: string; email: string }> {
+  return request<{ status: string; message: string; email: string }>('/api/auth/register-request', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function verifyRegisterOtpApi(data: {
+  name: string
+  email: string
+  password: string
+  phone?: string
+  shipping_address?: string
+  city?: string
+  state?: string
+  pincode?: string
+  otp_code: string
+}): Promise<{ access_token: string; user: User }> {
+  return request<{ access_token: string; user: User }>('/api/auth/verify-register-otp', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateProfileApi(data: {
+  name?: string
+  phone?: string
+  shipping_address?: string
+  city?: string
+  state?: string
+  pincode?: string
+}): Promise<User> {
+  return request<User>('/api/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function loginApi(email: string, password: string): Promise<{ access_token: string; user: User }> {
+  return request<{ access_token: string; user: User }>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+export async function registerApi(data: {
+  name: string
+  email: string
+  password: string
+  phone?: string
+  shipping_address?: string
+  city?: string
+  state?: string
+  pincode?: string
+}): Promise<{ access_token: string; user: User }> {
+  return request<{ access_token: string; user: User }>('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
 export async function sendOtpApi(email: string): Promise<{ status: string; message: string; dev_code?: string }> {
   return request<{ status: string; message: string; dev_code?: string }>('/api/auth/send-otp', {
     method: 'POST',
@@ -47,10 +131,7 @@ export async function verifyOtpApi(email: string, otp_code: string, name?: strin
 }
 
 export async function adminLoginApi(email: string, password: string): Promise<{ access_token: string; user: User }> {
-  return request<{ access_token: string; user: User }>('/api/auth/admin-login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  })
+  return loginApi(email, password)
 }
 
 export async function getMeApi(): Promise<User> {

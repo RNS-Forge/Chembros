@@ -1,4 +1,4 @@
-export interface Product {
+﻿export interface Product {
   id: number
   name: string
   subtitle?: string
@@ -33,6 +33,10 @@ export interface User {
   name?: string
   role: 'user' | 'admin'
   phone?: string
+  shipping_address?: string
+  city?: string
+  state?: string
+  pincode?: string
 }
 
 export interface OrderItem {
