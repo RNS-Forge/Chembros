@@ -1,96 +1,154 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import cmlogo from '../assets/cmlogo.png'
+import React, { useState, useEffect, useRef } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import cmlogo from '../assets/blacklogo.png'
 
 interface NavBarProps {
   className?: string
   style?: React.CSSProperties
+  cartCount?: number
+  onOpenCart?: () => void
 }
 
-export default function NavBar({ className = '', style }: NavBarProps) {
+export default function NavBar({
+  className = '',
+  style,
+  cartCount = 1,
+  onOpenCart,
+}: NavBarProps) {
+  const location = useLocation()
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+      if (currentScrollY > 60 && currentScrollY > lastScrollY.current) {
+        setIsScrolled(true)
+      } else if (currentScrollY <= 60 || currentScrollY < lastScrollY.current - 10) {
+        setIsScrolled(false)
+      }
+
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const isExpanded = !isScrolled || isHovered
+
+  const navLinks = [
+    { label: 'Fragrances', path: '/fragrances' },
+    { label: 'Our Story', path: '/our-story' },
+  ]
+
   return (
-    <nav
-      className={`w-[502px] h-20 relative bg-neutral-400/80 backdrop-blur-md rounded-full outline outline-1 outline-offset-[-1px] outline-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] select-none z-50 ${className}`}
-      style={style}
-    >
-      {/* Brand Monogram Logo */}
-      <Link
-        to="/"
-        className="w-14 h-9 left-[25px] top-[19px] absolute flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+    <header className="fixed top-8 left-6 lg:left-[172px] pointer-events-none z-[100]">
+      <nav
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`pointer-events-auto h-[54px] sm:h-[60px] inline-flex items-center rounded-full bg-white/70 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(0,0,0,0.08),_inset_0_1px_1px_rgba(255,255,255,0.9)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isExpanded
+            ? 'pr-5 sm:pr-6 shadow-[0_12px_36px_rgba(0,0,0,0.08)]'
+            : 'pr-0 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-white/85'
+        } ${className}`}
+        style={style}
       >
-        <img
-          className="w-full h-full object-contain"
-          src={cmlogo}
-          alt="Chembros Monogram Logo"
-          draggable={false}
-        />
-      </Link>
-
-      {/* Nav Links */}
-      <div className="left-[128px] top-[29px] absolute inline-flex justify-start items-center gap-7">
-        <Link
-          to="/fragrances"
-          className="opacity-60 hover:opacity-100 transition-opacity justify-center text-black text-base font-medium font-['Poppins',sans-serif] leading-4 tracking-tight cursor-pointer"
-        >
-          Fragrances
-        </Link>
-        <Link
-          to="/our-story"
-          className="opacity-60 hover:opacity-100 transition-opacity justify-center text-black text-base font-medium font-['Poppins',sans-serif] leading-4 tracking-tight cursor-pointer"
-        >
-          Our Story
-        </Link>
-      </div>
-
-      {/* Shopping Cart Pill Button */}
-      <button
-        type="button"
-        className="w-16 h-12 left-[403px] top-[13px] absolute rounded-full outline outline-[1.33px] outline-offset-[-1.33px] outline-black cursor-pointer transition-all hover:bg-black/5 active:scale-95"
-        aria-label="View Shopping Cart, 1 item"
-      >
-        {/* Shopping Bag Icon */}
-        <div className="w-5 h-5 left-[14px] top-[13px] absolute flex items-center justify-center">
-          <svg
-            className="w-[18px] h-[18px] text-black"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+        {/* Fixed Width Logo Anchor: Never resizes, shifts, or recalculates */}
+        <div className="w-[96px] sm:w-[106px] h-full flex items-center justify-center shrink-0">
+          <Link
+            to="/"
+            className="flex items-center justify-center transition-transform duration-300 hover:scale-105 active:scale-95"
+            aria-label="Chembros Home"
           >
-            {/* Bag outline */}
-            <rect
-              x="3.25"
-              y="5.5"
-              width="13.5"
-              height="12"
-              rx="2"
-              stroke="currentColor"
-              strokeWidth="1.33"
+            <img
+              className="h-6 sm:h-7 w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.04)] will-change-transform"
+              src={cmlogo}
+              alt="Chembros Monogram"
+              draggable={false}
             />
-            {/* Curved handle */}
-            <path
-              d="M7 5.5V4C7 2.62 8.34 1.5 10 1.5C11.66 1.5 13 2.62 13 4V5.5"
-              stroke="currentColor"
-              strokeWidth="1.33"
-              strokeLinecap="round"
-            />
-            {/* Center lock/notch */}
-            <path
-              d="M8.5 9.5H11.5"
-              stroke="currentColor"
-              strokeWidth="1.33"
-              strokeLinecap="round"
-            />
-          </svg>
+          </Link>
         </div>
 
-        {/* Item Count */}
-        <span className="left-[40px] top-[13px] absolute text-center justify-center text-black text-sm font-medium font-['Poppins',sans-serif] leading-5">
-          1
-        </span>
+        {/* Unfolding Menu Container */}
+        <div
+          className={`grid transition-[grid-template-columns,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] items-center ${
+            isExpanded
+              ? 'grid-cols-[1fr] opacity-100'
+              : 'grid-cols-[0fr] opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="overflow-hidden flex items-center gap-6 sm:gap-8 whitespace-nowrap">
+            {/* Divider */}
+            <span className="w-px h-4 bg-black/15 shrink-0" />
 
-        {/* Status Dot Accent */}
-        <span className="size-2 left-[52.67px] top-[9.33px] absolute bg-neutral-400 rounded-full"></span>
-      </button>
-    </nav>
+            {/* Links */}
+            <div className="flex items-center gap-5 sm:gap-7 shrink-0">
+              {navLinks.map((link) => {
+                const isActive = location.pathname === link.path
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`relative py-1 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors duration-200 ${
+                      isActive
+                        ? 'text-black opacity-100 font-semibold'
+                        : 'text-black/65 hover:text-black hover:opacity-100'
+                    }`}
+                  >
+                    <span>{link.label}</span>
+                    {isActive && (
+                      <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-black" />
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* Cart Pill */}
+            <button
+              type="button"
+              onClick={onOpenCart}
+              className="flex items-center gap-2 pl-3 pr-3.5 py-1.5 sm:py-2 rounded-full bg-black/5 hover:bg-black text-black hover:text-white border border-black/10 hover:border-black transition-all duration-300 active:scale-95 cursor-pointer shrink-0"
+              aria-label={`View Shopping Bag, ${cartCount} items`}
+            >
+              <svg
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="3.25"
+                  y="5.5"
+                  width="13.5"
+                  height="12"
+                  rx="2"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                />
+                <path
+                  d="M7 5.5V4C7 2.62 8.34 1.5 10 1.5C11.66 1.5 13 2.62 13 4V5.5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M8.5 9.5H11.5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="text-xs sm:text-[13px] font-mono font-medium leading-none">
+                {cartCount}
+              </span>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </header>
   )
 }

@@ -1,8 +1,26 @@
+import React, { useState } from 'react'
 import heroImg from '../assets/hero.png'
 import bottleImg from '../assets/bottle.png'
 import NavBar from './NavBar'
 
+interface Formula {
+  id: string
+  code: string
+  name: string
+  notes: string
+  concentration: string
+}
+
+const FORMULAS: Formula[] = [
+  { id: '1', code: '01', name: 'MOLECULE X', notes: 'Santal · Iso E Super · Cardamom', concentration: '32% Extrait' },
+  { id: '2', code: '02', name: 'MOLECULE T', notes: 'Black Tea · Ambroxan · Bergamot', concentration: '28% Extrait' },
+  { id: '3', code: '03', name: 'MOLECULE J', notes: 'Iris Root · Vetiver · Cedar', concentration: '30% Extrait' },
+  { id: '4', code: '04', name: 'MOLECULE K', notes: 'Smoked Ozone · Frankincense', concentration: '35% Extrait' },
+]
+
 export default function Homehero() {
+  const [selectedFormula, setSelectedFormula] = useState<Formula>(FORMULAS[0])
+
   return (
     <section className="w-full bg-white flex justify-center overflow-x-hidden select-none relative">
       {/* 1920x983 Responsive Scaled Artboard */}
@@ -13,59 +31,132 @@ export default function Homehero() {
           marginBottom: 'calc(983px * (min(1, calc(100vw / 1920)) - 1))',
         }}
       >
-        <div className="w-[1920px] h-[1080px] left-0 top-0 absolute"></div>
-
-        {/* Floating Navigation Pill with consistent 172px left margin */}
-        <div className="left-[172px] top-[50px] absolute z-50">
+        {/* Floating Navigation Pill */}
+        <div className="left-[172px] top-[48px] absolute z-50">
           <NavBar />
         </div>
 
-        {/* Hero Content Container with 172px margins */}
-        <div className="w-[1576px] h-[1080px] left-[172px] top-0 absolute overflow-hidden">
-          {/* Background Model Image pinned to top of screen */}
+        {/* Top Laboratory Blueprint Tagline */}
+        <div className="left-[172px] top-[148px] absolute z-30 flex items-center gap-3 text-black/50 font-mono text-xs tracking-[0.3em] uppercase">
+          <span className="w-2 h-2 rounded-full bg-black/80 animate-pulse" />
+          <span>RESEARCH & EXTRACTION ARCHIVE // 2026 EDITION</span>
+        </div>
+
+        {/* Big Editorial Headline */}
+        <div className="left-[172px] top-[185px] absolute z-30 pointer-events-none">
+          <h1 className="text-black text-[54px] font-normal font-['Conquera',sans-serif] leading-[62px] tracking-wider uppercase">
+            CHEMISTRY <br />
+            CAPTURED
+          </h1>
+        </div>
+
+        <div className="right-[172px] top-[185px] absolute z-30 pointer-events-none text-right">
+          <h2 className="text-black text-[54px] font-normal font-['Conquera',sans-serif] leading-[62px] tracking-wider uppercase">
+            IN A <br />
+            BOTTLE.
+          </h2>
+        </div>
+
+        {/* Central Model Canvas */}
+        <div className="w-[1576px] h-[983px] left-[172px] top-0 absolute overflow-hidden pointer-events-none">
           <img
-            className="w-[1414px] h-[1100px] left-0 top-0 absolute object-cover object-top select-none pointer-events-none"
+            className="w-[1414px] h-[1050px] left-1/2 -translate-x-[48%] top-0 absolute object-cover object-top select-none pointer-events-none"
             src={heroImg}
             alt="Chembros Hero Model"
             draggable={false}
           />
+        </div>
 
-          {/* Typography + Bottles Layer */}
-          <div className="w-[1576px] h-[712px] left-0 top-[269px] absolute overflow-hidden">
-            <div className="w-[1617px] left-0 top-0 absolute inline-flex flex-col justify-start items-center">
-              {/* Headline Row: "Chemistry captured" & "in a bottle." */}
-              <div className="self-stretch inline-flex justify-between items-center">
-                <div className="w-[533px] justify-center text-black text-5xl font-normal font-['Conquera',sans-serif] leading-[59.36px] uppercase tracking-wider">
-                  Chemistry captured
-                </div>
-                <div className="w-96 justify-center text-black text-5xl font-normal font-['Conquera',sans-serif] leading-[59.36px] uppercase tracking-wider">
-                  in a <br />
-                  bottle.
-                </div>
-              </div>
+        {/* HERO SHOWCASE BOTTLE */}
+        <div className="left-[1060px] top-[370px] absolute z-30 flex flex-col items-center group pointer-events-auto">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/40 blur-[60px] rounded-full -z-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
 
-              {/* 4 Perfume Bottles Row */}
-              <div className="inline-flex justify-start items-center gap-14 mt-4">
-                {[1, 2, 3, 4].map((id) => (
-                  <div
-                    key={id}
-                    className="w-[306px] h-[343px] flex items-center justify-center group"
-                  >
-                    <img
-                      className="size-80 object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.12)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
-                      src={bottleImg}
-                      alt={`Chembros Fragrance Bottle Formula ${id}`}
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
+          <div className="relative">
+            <img
+              className="w-[340px] h-[380px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.22)] group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ease-out select-none"
+              src={bottleImg}
+              alt="Chembros Flagship Perfume Bottle"
+              draggable={false}
+            />
+
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white text-[10px] font-mono tracking-widest px-3 py-1 rounded-full border border-white/20 whitespace-nowrap shadow-lg">
+              {selectedFormula.name} · {selectedFormula.concentration}
             </div>
           </div>
         </div>
 
-        {/* Bottom Soft Fade for Seamless Transition */}
-        <div className="w-full h-32 absolute left-0 bottom-0 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-30"></div>
+        {/* Interactive Batch Selector */}
+        <div className="left-[172px] bottom-[50px] absolute z-30 flex items-end gap-10">
+          
+          {/* Formula Card */}
+          <div className="w-[420px] p-6 bg-white/85 backdrop-blur-xl border border-black/10 rounded-[32px] shadow-[0_15px_35px_rgba(0,0,0,0.06)] flex flex-col gap-3">
+            <div className="flex items-center justify-between text-[11px] font-mono tracking-widest text-black/50 uppercase">
+              <span className="flex items-center gap-1.5 text-black">
+                <svg className="w-3.5 h-3.5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                </svg>
+                ACTIVE FORMULATION
+              </span>
+              <span>BATCH // {selectedFormula.code}</span>
+            </div>
+
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-normal font-['Conquera',sans-serif] tracking-wider text-black uppercase">
+                {selectedFormula.name}
+              </div>
+              <span className="text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/60">
+                ₹1,299
+              </span>
+            </div>
+
+            <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide">
+              {selectedFormula.notes}
+            </p>
+
+            <div className="pt-2 flex items-center justify-between border-t border-black/5">
+              <span className="text-[10px] font-mono text-black/40 uppercase">30ML EXTRAIT DE PARFUM</span>
+              <a
+                href="#discovery"
+                className="text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-1 hover:opacity-70 transition-opacity"
+              >
+                <span>Inspect Formula</span>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M7 7h10v10" /><path d="M7 17 17 7" />
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          {/* Formula Switcher Pills */}
+          <div className="flex items-center gap-3">
+            {FORMULAS.map((formula) => {
+              const isActive = selectedFormula.id === formula.id
+              return (
+                <button
+                  key={formula.id}
+                  onClick={() => setSelectedFormula(formula)}
+                  className={`px-5 py-3 rounded-2xl border text-xs font-mono tracking-wider transition-all duration-300 cursor-pointer ${
+                    isActive
+                      ? 'bg-black text-white border-black shadow-lg scale-105'
+                      : 'bg-white/90 backdrop-blur-md text-black/70 border-black/10 hover:border-black/40 hover:bg-white'
+                  }`}
+                >
+                  <span className="text-[10px] opacity-50 block text-left">F-{formula.code}</span>
+                  <span className="font-semibold uppercase">{formula.name.replace('MOLECULE ', 'M-')}</span>
+                </button>
+              )
+            })}
+          </div>
+
+        </div>
+
+        {/* Low-Profile Bottom Edge Blend */}
+        <div 
+          className="w-full h-24 absolute left-0 bottom-0 pointer-events-none z-10"
+          style={{
+            background: 'linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0.9) 25%, rgba(255, 255, 255, 0.4) 55%, transparent 100%)',
+          }}
+        />
       </div>
     </section>
   )
