@@ -1,6 +1,7 @@
 import { useCart } from '../context/CartContext'
 import { useNavigate } from 'react-router-dom'
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react'
+import bottleImg from '../assets/bottle.png'
 
 export default function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, subtotal, shippingFee, total } = useCart()
@@ -73,15 +74,11 @@ export default function CartDrawer() {
                 <div key={product.id} className="py-4 flex gap-4 items-center">
                   {/* Flacon Base64 Thumbnail */}
                   <div className="w-20 h-24 bg-neutral-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1.5 border border-neutral-200">
-                    {product.image_base64 ? (
-                      <img
-                        src={product.image_base64}
-                        alt={product.name}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-[10px] text-neutral-400 font-mono">BOTTLE</div>
-                    )}
+                    <img
+                      src={product.image_base64 || bottleImg}
+                      alt={product.name}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
 
                   {/* Details */}

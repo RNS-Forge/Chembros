@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FRAGRANCES_DATA } from '../data/fragranceData'
 import NavBar from '../components/NavBar'

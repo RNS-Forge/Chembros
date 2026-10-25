@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import cmlogo from '../assets/blacklogo.png'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -18,7 +18,6 @@ export default function NavBar({
   onOpenCart,
 }: NavBarProps) {
   const location = useLocation()
-  const navigate = useNavigate()
   const { totalItems, openCart } = useCart()
   const { user, openAuthModal, logout } = useAuth()
 

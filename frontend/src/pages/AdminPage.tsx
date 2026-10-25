@@ -69,8 +69,8 @@ export default function AdminPage() {
   })
 
   // Quick edits on products table
-  const [stockEdits, setStockEdits] = useState<Record<number, number>>({})
-  const [priceEdits, setPriceEdits] = useState<Record<number, number>>({})
+  const [stockEdits, setStockEdits] = useState<Record<string, number>>({})
+  const [priceEdits, setPriceEdits] = useState<Record<string, number>>({})
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
 
   // Orders filter & search
@@ -137,7 +137,7 @@ export default function AdminPage() {
   }
 
   // Delete product
-  const handleDeleteProduct = async (id: number, name: string) => {
+  const handleDeleteProduct = async (id: number | string, name: string) => {
     if (!confirm(`Are you sure you want to permanently remove "${name}" from the catalog?`)) return
     try {
       await deleteAdminProductApi(id)
@@ -149,8 +149,8 @@ export default function AdminPage() {
   }
 
   // Quick Stock Save
-  const handleQuickStockSave = async (id: number) => {
-    const newStock = stockEdits[id]
+  const handleQuickStockSave = async (id: number | string) => {
+    const newStock = stockEdits[String(id)]
     if (newStock === undefined) return
     try {
       await updateProductStockApi(id, newStock)
@@ -162,8 +162,8 @@ export default function AdminPage() {
   }
 
   // Quick Price Save
-  const handleQuickPriceSave = async (id: number) => {
-    const newPrice = priceEdits[id]
+  const handleQuickPriceSave = async (id: number | string) => {
+    const newPrice = priceEdits[String(id)]
     if (newPrice === undefined) return
     try {
       await updateProductPriceApi(id, newPrice)
@@ -585,11 +585,11 @@ export default function AdminPage() {
                               type="number"
                               defaultValue={p.price}
                               onChange={(e) =>
-                                setPriceEdits((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))
+                                setPriceEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
                               }
                               className="w-20 px-2 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-black focus:outline-none focus:ring-1 focus:ring-black"
                             />
-                            {priceEdits[p.id] !== undefined && priceEdits[p.id] !== p.price && (
+                            {priceEdits[String(p.id)] !== undefined && priceEdits[String(p.id)] !== p.price && (
                               <button
                                 onClick={() => handleQuickPriceSave(p.id)}
                                 className="p-1 bg-black text-white rounded hover:bg-neutral-800 cursor-pointer"
@@ -608,7 +608,7 @@ export default function AdminPage() {
                               type="number"
                               defaultValue={p.stock}
                               onChange={(e) =>
-                                setStockEdits((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))
+                                setStockEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
                               }
                               className={`w-16 px-2 py-1 border rounded text-xs font-semibold focus:outline-none ${
                                 p.stock <= 10
@@ -616,7 +616,7 @@ export default function AdminPage() {
                                   : 'bg-neutral-50 border-neutral-300 text-black'
                               }`}
                             />
-                            {stockEdits[p.id] !== undefined && stockEdits[p.id] !== p.stock && (
+                            {stockEdits[String(p.id)] !== undefined && stockEdits[String(p.id)] !== p.stock && (
                               <button
                                 onClick={() => handleQuickStockSave(p.id)}
                                 className="p-1 bg-black text-white rounded hover:bg-neutral-800 cursor-pointer"

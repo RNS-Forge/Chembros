@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { User } from '../types'
 import {
   getMeApi,
@@ -21,6 +21,8 @@ interface AuthContextType {
   isLoading: boolean
   isAuthModalOpen: boolean
   setIsAuthModalOpen: (open: boolean) => void
+  openAuthModal: () => void
+  closeAuthModal: () => void
   sendOtp: (email: string) => Promise<{ status: string; message: string; dev_code?: string }>
   verifyOtp: (email: string, code: string, name?: string) => Promise<User>
   loginRequest: (email: string, password: string) => Promise<{ status: string; message: string; email: string }>
@@ -197,6 +199,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isAuthModalOpen,
         setIsAuthModalOpen,
+        openAuthModal: () => setIsAuthModalOpen(true),
+        closeAuthModal: () => setIsAuthModalOpen(false),
         sendOtp,
         verifyOtp,
         loginRequest,

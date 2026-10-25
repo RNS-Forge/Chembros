@@ -1,24 +1,27 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { FRAGRANCES_DATA } from '../data/fragranceData'
+import { useCart } from '../context/CartContext'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { addToCart } = useCart()
 
   const product = FRAGRANCES_DATA.find((item) => item.id === id) || FRAGRANCES_DATA[0]
   const [selectedSize, setSelectedSize] = useState<string>(product.volume)
   const [isAdded, setIsAdded] = useState(false)
 
   const handleAddToCart = () => {
+    addToCart(product)
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 2500)
   }
 
   const handleBuyNow = () => {
-    // Direct checkout routing
+    addToCart(product)
     navigate('/checkout')
   }
 

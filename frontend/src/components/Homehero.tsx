@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import heroImg from '../assets/hero.png'
 import bottleImg from '../assets/bottle.png'
 import NavBar from './NavBar'
@@ -115,15 +116,15 @@ export default function Homehero() {
 
             <div className="pt-2 flex items-center justify-between border-t border-black/5">
               <span className="text-[10px] font-mono text-black/40 uppercase">30ML EXTRAIT DE PARFUM</span>
-              <a
-                href="#discovery"
+              <Link
+                to={`/fragrances/${selectedFormula.name.toLowerCase().replace(' ', '-')}`}
                 className="text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-1 hover:opacity-70 transition-opacity"
               >
                 <span>Inspect Formula</span>
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M7 7h10v10" /><path d="M7 17 17 7" />
                 </svg>
-              </a>
+              </Link>
             </div>
           </div>
 

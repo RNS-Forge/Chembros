@@ -1,4 +1,4 @@
-﻿import type { Product, Order, User, AdminStats } from '../types'
+import type { Product, Order, User, AdminStats } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -186,7 +186,7 @@ export interface CreateOrderPayload {
   customer_phone: string
   shipping_address: string
   items: {
-    product_id: number
+    product_id: number | string
     name: string
     price: number
     quantity: number
@@ -240,28 +240,28 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
   })
 }
 
-export async function updateAdminProductApi(productId: number, product: Partial<Product>): Promise<Product> {
+export async function updateAdminProductApi(productId: number | string, product: Partial<Product>): Promise<Product> {
   return request<Product>(`/api/admin/products/${productId}`, {
     method: 'PUT',
     body: JSON.stringify(product),
   })
 }
 
-export async function updateProductStockApi(productId: number, stock: number): Promise<Product> {
+export async function updateProductStockApi(productId: number | string, stock: number): Promise<Product> {
   return request<Product>(`/api/admin/products/${productId}/stock`, {
     method: 'PATCH',
     body: JSON.stringify({ stock }),
   })
 }
 
-export async function updateProductPriceApi(productId: number, price: number, original_price?: number): Promise<Product> {
+export async function updateProductPriceApi(productId: number | string, price: number, original_price?: number): Promise<Product> {
   return request<Product>(`/api/admin/products/${productId}/price`, {
     method: 'PATCH',
     body: JSON.stringify({ price, original_price }),
   })
 }
 
-export async function deleteAdminProductApi(productId: number): Promise<{ status: string; message: string }> {
+export async function deleteAdminProductApi(productId: number | string): Promise<{ status: string; message: string }> {
   return request(`/api/admin/products/${productId}`, {
     method: 'DELETE',
   })

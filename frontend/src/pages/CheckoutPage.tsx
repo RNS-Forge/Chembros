@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
+import bottleImg from '../assets/bottle.png'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { createOrderApi, verifyOrderPaymentApi, updateProfileApi } from '../services/api'
@@ -549,9 +550,7 @@ export default function CheckoutPage() {
                 <div key={product.id} className="py-3.5 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-14 h-16 bg-white rounded-xl border border-neutral-200 p-1 flex items-center justify-center shrink-0">
-                      {product.image_base64 && (
-                        <img src={product.image_base64} alt={product.name} className="h-full object-contain" />
-                      )}
+                      <img src={product.image_base64 || bottleImg} alt={product.name} className="h-full object-contain" />
                     </div>
                     <div>
                       <h4 className="font-['Cinzel',serif] text-xs font-bold text-black">{product.name}</h4>
