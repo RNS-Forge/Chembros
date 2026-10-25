@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import cmlogo from '../assets/blacklogo.png'
+import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
 interface NavBarProps {
   className?: string
@@ -12,13 +14,19 @@ interface NavBarProps {
 export default function NavBar({
   className = '',
   style,
-  cartCount = 1,
+  cartCount,
   onOpenCart,
 }: NavBarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { totalItems, openCart } = useCart()
+  const { user, openAuthModal, logout } = useAuth()
+
   const [isScrolled, setIsScrolled] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const lastScrollY = useRef(0)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,11 +45,31 @@ export default function NavBar({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const isExpanded = !isScrolled || isHovered
+  const displayedCartCount = cartCount !== undefined ? cartCount : totalItems
+
+  const handleCartClick = () => {
+    if (onOpenCart) {
+      onOpenCart()
+    } else {
+      openCart()
+    }
+  }
 
   const navLinks = [
     { label: 'Fragrances', path: '/fragrances' },
     { label: 'Our Story', path: '/our-story' },
+    ...(user?.role === 'admin' ? [{ label: 'Admin', path: '/admin' }] : []),
   ]
 
   return (
@@ -107,12 +135,70 @@ export default function NavBar({
               })}
             </div>
 
+            {/* Auth / Account Trigger */}
+            <div className="relative shrink-0" ref={menuRef}>
+              {user ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-1.5 py-1 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/75 hover:text-black transition-colors cursor-pointer"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>{user.name?.split(' ')[0] || 'Client'}</span>
+                  </button>
+
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 top-full mt-3 w-48 bg-white/95 backdrop-blur-xl border border-black/10 rounded-2xl shadow-xl py-2 z-50 text-xs font-['Inter',sans-serif]">
+                      <div className="px-4 py-2 border-b border-black/5 text-neutral-400 text-[10px] uppercase tracking-wider font-mono">
+                        {user.email}
+                      </div>
+                      <Link
+                        to="/my-orders"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block px-4 py-2 text-neutral-700 hover:bg-black/5 transition-colors"
+                      >
+                        My Orders
+                      </Link>
+                      {user.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="block px-4 py-2 text-neutral-700 hover:bg-black/5 transition-colors"
+                        >
+                          Admin Portal
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false)
+                          logout()
+                        }}
+                        className="w-full text-left px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openAuthModal}
+                  className="py-1 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/65 hover:text-black transition-colors cursor-pointer"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+
             {/* Cart Pill */}
             <button
               type="button"
-              onClick={onOpenCart}
+              onClick={handleCartClick}
               className="flex items-center gap-2 pl-3 pr-3.5 py-1.5 sm:py-2 rounded-full bg-black/5 hover:bg-black text-black hover:text-white border border-black/10 hover:border-black transition-all duration-300 active:scale-95 cursor-pointer shrink-0"
-              aria-label={`View Shopping Bag, ${cartCount} items`}
+              aria-label={`View Shopping Bag, ${displayedCartCount} items`}
             >
               <svg
                 className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors"
@@ -143,7 +229,7 @@ export default function NavBar({
                 />
               </svg>
               <span className="text-xs sm:text-[13px] font-mono font-medium leading-none">
-                {cartCount}
+                {displayedCartCount}
               </span>
             </button>
           </div>

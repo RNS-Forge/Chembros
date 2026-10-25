@@ -1,12 +1,12 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import footerBgImg from '../assets/footerbg.png'; // Your base gradient background
-import modelHandImg from '../assets/footerguy.png'; // Model holding conical bottle
+import React from 'react'
+import { Link } from 'react-router-dom'
+import footerBgImg from '../assets/footerbg.png'
+import modelHandImg from '../assets/footerguy.png'
 
 interface FooterProps {
-  onOpenStory?: () => void;
-  onOpenContact?: () => void;
-  onOpenPolicy?: (type: 'shipping' | 'privacy' | 'terms') => void;
+  onOpenStory?: () => void
+  onOpenContact?: () => void
+  onOpenPolicy?: (type: 'shipping' | 'privacy' | 'terms') => void
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -16,7 +16,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   return (
     <footer className="w-full flex justify-center items-center overflow-x-hidden select-none bg-white py-10">
-      {/* 1579x713 Scaled Container (Matches your Figma artboard coordinates) */}
+      {/* 1579x713 Scaled Container (Matches Figma artboard coordinates) */}
       <div
         className="w-[1579px] h-[713px] relative rounded-[50px] overflow-hidden origin-top"
         style={{
@@ -49,13 +49,13 @@ export const Footer: React.FC<FooterProps> = ({
               THE BRAND
             </span>
             <div className="w-28 flex flex-col justify-start items-start gap-4">
-              <button
-                type="button"
+              <Link
+                to="/our-story"
                 onClick={onOpenStory}
                 className="self-stretch opacity-60 hover:opacity-100 text-left text-white text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-4 tracking-tight transition-opacity cursor-pointer"
               >
                 Our Story
-              </button>
+              </Link>
               <button
                 type="button"
                 onClick={onOpenContact}
@@ -79,25 +79,25 @@ export const Footer: React.FC<FooterProps> = ({
             </span>
             <div className="w-28 flex flex-col justify-start items-start gap-4">
               <Link
-                to="/product/molecule-t"
+                to="/fragrances/molecule-t"
                 className="self-stretch opacity-60 hover:opacity-100 text-white text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-4 tracking-tight transition-opacity"
               >
                 Molecule T
               </Link>
               <Link
-                to="/product/molecule-j"
+                to="/fragrances/molecule-j"
                 className="self-stretch opacity-60 hover:opacity-100 text-white text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-4 tracking-tight transition-opacity"
               >
                 Molecule J
               </Link>
               <Link
-                to="/product/formula-03"
+                to="/fragrances/molecule-x"
                 className="self-stretch opacity-60 hover:opacity-100 text-white text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-4 tracking-tight transition-opacity"
               >
                 Molecule X
               </Link>
               <Link
-                to="/product/formula-04"
+                to="/fragrances/molecule-k"
                 className="self-stretch opacity-60 hover:opacity-100 text-white text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-4 tracking-tight transition-opacity"
               >
                 Molecule K
@@ -149,7 +149,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
       </div>
     </footer>
-  );
-};
+  )
+}
 
-export default Footer;
+export default Footer
