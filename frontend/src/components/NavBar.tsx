@@ -19,7 +19,13 @@ export default function NavBar({
 }: NavBarProps) {
   const location = useLocation()
   const { totalItems, openCart } = useCart()
-  const { user, openAuthModal, logout } = useAuth()
+  const { user, openAuthModal, logout, isAuthModalOpen } = useAuth()
+
+  const isAuthRoute = location.pathname === '/auth' || location.pathname === '/login' || location.pathname === '/register'
+
+  if (isAuthModalOpen || isAuthRoute) {
+    return null
+  }
 
   const [isScrolled, setIsScrolled] = useState(false)
   const [isHovered, setIsHovered] = useState(false)

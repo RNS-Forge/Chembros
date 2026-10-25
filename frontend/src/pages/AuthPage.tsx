@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NavBar from '../components/NavBar'
@@ -21,7 +21,6 @@ import {
   AlertCircle,
   Loader2,
   KeyRound,
-  Sparkles,
   ArrowLeft,
   RotateCcw
 } from 'lucide-react'
@@ -256,30 +255,30 @@ export default function AuthPage() {
       </div>
 
       {/* Main Container */}
-      <div className={`flex-1 w-full px-6 py-10 flex flex-col justify-center ${tab === 'register' && registerStep === 'details' ? 'max-w-xl' : 'max-w-md'}`}>
-        <div className="w-full bg-white border border-neutral-200/90 rounded-3xl p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+      <div className={`flex-1 w-full px-6 pt-12 pb-20 flex flex-col justify-center ${tab === 'register' && registerStep === 'details' ? 'max-w-xl' : 'max-w-md'}`}>
+        <div className="w-full bg-white border border-black/10 rounded-[36px] p-8 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.06)] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {/* Brand Header */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block transition-transform hover:scale-105 active:scale-95">
               <img src={cmlogo} alt="Chembros" className="h-10 mx-auto object-contain" />
             </Link>
-            <h1 className="font-['Cinzel',serif] text-2xl font-bold tracking-tight text-neutral-900 mt-3">
+            <h1 className="font-['Conquera',sans-serif] text-2xl font-normal tracking-wider uppercase text-black mt-3">
               CHEM BROS
             </h1>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500 mt-0.5">
-              Haute Parfumerie & Chemistry
+            <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-black/50 mt-1">
+              Haute Parfumerie & Chemistry // Client Portal
             </p>
           </div>
 
           {/* Unified Two-Tab Switcher */}
-          <div className="grid grid-cols-2 p-1 bg-neutral-100 rounded-2xl mb-6">
+          <div className="grid grid-cols-2 p-1 bg-[#F5F5F7] rounded-full border border-black/5 mb-6">
             <button
               type="button"
               onClick={() => handleTabChange('signin')}
-              className={`py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+              className={`py-2.5 text-xs font-semibold uppercase tracking-wider rounded-full transition-all cursor-pointer font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] ${
                 tab === 'signin'
-                  ? 'bg-white text-black shadow-sm'
-                  : 'text-neutral-500 hover:text-black'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-black/50 hover:text-black'
               }`}
             >
               Sign In
@@ -287,10 +286,10 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => handleTabChange('register')}
-              className={`py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+              className={`py-2.5 text-xs font-semibold uppercase tracking-wider rounded-full transition-all cursor-pointer font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] ${
                 tab === 'register'
-                  ? 'bg-white text-black shadow-sm'
-                  : 'text-neutral-500 hover:text-black'
+                  ? 'bg-black text-white shadow-md'
+                  : 'text-black/50 hover:text-black'
               }`}
             >
               Create Account
@@ -615,17 +614,17 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full mt-2 py-3.5 px-4 bg-black text-white rounded-xl text-xs font-semibold uppercase tracking-[0.15em] flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-md"
+                    className="w-full mt-2 py-3.5 px-6 bg-black hover:bg-neutral-800 active:scale-[0.99] text-white rounded-full text-xs font-semibold uppercase tracking-[0.2em] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] flex items-center justify-center gap-2.5 transition-all duration-300 shadow-md cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
+                        <span>Processing...</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4" />
-                        Continue with Verification
+                        <span>Continue with Verification</span>
+                        <ArrowRight className="w-4 h-4 stroke-[2]" />
                       </>
                     )}
                   </button>

@@ -1,16 +1,18 @@
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react'
 import bottleImg from '../assets/bottle.png'
 
 export default function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, subtotal, shippingFee, total } = useCart()
+  const { isAuthModalOpen } = useAuth()
   const navigate = useNavigate()
 
-  if (!isCartOpen) return null
+  if (!isCartOpen || isAuthModalOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[90] overflow-hidden">
+    <div className="fixed inset-0 z-[500] overflow-hidden">
       {/* Backdrop */}
       <div
         onClick={() => setIsCartOpen(false)}
