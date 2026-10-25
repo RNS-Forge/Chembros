@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import cmlogo from '../assets/cmlogo.png'
+import authBg from '../assets/auth_bg.jpg'
 import {
   Mail,
   Lock,
@@ -22,7 +22,8 @@ import {
   Loader2,
   KeyRound,
   ArrowLeft,
-  RotateCcw
+  RotateCcw,
+  Check
 } from 'lucide-react'
 
 export default function AuthPage() {
@@ -57,6 +58,22 @@ export default function AuthPage() {
   // OTP & UI State
   const [otpCode, setOtpCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  // Password Strength Verification Logic
+  const hasMinLength = registerPassword.length >= 8
+  const hasUppercase = /[A-Z]/.test(registerPassword)
+  const hasLowercase = /[a-z]/.test(registerPassword)
+  const hasNumber = /[0-9]/.test(registerPassword)
+  const hasSpecial = /[^A-Za-z0-9]/.test(registerPassword)
+
+  const strengthScore = [
+    hasMinLength,
+    hasUppercase && hasLowercase,
+    hasNumber,
+    hasSpecial,
+  ].filter(Boolean).length
+
+  const isStrongPassword = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -150,8 +167,8 @@ export default function AuthPage() {
       return
     }
 
-    if (registerPassword.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (!isStrongPassword) {
+      setError('Please provide an archive-grade strong password meeting all 4 laboratory security criteria.')
       return
     }
 
@@ -248,15 +265,21 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-neutral-50 flex flex-col items-center selection:bg-neutral-200 font-['Inter',sans-serif]">
-      {/* Sticky Luxury Navigation */}
-      <div className="w-full flex justify-center pt-8 pb-6 sticky top-0 z-40 bg-neutral-50/80 backdrop-blur-md">
-        <NavBar />
+    <div className="w-full min-h-screen relative flex flex-col items-center justify-between selection:bg-neutral-200 font-['Inter',sans-serif] overflow-hidden">
+      {/* Ambient Animated Laboratory Flacon Atmosphere in Background */}
+      <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden select-none">
+        <img
+          src={authBg}
+          alt="Chembros Fragrance Atelier Atmosphere"
+          className="w-full h-full object-cover object-center opacity-30 scale-105 animate-[pulse_12s_ease-in-out_infinite] filter blur-[2px]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/85" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/10 blur-[150px] rounded-full animate-pulse pointer-events-none" />
       </div>
 
       {/* Main Container */}
-      <div className={`flex-1 w-full px-6 pt-12 pb-20 flex flex-col justify-center ${tab === 'register' && registerStep === 'details' ? 'max-w-xl' : 'max-w-md'}`}>
-        <div className="w-full bg-white border border-black/10 rounded-[36px] p-8 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.06)] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className={`flex-1 w-full px-6 pt-16 pb-20 flex flex-col justify-center ${tab === 'register' && registerStep === 'details' ? 'max-w-xl' : 'max-w-md'}`}>
+        <div className="w-full bg-white/95 backdrop-blur-2xl border border-white/40 rounded-[36px] p-8 sm:p-10 shadow-[0_30px_80px_rgba(0,0,0,0.5)] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {/* Brand Header */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block transition-transform hover:scale-105 active:scale-95">
@@ -587,18 +610,40 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wider">
-                      Create Password *
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider block">
+                        Create Password *
+                      </label>
+                      {registerPassword.length > 0 && (
+                        <span
+                          className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${
+                            strengthScore <= 1
+                              ? 'text-red-500'
+                              : strengthScore === 2
+                              ? 'text-amber-500'
+                              : strengthScore === 3
+                              ? 'text-blue-600'
+                              : 'text-emerald-600'
+                          }`}
+                        >
+                          {strengthScore <= 1
+                            ? 'Weak'
+                            : strengthScore === 2
+                            ? 'Moderate'
+                            : strengthScore === 3
+                            ? 'Good'
+                            : 'Archive Strong'}
+                        </span>
+                      )}
+                    </div>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
-                        minLength={6}
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
-                        placeholder="At least 6 characters"
+                        placeholder="Minimum 8 characters"
                         className="w-full pl-10 pr-11 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm text-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                       />
                       <button
@@ -609,6 +654,66 @@ export default function AuthPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+
+                    {/* Segmented Strength Meter & Criteria Badges */}
+                    {registerPassword.length > 0 && (
+                      <div className="mt-2.5 space-y-2 p-3 bg-neutral-50/80 rounded-2xl border border-black/5 animate-in fade-in duration-200">
+                        {/* 4 Segmented Strength Bars */}
+                        <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                          {[1, 2, 3, 4].map((step) => {
+                            let barColor = 'bg-black/10'
+                            if (strengthScore >= step) {
+                              if (strengthScore <= 1) barColor = 'bg-red-500'
+                              else if (strengthScore === 2) barColor = 'bg-amber-500'
+                              else if (strengthScore === 3) barColor = 'bg-blue-600'
+                              else barColor = 'bg-emerald-500'
+                            }
+                            return (
+                              <div
+                                key={step}
+                                className={`rounded-full transition-all duration-300 ${barColor}`}
+                              />
+                            )
+                          })}
+                        </div>
+
+                        {/* 4 Security Criteria Pills */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[10px] font-mono">
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                            {hasMinLength ? (
+                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
+                            )}
+                            <span>8+ Characters</span>
+                          </div>
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasUppercase && hasLowercase ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                            {hasUppercase && hasLowercase ? (
+                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
+                            )}
+                            <span>Upper & Lower</span>
+                          </div>
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                            {hasNumber ? (
+                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
+                            )}
+                            <span>1+ Number</span>
+                          </div>
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasSpecial ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                            {hasSpecial ? (
+                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                            ) : (
+                              <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
+                            )}
+                            <span>1+ Symbol (!@#$)</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <button
