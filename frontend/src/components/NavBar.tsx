@@ -23,7 +23,7 @@ export default function NavBar({
 
   const isAuthRoute = location.pathname === '/auth' || location.pathname === '/login' || location.pathname === '/register'
 
-  if (isAuthModalOpen || isAuthRoute) {
+  if (isAuthRoute) {
     return null
   }
 
@@ -78,11 +78,11 @@ export default function NavBar({
   ]
 
   return (
-    <header className="fixed top-8 left-6 lg:left-[172px] pointer-events-none z-[100]">
+    <header className={`fixed top-8 left-6 lg:left-[172px] pointer-events-none z-[100] transition-all duration-500 ${isAuthModalOpen ? 'opacity-20 scale-95 blur-xs' : 'opacity-100 scale-100 blur-none'}`}>
       <nav
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`pointer-events-auto h-[54px] sm:h-[60px] inline-flex items-center rounded-full bg-white/70 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(0,0,0,0.08),_inset_0_1px_1px_rgba(255,255,255,0.9)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`${isAuthModalOpen ? 'pointer-events-none' : 'pointer-events-auto'} h-[54px] sm:h-[60px] inline-flex items-center rounded-full bg-white/70 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(0,0,0,0.08),_inset_0_1px_1px_rgba(255,255,255,0.9)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isExpanded
             ? 'pr-5 sm:pr-6 shadow-[0_12px_36px_rgba(0,0,0,0.08)]'
             : 'pr-0 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-white/85'

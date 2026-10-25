@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import cmlogo from '../assets/cmlogo.png'
-import authBg from '../assets/auth_bg.jpg'
 import {
   Mail,
   Lock,
@@ -265,21 +264,10 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="w-full min-h-screen relative flex flex-col items-center justify-between selection:bg-neutral-200 font-['Inter',sans-serif] overflow-hidden">
-      {/* Ambient Animated Laboratory Flacon Atmosphere in Background */}
-      <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden select-none">
-        <img
-          src={authBg}
-          alt="Chembros Fragrance Atelier Atmosphere"
-          className="w-full h-full object-cover object-center opacity-30 scale-105 animate-[pulse_12s_ease-in-out_infinite] filter blur-[2px]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/85" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/10 blur-[150px] rounded-full animate-pulse pointer-events-none" />
-      </div>
-
+    <div className="w-full min-h-screen relative flex flex-col items-center justify-between bg-[#0F0F11] selection:bg-neutral-200 font-['Inter',sans-serif] overflow-hidden">
       {/* Main Container */}
       <div className={`flex-1 w-full px-6 pt-16 pb-20 flex flex-col justify-center ${tab === 'register' && registerStep === 'details' ? 'max-w-xl' : 'max-w-md'}`}>
-        <div className="w-full bg-white/95 backdrop-blur-2xl border border-white/40 rounded-[36px] p-8 sm:p-10 shadow-[0_30px_80px_rgba(0,0,0,0.5)] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="w-full bg-white/90 backdrop-blur-3xl border border-white/60 rounded-[36px] p-8 sm:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.35),_inset_0_1px_1px_rgba(255,255,255,0.9)] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden animate-modal-card">
           {/* Brand Header */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block transition-transform hover:scale-105 active:scale-95">
@@ -615,25 +603,18 @@ export default function AuthPage() {
                         Create Password *
                       </label>
                       {registerPassword.length > 0 && (
-                        <span
-                          className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${
-                            strengthScore <= 1
-                              ? 'text-red-500'
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isStrongPassword ? 'bg-black' : 'bg-black/30'}`} />
+                          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-black">
+                            {strengthScore <= 1
+                              ? 'Weak'
                               : strengthScore === 2
-                              ? 'text-amber-500'
+                              ? 'Moderate'
                               : strengthScore === 3
-                              ? 'text-blue-600'
-                              : 'text-emerald-600'
-                          }`}
-                        >
-                          {strengthScore <= 1
-                            ? 'Weak'
-                            : strengthScore === 2
-                            ? 'Moderate'
-                            : strengthScore === 3
-                            ? 'Good'
-                            : 'Archive Strong'}
-                        </span>
+                              ? 'Good'
+                              : 'Archive Strong'}
+                          </span>
+                        </div>
                       )}
                     </div>
                     <div className="relative">
@@ -655,57 +636,53 @@ export default function AuthPage() {
                       </button>
                     </div>
 
-                    {/* Segmented Strength Meter & Criteria Badges */}
+                    {/* Segmented Strength Meter & Criteria Badges (Pure Monochrome / Black & White) */}
                     {registerPassword.length > 0 && (
-                      <div className="mt-2.5 space-y-2 p-3 bg-neutral-50/80 rounded-2xl border border-black/5 animate-in fade-in duration-200">
-                        {/* 4 Segmented Strength Bars */}
+                      <div className="mt-2.5 space-y-2 p-3 bg-neutral-50/90 rounded-2xl border border-black/10 animate-in fade-in duration-200">
+                        {/* 4 Segmented Strength Bars - Pure Black & White */}
                         <div className="grid grid-cols-4 gap-1.5 h-1.5">
                           {[1, 2, 3, 4].map((step) => {
-                            let barColor = 'bg-black/10'
-                            if (strengthScore >= step) {
-                              if (strengthScore <= 1) barColor = 'bg-red-500'
-                              else if (strengthScore === 2) barColor = 'bg-amber-500'
-                              else if (strengthScore === 3) barColor = 'bg-blue-600'
-                              else barColor = 'bg-emerald-500'
-                            }
+                            const isFilled = strengthScore >= step
                             return (
                               <div
                                 key={step}
-                                className={`rounded-full transition-all duration-300 ${barColor}`}
+                                className={`rounded-full transition-all duration-300 ${
+                                  isFilled ? 'bg-black' : 'bg-black/10'
+                                }`}
                               />
                             )
                           })}
                         </div>
 
-                        {/* 4 Security Criteria Pills */}
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[10px] font-mono">
-                          <div className={`flex items-center gap-1.5 transition-colors ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                        {/* 4 Security Criteria Pills - Pure Monochrome */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1 text-[10px] font-mono">
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasMinLength ? 'text-black font-semibold' : 'text-black/40'}`}>
                             {hasMinLength ? (
-                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                              <Check className="w-3 h-3 text-black stroke-[2.5]" />
                             ) : (
                               <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
                             )}
                             <span>8+ Characters</span>
                           </div>
-                          <div className={`flex items-center gap-1.5 transition-colors ${hasUppercase && hasLowercase ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasUppercase && hasLowercase ? 'text-black font-semibold' : 'text-black/40'}`}>
                             {hasUppercase && hasLowercase ? (
-                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                              <Check className="w-3 h-3 text-black stroke-[2.5]" />
                             ) : (
                               <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
                             )}
                             <span>Upper & Lower</span>
                           </div>
-                          <div className={`flex items-center gap-1.5 transition-colors ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasNumber ? 'text-black font-semibold' : 'text-black/40'}`}>
                             {hasNumber ? (
-                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                              <Check className="w-3 h-3 text-black stroke-[2.5]" />
                             ) : (
                               <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
                             )}
                             <span>1+ Number</span>
                           </div>
-                          <div className={`flex items-center gap-1.5 transition-colors ${hasSpecial ? 'text-emerald-700 font-semibold' : 'text-black/40'}`}>
+                          <div className={`flex items-center gap-1.5 transition-colors ${hasSpecial ? 'text-black font-semibold' : 'text-black/40'}`}>
                             {hasSpecial ? (
-                              <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                              <Check className="w-3 h-3 text-black stroke-[2.5]" />
                             ) : (
                               <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
                             )}
