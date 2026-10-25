@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { Product, CartItem } from '../types'
-import type { FragranceItem } from '../data/fragranceData'
 
 export interface CartContextType {
   items: CartItem[]
-  addToCart: (product: Product | FragranceItem, quantity?: number) => void
+  addToCart: (product: Product, quantity?: number) => void
   removeFromCart: (productId: number | string) => void
   updateQuantity: (productId: number | string, quantity: number) => void
   clearCart: () => void
@@ -23,31 +22,35 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 const CART_STORAGE_KEY = 'chembros_cart_items'
 
-function normalizeProduct(p: Product | FragranceItem): Product {
-  if ('title' in p) {
+function normalizeProduct(p: any): Product {
+  if (p && 'title' in p && !p.name) {
     return {
-      id: p.id,
+      ...p,
       name: p.title,
-      subtitle: p.tagline,
-      price: p.price,
-      stock: 50,
-      category: p.isArchive ? 'Specimen Discovery Set' : 'Extrait de Parfum',
-      fragrance_family: p.gender || 'Unisex',
-      concentration: p.concentration,
-      volume_ml: parseInt(p.volume) || 30,
-      top_notes: p.topNotes?.join(', '),
-      heart_notes: p.heartNotes?.join(', '),
-      base_notes: p.baseNotes?.join(', '),
+      subtitle: p.tagline || p.subtitle,
+      price: Number(p.price) || 0,
+      stock: p.stock ?? 50,
+      category: p.category || (p.is_archive ? 'Specimen Discovery Set' : 'Extrait de Parfum'),
+      fragrance_family: p.fragrance_family || p.gender || 'Unisex',
+      concentration: p.concentration || '30% Extrait',
+      volume_ml: p.volume_ml || (parseInt(p.volume) || 30),
+      top_notes: Array.isArray(p.topNotes) ? p.topNotes.join(', ') : p.top_notes,
+      heart_notes: Array.isArray(p.heartNotes) ? p.heartNotes.join(', ') : p.heart_notes,
+      base_notes: Array.isArray(p.baseNotes) ? p.baseNotes.join(', ') : p.base_notes,
       description: p.description,
-      image_base64: p.image,
-      rating: 4.95,
-      reviews_count: 24,
-      is_trending: true,
-      is_featured: true,
-      sales_count: 10,
+      image_base64: p.image || p.image_base64,
+      rating: p.rating ?? 4.95,
+      reviews_count: p.reviews_count ?? 24,
+      is_trending: p.is_trending ?? true,
+      is_featured: p.is_featured ?? true,
+      sales_count: p.sales_count ?? 10,
     }
   }
-  return p
+  return {
+    ...p,
+    price: Number(p.price) || 0,
+    stock: p.stock ?? 50,
+  }
 }
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,7 +72,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [items])
 
-  const addToCart = (productInput: Product | FragranceItem, quantity = 1) => {
+  const addToCart = (productInput: Product, quantity = 1) => {
     const product = normalizeProduct(productInput)
     setItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id)

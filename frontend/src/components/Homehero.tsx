@@ -1,26 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import heroImg from '../assets/hero.png'
 import bottleImg from '../assets/bottle.png'
 import NavBar from './NavBar'
-
-interface Formula {
-  id: string
-  code: string
-  name: string
-  notes: string
-  concentration: string
-}
-
-const FORMULAS: Formula[] = [
-  { id: '1', code: '01', name: 'MOLECULE X', notes: 'Santal · Iso E Super · Cardamom', concentration: '32% Extrait' },
-  { id: '2', code: '02', name: 'MOLECULE T', notes: 'Black Tea · Ambroxan · Bergamot', concentration: '28% Extrait' },
-  { id: '3', code: '03', name: 'MOLECULE J', notes: 'Iris Root · Vetiver · Cedar', concentration: '30% Extrait' },
-  { id: '4', code: '04', name: 'MOLECULE K', notes: 'Smoked Ozone · Frankincense', concentration: '35% Extrait' },
-]
+import { getProductsApi } from '../services/api'
+import type { Product } from '../types'
 
 export default function Homehero() {
-  const [selectedFormula, setSelectedFormula] = useState<Formula>(FORMULAS[0])
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedIndex, setSelectedIndex] = useState<number>(0)
+
+  useEffect(() => {
+    async function loadFormulas() {
+      try {
+        const data = await getProductsApi()
+        const formulas = data
+          .filter((p) => !p.is_archive)
+          .sort((a, b) => (a.code || '').localeCompare(b.code || '') || (Number(a.id) - Number(b.id)))
+        setProducts(formulas)
+      } catch (err) {
+        console.error('Failed to load formulas for hero from live DB:', err)
+      }
+    }
+    loadFormulas()
+  }, [])
+
+  const selectedProduct = products[selectedIndex] || products[0]
 
   return (
     <section className="w-full bg-white flex justify-center overflow-x-hidden select-none relative">
@@ -75,13 +80,13 @@ export default function Homehero() {
           <div className="relative">
             <img
               className="w-[340px] h-[380px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.22)] group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ease-out select-none"
-              src={bottleImg}
+              src={selectedProduct?.image_base64 || bottleImg}
               alt="Chembros Flagship Perfume Bottle"
               draggable={false}
             />
 
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white text-[10px] font-mono tracking-widest px-3 py-1 rounded-full border border-white/20 whitespace-nowrap shadow-lg">
-              {selectedFormula.name} · {selectedFormula.concentration}
+              {selectedProduct ? `${selectedProduct.name} · ${selectedProduct.concentration || '30% Extrait'}` : 'MOLECULE X · 32% Extrait'}
             </div>
           </div>
         </div>
@@ -98,26 +103,28 @@ export default function Homehero() {
                 </svg>
                 ACTIVE FORMULATION
               </span>
-              <span>BATCH // {selectedFormula.code}</span>
+              <span>BATCH // {selectedProduct?.code || '01'}</span>
             </div>
 
             <div className="flex items-baseline justify-between">
               <div className="text-2xl font-normal font-['Conquera',sans-serif] tracking-wider text-black uppercase">
-                {selectedFormula.name}
+                {selectedProduct?.name || 'MOLECULE X'}
               </div>
               <span className="text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/60">
-                ₹1,299
+                {selectedProduct ? `₹${selectedProduct.price.toLocaleString('en-IN')}` : '₹1,299'}
               </span>
             </div>
 
             <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide">
-              {selectedFormula.notes}
+              {selectedProduct?.subtitle || 'Santal · Iso E Super · Cardamom'}
             </p>
 
             <div className="pt-2 flex items-center justify-between border-t border-black/5">
-              <span className="text-[10px] font-mono text-black/40 uppercase">30ML EXTRAIT DE PARFUM</span>
+              <span className="text-[10px] font-mono text-black/40 uppercase">
+                {selectedProduct?.volume_ml ? `${selectedProduct.volume_ml}ML EXTRAIT DE PARFUM` : '30ML EXTRAIT DE PARFUM'}
+              </span>
               <Link
-                to={`/fragrances/${selectedFormula.name.toLowerCase().replace(' ', '-')}`}
+                to={`/fragrances/${selectedProduct?.slug || selectedProduct?.id || 'molecule-x'}`}
                 className="text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-1 hover:opacity-70 transition-opacity"
               >
                 <span>Inspect Formula</span>
@@ -130,19 +137,19 @@ export default function Homehero() {
 
           {/* Formula Switcher Pills */}
           <div className="flex items-center gap-3">
-            {FORMULAS.map((formula) => {
-              const isActive = selectedFormula.id === formula.id
+            {products.map((formula, idx) => {
+              const isActive = selectedIndex === idx
               return (
                 <button
                   key={formula.id}
-                  onClick={() => setSelectedFormula(formula)}
+                  onClick={() => setSelectedIndex(idx)}
                   className={`px-5 py-3 rounded-2xl border text-xs font-mono tracking-wider transition-all duration-300 cursor-pointer ${
                     isActive
                       ? 'bg-black text-white border-black shadow-lg scale-105'
                       : 'bg-white/90 backdrop-blur-md text-black/70 border-black/10 hover:border-black/40 hover:bg-white'
                   }`}
                 >
-                  <span className="text-[10px] opacity-50 block text-left">F-{formula.code}</span>
+                  <span className="text-[10px] opacity-50 block text-left">F-{formula.code || `0${idx + 1}`}</span>
                   <span className="font-semibold uppercase">{formula.name.replace('MOLECULE ', 'M-')}</span>
                 </button>
               )

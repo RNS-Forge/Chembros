@@ -1,5 +1,7 @@
 export interface Product {
   id: number | string
+  slug?: string
+  code?: string
   name: string
   subtitle?: string
   price: number
@@ -9,6 +11,9 @@ export interface Product {
   fragrance_family: string
   concentration: string
   volume_ml: number
+  longevity?: string
+  gender?: string
+  is_archive?: boolean
   top_notes?: string
   heart_notes?: string
   base_notes?: string

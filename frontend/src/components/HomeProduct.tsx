@@ -1,14 +1,31 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import boyImg from '../assets/tonedboy.png'
 import bottleImg from '../assets/bottle.png'
-import { FRAGRANCES_DATA } from '../data/fragranceData'
+import { getProductsApi } from '../services/api'
+import type { Product } from '../types'
 import { useCart } from '../context/CartContext'
 
 export default function HomeProduct() {
   const { addToCart } = useCart()
+  const [products, setProducts] = useState<Product[]>([])
 
-  const fourFormulas = FRAGRANCES_DATA.filter((item) => !item.isArchive)
-  const discoveryArchive = FRAGRANCES_DATA.find((item) => item.isArchive) || FRAGRANCES_DATA[4]
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await getProductsApi()
+        setProducts(data)
+      } catch (err) {
+        console.error('Failed to load products from live DB:', err)
+      }
+    }
+    loadProducts()
+  }, [])
+
+  const fourFormulas = products
+    .filter((item) => !item.is_archive)
+    .sort((a, b) => (a.code || '').localeCompare(b.code || '') || (Number(a.id) - Number(b.id)))
+  const discoveryArchive = products.find((item) => item.is_archive)
 
   return (
     <section className="w-full bg-white flex justify-center overflow-x-hidden select-none relative">
@@ -51,12 +68,12 @@ export default function HomeProduct() {
           >
             {/* Left White Container with Big Bottle */}
             <Link
-              to={`/fragrances/${discoveryArchive.id}`}
+              to={`/fragrances/${discoveryArchive ? (discoveryArchive.slug || discoveryArchive.id) : 'the-discovery-archive'}`}
               className="w-[677px] h-[521px] left-[96px] top-[102px] absolute bg-white rounded-[30px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex items-center justify-center group cursor-pointer"
             >
               <img
                 className="w-96 h-[471px] object-contain select-none pointer-events-none drop-shadow-[0_15px_25px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500"
-                src={bottleImg}
+                src={discoveryArchive?.image_base64 || bottleImg}
                 alt="The Discovery Archive Bottle"
                 draggable={false}
               />
@@ -64,7 +81,7 @@ export default function HomeProduct() {
 
             {/* Title: THE DISCOVERY ARCHIVE */}
             <Link
-              to={`/fragrances/${discoveryArchive.id}`}
+              to={`/fragrances/${discoveryArchive ? (discoveryArchive.slug || discoveryArchive.id) : 'the-discovery-archive'}`}
               className="left-[844px] top-[219px] absolute justify-center text-white text-3xl font-normal font-['Conquera',sans-serif] leading-10 tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               THE DISCOVERY <br />
@@ -73,26 +90,27 @@ export default function HomeProduct() {
 
             {/* Subtitle */}
             <div className="left-[844px] top-[339px] absolute justify-center text-white text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-4 tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-              The complete Molecule Series, in miniature.
+              {discoveryArchive?.subtitle || 'The complete Molecule Series, in miniature.'}
             </div>
 
             {/* Formulation Specs */}
             <div className="left-[844px] top-[402px] absolute justify-center text-white/90 text-base font-normal font-['General_Sans','Poppins',sans-serif] leading-6 tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-              4 × 3ml Extrait<br />
-              Extrait de Parfum<br />
-              25% natural oil concentration<br />
-              Unisex · 8+ hours
+              {discoveryArchive?.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
+              {discoveryArchive?.category || 'Extrait de Parfum'}<br />
+              {discoveryArchive?.concentration || '25% natural oil concentration'}<br />
+              {discoveryArchive?.gender || 'Unisex'} · {discoveryArchive?.longevity || '8+ hours'}
             </div>
 
             {/* Price: ₹1299 */}
             <div className="left-[845.50px] top-[521px] absolute justify-center text-white text-2xl font-normal font-['Conquera',sans-serif] leading-[59.36px] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-              {discoveryArchive.priceFormatted}
+              {discoveryArchive ? `₹${discoveryArchive.price.toLocaleString('en-IN')}` : '₹1,299'}
             </div>
 
             {/* ADD TO CART Button */}
             <button
               type="button"
-              onClick={() => addToCart(discoveryArchive)}
+              disabled={!discoveryArchive}
+              onClick={() => discoveryArchive && addToCart(discoveryArchive)}
               className="w-56 h-14 left-[998px] top-[521px] absolute bg-white/80 hover:bg-white active:scale-95 rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn"
               aria-label="Add The Discovery Archive to Cart"
             >
@@ -119,28 +137,28 @@ export default function HomeProduct() {
               >
                 {/* Molecule Title */}
                 <Link
-                  to={`/fragrances/${prod.id}`}
+                  to={`/fragrances/${prod.slug || prod.id}`}
                   className="w-full text-center left-0 top-[26px] absolute justify-center text-white text-xl font-normal font-['Conquera',sans-serif] leading-[59.36px] tracking-widest uppercase whitespace-nowrap hover:opacity-80 transition-opacity cursor-pointer"
                 >
-                  {prod.title}
+                  {prod.name}
                 </Link>
 
                 {/* Bottle Image */}
                 <Link
-                  to={`/fragrances/${prod.id}`}
+                  to={`/fragrances/${prod.slug || prod.id}`}
                   className="w-60 h-64 left-1/2 -translate-x-1/2 top-[125px] absolute flex items-center justify-center cursor-pointer"
                 >
                   <img
                     className="w-full h-full object-contain drop-shadow-[0_15px_30px_rgba(255,255,255,0.06)] group-hover:scale-105 group-hover:-translate-y-1 transition-transform duration-500 select-none pointer-events-none"
-                    src={bottleImg}
-                    alt={`${prod.title} Bottle`}
+                    src={prod.image_base64 || bottleImg}
+                    alt={`${prod.name} Bottle`}
                     draggable={false}
                   />
                 </Link>
 
                 {/* Price */}
                 <div className="w-full text-center left-0 top-[428px] absolute justify-center text-white text-2xl font-normal font-['Conquera',sans-serif] leading-[59.36px] tracking-wider">
-                  {prod.priceFormatted}
+                  ₹{prod.price.toLocaleString('en-IN')}
                 </div>
 
                 {/* Add to cart Button */}
@@ -148,7 +166,7 @@ export default function HomeProduct() {
                   type="button"
                   onClick={() => addToCart(prod)}
                   className="w-72 h-14 left-1/2 -translate-x-1/2 top-[494px] absolute bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-md"
-                  aria-label={`Add ${prod.title} to Cart`}
+                  aria-label={`Add ${prod.name} to Cart`}
                 >
                   <span className="text-white text-lg font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-[59.36px] tracking-wide transition-transform group-hover/btn:scale-105">
                     Add to cart

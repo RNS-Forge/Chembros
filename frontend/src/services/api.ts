@@ -166,11 +166,11 @@ export async function getTrendingProductsApi(limit: number = 8): Promise<Product
   return request<Product[]>(`/api/products/trending?limit=${limit}`)
 }
 
-export async function getProductDetailApi(productId: number): Promise<Product> {
+export async function getProductDetailApi(productId: number | string): Promise<Product> {
   return request<Product>(`/api/products/${productId}`)
 }
 
-export async function getProductRecommendationsApi(productId: number, limit: number = 4): Promise<Product[]> {
+export async function getProductRecommendationsApi(productId: number | string, limit: number = 4): Promise<Product[]> {
   return request<Product[]>(`/api/products/${productId}/recommendations?limit=${limit}`)
 }
 
