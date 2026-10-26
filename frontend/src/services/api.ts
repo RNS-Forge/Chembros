@@ -1,6 +1,6 @@
 import type { Product, Order, User, AdminStats } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://chembros-server.onrender.com').replace(/\/+$/, '')
 
 function getHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
   const token = localStorage.getItem('chembros_token')
