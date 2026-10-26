@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import footerBgImg from '../assets/footerbg.png';
 import modelHandImg from '../assets/footerguy.png';
@@ -9,11 +8,11 @@ interface FooterProps {
   onOpenPolicy?: (type: 'shipping' | 'privacy' | 'terms') => void
 }
 
-export const Footer: React.FC<FooterProps> = ({
+export const Footer = ({
   onOpenStory,
   onOpenContact,
   onOpenPolicy,
-}) => {
+}: FooterProps) => {
   return (
     <footer className="w-full flex justify-center items-center overflow-hidden select-none bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12">
       
@@ -47,8 +46,8 @@ export const Footer: React.FC<FooterProps> = ({
               THE BRAND
             </span>
             <div className="flex flex-col items-start gap-1 sm:gap-1.5 lg:gap-2">
-              <button
-                type="button"
+              <Link
+                to="/our-story"
                 onClick={onOpenStory}
                 className="text-white/85 hover:text-white text-[11px] sm:text-xs lg:text-sm font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-tight transition-colors cursor-pointer text-left"
               >

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import Vid from '../assets/video/introvideo.mp4'
 
 interface BrandStoryProtocolProps {
