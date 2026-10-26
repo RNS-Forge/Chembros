@@ -79,54 +79,26 @@ body {
   overflow-x: hidden;
 }
 
-/* Hide scrollbar cross-browser while keeping scrolling functional */
-.no-scrollbar::-webkit-scrollbar {
-  display: none !important;
-}
-.no-scrollbar {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
+@layer utilities {
 
-/* Custom luxury entrance animations for auth modal & backdrop */
-@keyframes modalCardIn {
-  0% {
-    opacity: 0;
-    transform: translateY(32px) scale(0.95);
-    filter: blur(6px);
+  /* Headings */
+  .text-title-hero {
+    font-size: clamp(24px, 2.6vw, 44px);
+    line-height: 1.1;
   }
-  60% {
-    opacity: 1;
-    transform: translateY(-3px) scale(1.008);
-    filter: blur(0px);
+
+  .text-title-card {
+    font-size: clamp(14px, 1.15vw, 19px);
+    line-height: 1.25;
   }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0px);
+
+  .text-price {
+    font-size: clamp(18px, 1.4vw, 24px);
+    line-height: 1;
+  }
+
+  .text-meta {
+    font-size: clamp(10px, 0.75vw, 12px);
+    line-height: 1.4;
   }
 }
-
-@keyframes modalBackdropIn {
-  0% {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-    -webkit-backdrop-filter: blur(0px);
-  }
-  100% {
-    opacity: 1;
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-  }
-}
-
-.animate-modal-card {
-  animation: modalCardIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity, filter;
-}
-
-.animate-modal-backdrop {
-  animation: modalBackdropIn 0.4s ease-out forwards;
-}
-
-

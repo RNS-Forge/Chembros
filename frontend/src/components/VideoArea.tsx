@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import Vid from '../assets/video/introvideo.mp4';
+import React, { useState, useRef } from 'react'
+import Vid from '../assets/video/introvideo.mp4'
 
 interface BrandStoryProtocolProps {
   videoSrc?: string
@@ -12,8 +12,8 @@ interface Testimonial {
   location: string
   formula: string
   rating: string
-  longevityTested: string
-  sillageRating: string
+  longevity: string
+  projection: string
   quote: string
   review: string
   verifiedDate: string
@@ -26,12 +26,12 @@ const TESTIMONIALS: Testimonial[] = [
     location: 'BENGALURU',
     formula: 'MOLECULE X',
     rating: '5.0 / 5.0',
-    longevityTested: '11.5 HRS',
-    sillageRating: 'INTIMATE · RADIAL',
-    quote: 'A SECOND-SKIN SILLAGE THAT EVOLVES ALL DAY.',
+    longevity: '11+ HOURS',
+    projection: 'INTIMATE & SUBTLE',
+    quote: 'A SECOND-SKIN SCENT THAT EVOLVES ALL DAY.',
     review:
-      'The sandalwood and Iso E Super melt effortlessly with body heat. It doesn’t scream for attention like commercial EDPs; instead, people keep asking what smells so remarkably clean whenever I walk past.',
-    verifiedDate: 'OCT 2026 // BATCH 01',
+      'The sandalwood and Iso E Super blend effortlessly with body heat. It does not overpower the room; instead, people consistently ask what smells so remarkably clean whenever I walk past.',
+    verifiedDate: 'VERIFIED BUYER',
   },
   {
     id: '02',
@@ -39,12 +39,12 @@ const TESTIMONIALS: Testimonial[] = [
     location: 'MUMBAI',
     formula: 'MOLECULE T',
     rating: '5.0 / 5.0',
-    longevityTested: '9.0 HRS',
-    sillageRating: 'DIFFUSIVE',
+    longevity: '9+ HOURS',
+    projection: 'MODERATE',
     quote: 'THE BLACK TEA AND AMBROXAN NOTE IS MASTERFUL.',
     review:
-      'Opens with this sharp, cold bergamot burst before settling into a warm, mineral black tea steam. You can immediately feel the heavy oil concentration—leaves zero chemical residue on dry down.',
-    verifiedDate: 'SEP 2026 // BATCH 02',
+      'Opens with a crisp, cool bergamot burst before settling into a warm, aromatic black tea steam. You can immediately feel the pure oil concentration—leaves zero chemical residue on dry down.',
+    verifiedDate: 'VERIFIED BUYER',
   },
   {
     id: '03',
@@ -52,12 +52,12 @@ const TESTIMONIALS: Testimonial[] = [
     location: 'NEW DELHI',
     formula: 'DISCOVERY ARCHIVE',
     rating: '5.0 / 5.0',
-    longevityTested: '8–12 HRS',
-    sillageRating: 'MODERATE · HIGH',
+    longevity: '10+ HOURS',
+    projection: 'BALANCED',
     quote: 'THE COMPACT VIALS ARE ABSOLUTE WORKS OF ART.',
     review:
-      'Ordered the 4-vial archive before deciding on a full 30ml bottle. Testing the skin evolution of Molecule J vs Molecule K over a weekend convinced me to buy both. Exceptional lab packaging.',
-    verifiedDate: 'OCT 2026 // ARCHIVE 04',
+      'Ordered the 4-vial set before deciding on a full bottle. Testing Molecule J versus Molecule K over a weekend convinced me to get both. Beautiful luxury packaging.',
+    verifiedDate: 'VERIFIED BUYER',
   },
   {
     id: '04',
@@ -65,12 +65,12 @@ const TESTIMONIALS: Testimonial[] = [
     location: 'CHENNAI',
     formula: 'MOLECULE K',
     rating: '5.0 / 5.0',
-    longevityTested: '14.0 HRS',
-    sillageRating: 'HEAVY PROJECTION',
+    longevity: '14+ HOURS',
+    projection: 'STRONG',
     quote: 'PETRICHOR AND FRANKINCENSE UNLIKE ANYTHING ELSE.',
     review:
-      'Smells like rain on cold volcanic stones and church resin. It survived a 10-hour workday in humid heat and was still projecting softly by midnight. Authentic Extrait concentration in every drop.',
-    verifiedDate: 'AUG 2026 // BATCH 01',
+      'Smells like rain on volcanic stones and warm resin. Survived a full 10-hour humid day and was still noticeable by midnight. Real parfum concentration in every drop.',
+    verifiedDate: 'VERIFIED BUYER',
   },
 ]
 
@@ -90,19 +90,14 @@ export default function BrandStoryProtocol({
   }
 
   return (
-    <section className="w-full bg-white flex justify-center overflow-x-hidden select-none py-14">
-      {/* 1576px Responsive Scaled Container */}
-      <div
-        className="w-[1576px] flex flex-col justify-start items-start gap-16 origin-top"
-        style={{
-          transform: 'scale(min(1, calc((100vw - 48px) / 1576)))',
-          marginBottom: 'calc(1650px * (min(1, calc((100vw - 48px) / 1576)) - 1))',
-        }}
-      >
+    <section className="w-full bg-white flex justify-center overflow-hidden select-none py-10 sm:py-14 lg:py-20 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+      {/* Fluid Max-Width Container matching HomeProduct & HomeCta */}
+      <div className="w-full max-w-[1583px] flex flex-col gap-12 sm:gap-16 lg:gap-20">
+
         {/* ========================================================
-            PART 1: CLEAN VIDEO FRAME WITH MUTE/UNMUTE CONTROL (799px)
+            PART 1: CINEMATIC 16:9 VIDEO FRAME
             ======================================================== */}
-        <div className="w-full h-[799px] relative bg-neutral-900 rounded-[50px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] group">
+        <div className="w-full aspect-video max-h-[760px] relative bg-neutral-900 rounded-[28px] sm:rounded-[36px] lg:rounded-[48px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] group">
           {videoSrc ? (
             <video
               ref={videoRef}
@@ -118,22 +113,22 @@ export default function BrandStoryProtocol({
             <img
               className="w-full h-full object-cover select-none pointer-events-none group-hover:scale-105 transition-transform duration-700"
               src={videoPoster}
-              alt="Chembros Atelier Video"
+              alt="Chembros Craftsmanship"
               draggable={false}
             />
           )}
 
-          {/* Minimalist Floating Mute/Unmute Pill */}
+          {/* Floating Sound Control Pill */}
           <button
             type="button"
             onClick={toggleSound}
             aria-label={isMuted ? 'Unmute video' : 'Mute video'}
-            className="right-8 bottom-8 absolute z-20 px-4 py-2.5 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-xl border border-white/20 text-white font-mono text-xs tracking-wider uppercase transition-all duration-300 flex items-center gap-2.5 active:scale-95 cursor-pointer shadow-lg"
+            className="right-4 bottom-4 sm:right-6 sm:bottom-6 lg:right-8 lg:bottom-8 absolute z-20 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-black/50 hover:bg-black/75 backdrop-blur-xl border border-white/20 text-white font-mono text-[11px] sm:text-xs tracking-wider uppercase transition-all duration-300 flex items-center gap-2 active:scale-95 cursor-pointer shadow-lg"
           >
             {isMuted ? (
               <>
                 <svg
-                  className="w-4 h-4 text-white/80"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/80"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -150,7 +145,7 @@ export default function BrandStoryProtocol({
             ) : (
               <>
                 <svg
-                  className="w-4 h-4 text-white"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -169,101 +164,97 @@ export default function BrandStoryProtocol({
         </div>
 
         {/* ========================================================
-            PART 2: 4-BOX LABORATORY TESTIMONIAL DOSSIERS
+            PART 2: TESTIMONIAL REVIEWS GRID
             ======================================================== */}
         <div className="w-full">
-          {/* Section Header */}
-          <div className="flex items-end justify-between mb-8 pb-4 border-b border-black/10">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-black/10">
             <div>
-              <span className="text-xs font-mono tracking-[0.3em] uppercase text-black/50 block mb-2">
-                VERIFIED ARCHIVE DOSSIERS
+              <span className="text-[11px] sm:text-xs font-mono tracking-[0.25em] uppercase text-black/50 block mb-1">
+                COMMUNITY REVIEWS
               </span>
-              <h3 className="text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
-                OBSERVATIONS & WEAR REPORTS
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
+                WEAR REPORTS & EXPERIENCE
               </h3>
             </div>
-            <div className="flex items-center gap-3 text-xs font-mono text-black/50 uppercase">
-              <span className="w-2 h-2 rounded-full bg-black/80" />
-              <span>4.9 / 5.0 AGGREGATE LAB RATING</span>
+            <div className="flex items-center gap-2 text-[11px] sm:text-xs font-mono text-black/60 uppercase">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span>4.9 / 5.0 OVERALL RATING</span>
             </div>
           </div>
 
-          {/* 4 Cards Grid */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Cards Grid */}
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
             {TESTIMONIALS.map((item, idx) => {
               const isActive = activeCard === idx
               return (
                 <div
                   key={item.id}
+                  onClick={() => setActiveCard(idx)}
                   onMouseEnter={() => setActiveCard(idx)}
-                  className={`relative h-[680px] rounded-[45px] p-8 flex flex-col justify-between transition-all duration-500 cursor-pointer overflow-hidden border ${
-                    isActive
-                      ? 'bg-black text-white border-black shadow-[0_25px_50px_rgba(0,0,0,0.22)] -translate-y-2'
-                      : 'bg-[#F6F8FA] text-black border-black/5 hover:border-black/20 hover:bg-[#EFF2F5]'
-                  }`}
+                  className={`relative min-h-[460px] sm:min-h-[480px] lg:h-[500px] xl:h-[520px] rounded-[28px] sm:rounded-[34px] lg:rounded-[40px] p-6 lg:p-7 flex flex-col justify-between transition-all duration-300 cursor-pointer overflow-hidden border ${isActive
+                      ? 'bg-black text-white border-black shadow-[0_20px_40px_rgba(0,0,0,0.18)] -translate-y-1.5'
+                      : 'bg-[#F7F9FA] text-black border-black/5 hover:border-black/15 hover:bg-[#EEF2F5]'
+                    }`}
                 >
-                  {/* Active Card Subtle Glow */}
+                  {/* Subtle Top-Right Ambient Glow */}
                   {isActive && (
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl pointer-events-none rounded-full" />
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 blur-3xl pointer-events-none rounded-full" />
                   )}
 
-                  {/* Card Header: Client Info & Formula Tag */}
+                  {/* Header: Name, Location, Formula */}
                   <div>
-                    <div className="flex items-center justify-between pb-5 border-b border-current/10">
+                    <div className="flex items-start justify-between gap-2 pb-4 border-b border-current/10">
                       <div>
                         <span className="text-[10px] font-mono tracking-widest uppercase opacity-50 block">
-                          VERIFIED CLIENT
+                          {item.verifiedDate}
                         </span>
-                        <div className="text-sm font-bold font-mono tracking-wide mt-0.5">
+                        <div className="text-xs sm:text-sm font-bold font-mono tracking-wide mt-0.5">
                           {item.clientName} · {item.location}
                         </div>
                       </div>
 
                       <span
-                        className={`text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full border ${
-                          isActive
+                        className={`text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${isActive
                             ? 'border-white/30 bg-white/10 text-white'
                             : 'border-black/15 bg-black/5 text-black'
-                        }`}
+                          }`}
                       >
                         {item.formula}
                       </span>
                     </div>
 
                     {/* Metric Badges */}
-                    <div className="grid grid-cols-2 gap-2 mt-5 p-3 rounded-2xl bg-current/5 border border-current/10 font-mono text-[10px]">
+                    <div className="grid grid-cols-2 gap-2 mt-4 p-2.5 rounded-xl bg-current/5 border border-current/10 font-mono text-[10px]">
                       <div>
-                        <span className="opacity-40 uppercase block">SKIN LONGEVITY</span>
-                        <span className="font-semibold block mt-0.5">{item.longevityTested}</span>
+                        <span className="opacity-50 uppercase block text-[9px]">LONGEVITY</span>
+                        <span className="font-semibold block mt-0.5">{item.longevity}</span>
                       </div>
                       <div>
-                        <span className="opacity-40 uppercase block">SILLAGE DENSITY</span>
-                        <span className="font-semibold block mt-0.5 truncate">{item.sillageRating}</span>
+                        <span className="opacity-50 uppercase block text-[9px]">PROJECTION</span>
+                        <span className="font-semibold block mt-0.5 truncate">{item.projection}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Testimonial Quote & Review Body */}
-                  <div className="my-auto py-4">
-                    <div className="text-[11px] font-mono tracking-widest opacity-40 mb-2">
-                      DOSSIER // {item.id}
-                    </div>
-                    <h4 className="text-xl font-normal font-['Conquera',sans-serif] tracking-wider uppercase leading-snug">
+                  {/* Quote & Review */}
+                  <div className="my-auto py-3">
+                    <h4 className="text-sm sm:text-base lg:text-sm xl:text-base font-normal font-['Conquera',sans-serif] tracking-wider uppercase leading-snug">
                       "{item.quote}"
                     </h4>
-                    <p className="mt-4 text-xs leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] opacity-80">
+                    <p className="mt-3 text-xs leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] opacity-80">
                       {item.review}
                     </p>
                   </div>
 
-                  {/* Card Footer: Stars & Batch Tag */}
-                  <div className="pt-5 border-t border-current/10 flex items-center justify-between font-mono text-[10px]">
+                  {/* Footer: Star Rating */}
+                  <div className="pt-4 border-t border-current/10 flex items-center justify-between font-mono text-[11px]">
                     <div className="flex items-center gap-1.5">
                       <span className="text-amber-400">★★★★★</span>
-                      <span className="opacity-60">{item.rating}</span>
+                      <span className="opacity-70 text-[10px]">{item.rating}</span>
                     </div>
-                    <span className="opacity-40 uppercase tracking-widest">
-                      {item.verifiedDate}
+                    <span className="opacity-40 uppercase tracking-widest text-[9px]">
+                      SCENT ARCHIVE
                     </span>
                   </div>
                 </div>
@@ -271,6 +262,7 @@ export default function BrandStoryProtocol({
             })}
           </div>
         </div>
+
       </div>
     </section>
   )
