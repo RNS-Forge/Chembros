@@ -24,9 +24,11 @@ export default function NavBar({
     const handleScroll = () => {
       const currentScrollY = window.scrollY
 
-      if (currentScrollY > 60 && currentScrollY > lastScrollY.current) {
+      // Collapse when scrolling down past 50px
+      if (currentScrollY > 50 && currentScrollY > lastScrollY.current) {
         setIsScrolled(true)
-      } else if (currentScrollY <= 60 || currentScrollY < lastScrollY.current - 10) {
+      } else if (currentScrollY <= 50 || currentScrollY < lastScrollY.current - 8) {
+        // Expand when scrolling up or back at the top
         setIsScrolled(false)
       }
 
@@ -45,26 +47,26 @@ export default function NavBar({
   ]
 
   return (
-    <header className="fixed top-8 left-6 lg:left-[172px] pointer-events-none z-[100]">
+    <header className="fixed top-4 sm:top-6 lg:top-8 left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] pointer-events-none z-[100] max-w-[calc(100vw-32px)]">
       <nav
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`pointer-events-auto h-[54px] sm:h-[60px] inline-flex items-center rounded-full bg-white/70 backdrop-blur-2xl border border-white/70 shadow-[0_12px_36px_rgba(0,0,0,0.08),_inset_0_1px_1px_rgba(255,255,255,0.9)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`pointer-events-auto h-[48px] sm:h-[54px] lg:h-[60px] inline-flex items-center rounded-full bg-white/75 backdrop-blur-2xl border border-white/80 shadow-[0_12px_36px_rgba(0,0,0,0.08),_inset_0_1px_1px_rgba(255,255,255,0.9)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-full ${
           isExpanded
-            ? 'pr-5 sm:pr-6 shadow-[0_12px_36px_rgba(0,0,0,0.08)]'
-            : 'pr-0 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-white/85'
+            ? 'pr-3.5 sm:pr-5 lg:pr-6 shadow-[0_12px_36px_rgba(0,0,0,0.08)]'
+            : 'pr-0 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-white/90'
         } ${className}`}
         style={style}
       >
-        {/* Fixed Width Logo Anchor: Never resizes, shifts, or recalculates */}
-        <div className="w-[96px] sm:w-[106px] h-full flex items-center justify-center shrink-0">
+        {/* Fixed Width Logo Anchor: Stays centered with rock-solid stability */}
+        <div className="w-[84px] sm:w-[96px] lg:w-[106px] h-full flex items-center justify-center shrink-0">
           <Link
             to="/"
             className="flex items-center justify-center transition-transform duration-300 hover:scale-105 active:scale-95"
             aria-label="Chembros Home"
           >
             <img
-              className="h-6 sm:h-7 w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.04)] will-change-transform"
+              className="h-5 sm:h-6 lg:h-7 w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.04)] will-change-transform"
               src={cmlogo}
               alt="Chembros Monogram"
               draggable={false}
@@ -80,19 +82,19 @@ export default function NavBar({
               : 'grid-cols-[0fr] opacity-0 pointer-events-none'
           }`}
         >
-          <div className="overflow-hidden flex items-center gap-6 sm:gap-8 whitespace-nowrap">
+          <div className="overflow-hidden flex items-center gap-3 sm:gap-6 lg:gap-8 whitespace-nowrap">
             {/* Divider */}
-            <span className="w-px h-4 bg-black/15 shrink-0" />
+            <span className="w-px h-3.5 sm:h-4 bg-black/15 shrink-0" />
 
             {/* Links */}
-            <div className="flex items-center gap-5 sm:gap-7 shrink-0">
+            <div className="flex items-center gap-3.5 sm:gap-5 lg:gap-7 shrink-0">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path
                 return (
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`relative py-1 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors duration-200 ${
+                    className={`relative py-1 text-[11px] sm:text-xs lg:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors duration-200 ${
                       isActive
                         ? 'text-black opacity-100 font-semibold'
                         : 'text-black/65 hover:text-black hover:opacity-100'
@@ -111,11 +113,11 @@ export default function NavBar({
             <button
               type="button"
               onClick={onOpenCart}
-              className="flex items-center gap-2 pl-3 pr-3.5 py-1.5 sm:py-2 rounded-full bg-black/5 hover:bg-black text-black hover:text-white border border-black/10 hover:border-black transition-all duration-300 active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:pl-3 sm:pr-3.5 py-1 sm:py-1.5 lg:py-2 rounded-full bg-black/5 hover:bg-black text-black hover:text-white border border-black/10 hover:border-black transition-all duration-300 active:scale-95 cursor-pointer shrink-0"
               aria-label={`View Shopping Bag, ${cartCount} items`}
             >
               <svg
-                className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors"
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4 transition-colors"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -142,7 +144,7 @@ export default function NavBar({
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="text-xs sm:text-[13px] font-mono font-medium leading-none">
+              <span className="text-[11px] sm:text-xs lg:text-[13px] font-mono font-medium leading-none">
                 {cartCount}
               </span>
             </button>

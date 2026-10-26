@@ -1,162 +1,380 @@
-import React, { useState } from 'react'
-import heroImg from '../assets/hero.png'
-import bottleImg from '../assets/bottle.png'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import gsap from 'gsap'
 import NavBar from './NavBar'
 
-interface Formula {
+// Assets
+import angelWaterBg from '../assets/bg/ogbg.png'
+import bottle1 from '../assets/bg/1.png'
+import bottle2 from '../assets/bg/2.png'
+import bottle3 from '../assets/bg/3.png'
+import bottle4 from '../assets/bg/4.png'
+
+interface BottleConfig {
   id: string
-  code: string
   name: string
-  notes: string
-  concentration: string
+  img: string
+  finalStyle: { left: string; top: string; width: string }
 }
 
-const FORMULAS: Formula[] = [
-  { id: '1', code: '01', name: 'MOLECULE X', notes: 'Santal · Iso E Super · Cardamom', concentration: '32% Extrait' },
-  { id: '2', code: '02', name: 'MOLECULE T', notes: 'Black Tea · Ambroxan · Bergamot', concentration: '28% Extrait' },
-  { id: '3', code: '03', name: 'MOLECULE J', notes: 'Iris Root · Vetiver · Cedar', concentration: '30% Extrait' },
-  { id: '4', code: '04', name: 'MOLECULE K', notes: 'Smoked Ozone · Frankincense', concentration: '35% Extrait' },
+const BOTTLES: BottleConfig[] = [
+  {
+    id: 'molecule-x',
+    name: 'MOLECULE X',
+    img: bottle1,
+    finalStyle: { left: '22.8%', top: '56.5%', width: '15.2%' },
+  },
+  {
+    id: 'molecule-t',
+    name: 'MOLECULE T',
+    img: bottle2,
+    finalStyle: { left: '37.8%', top: '49.0%', width: '17.6%' },
+  },
+  {
+    id: 'molecule-j',
+    name: 'MOLECULE J',
+    img: bottle4,
+    finalStyle: { left: '60.5%', top: '57.2%', width: '17.2%' },
+  },
+  {
+    id: 'molecule-k',
+    name: 'MOLECULE K',
+    img: bottle3,
+    finalStyle: { left: '77.8%', top: '65.5%', width: '15.2%' },
+  },
 ]
 
-export default function Homehero() {
-  const [selectedFormula, setSelectedFormula] = useState<Formula>(FORMULAS[0])
+export default function HomeHero() {
+  const [loadingFinished, setLoadingFinished] = useState(false)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const loaderOverlayRef = useRef<HTMLDivElement>(null)
+  const loaderTextRef = useRef<HTMLDivElement>(null)
+  const heroBgRef = useRef<HTMLImageElement>(null)
+  const leftTextRef = useRef<HTMLDivElement>(null)
+  const rightMetaRef = useRef<HTMLDivElement>(null)
+  const bottleRefs = useRef<(HTMLAnchorElement | null)[]>([])
+
+  useEffect(() => {
+    // Mobile devices (<768px) bypass heavy sequence for instantaneous touch UX
+    if (window.innerWidth < 768) {
+      setLoadingFinished(true)
+      return
+    }
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        onComplete: () => setLoadingFinished(true),
+      })
+
+      // 1. Initial Setup: Stack bottles in screen center, prep background & texts
+      gsap.set(heroBgRef.current, { y: 90, scale: 1.05, opacity: 0 })
+      gsap.set(leftTextRef.current, { y: 65, opacity: 0 })
+      gsap.set(rightMetaRef.current, { y: 45, opacity: 0 })
+
+      bottleRefs.current.forEach((el, index) => {
+        if (!el) return
+        gsap.set(el, {
+          xPercent: -50,
+          yPercent: -50,
+          left: '50%',
+          top: '50%',
+          scale: 0.88 + index * 0.04,
+          zIndex: 40 + index,
+          opacity: 0,
+        })
+      })
+
+      // 2. Initial Loader Entrance
+      tl.to(bottleRefs.current, {
+        opacity: 1,
+        duration: 0.8,
+        stagger: 0.08,
+        ease: 'power2.out',
+      })
+      .to(loaderTextRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+      }, '-=0.4')
+
+      // 3. Requested 2-Second Hold Delay
+      tl.to({}, { duration: 2.0 })
+
+      // 4. Loader Fadeout
+      tl.to(loaderTextRef.current, {
+        opacity: 0,
+        y: -15,
+        duration: 0.5,
+        ease: 'power2.in',
+      })
+      .to(loaderOverlayRef.current, {
+        opacity: 0,
+        duration: 1.3,
+        ease: 'power3.inOut',
+      }, '-=0.2')
+
+      // 5. Parallax Reveal: Background rises smoothly from the bottom
+      tl.to(heroBgRef.current, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 2.0,
+        ease: 'power3.out',
+      }, '-=1.2')
+
+      // 6. Smooth Bottle Dispersion: Fly from center directly to rock plinths
+      BOTTLES.forEach((bottle, idx) => {
+        const el = bottleRefs.current[idx]
+        if (!el) return
+
+        tl.to(
+          el,
+          {
+            xPercent: 0,
+            yPercent: 0,
+            left: bottle.finalStyle.left,
+            top: bottle.finalStyle.top,
+            scale: 1,
+            duration: 2.0,
+            ease: 'power4.out',
+          },
+          idx === 0 ? '-=1.8' : '-=1.92' // Gentle overlapping stagger
+        )
+      })
+
+      // 7. Parallax Reveal: Left Title & Right Metadata rise at distinct speeds
+      tl.to(
+        leftTextRef.current,
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1.4,
+          ease: 'power3.out',
+        },
+        '-=1.4'
+      )
+      .to(
+        rightMetaRef.current,
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1.4,
+          ease: 'power3.out',
+        },
+        '-=1.2'
+      )
+    }, containerRef)
+
+    return () => ctx.revert()
+  }, [])
 
   return (
-    <section className="w-full bg-white flex justify-center overflow-x-hidden select-none relative">
-      {/* 1920x983 Responsive Scaled Artboard */}
-      <div
-        className="w-[1920px] h-[983px] relative bg-white overflow-hidden origin-top"
-        style={{
-          transform: 'scale(min(1, calc(100vw / 1920)))',
-          marginBottom: 'calc(983px * (min(1, calc(100vw / 1920)) - 1))',
-        }}
-      >
-        {/* Floating Navigation Pill */}
-        <div className="left-[172px] top-[48px] absolute z-50">
-          <NavBar />
+    <section
+      ref={containerRef}
+      className="w-full h-screen min-h-[640px] max-h-[1080px] bg-white relative overflow-hidden select-none flex items-center justify-center"
+    >
+      <NavBar />
+
+      {/* =========================================================================
+          FULL-SCREEN WHITE LOADER OVERLAY
+          ========================================================================= */}
+      {!loadingFinished && (
+        <div
+          ref={loaderOverlayRef}
+          className="fixed inset-0 w-screen h-screen bg-white z-[150] pointer-events-none flex flex-col items-center justify-between py-12"
+        >
+          {/* Brand Monograph Header */}
+          <div className="text-[11px] font-mono tracking-[0.3em] uppercase text-black/40">
+            CHEM BROS // MOLECULAR SYNTHESIS
+          </div>
+
+          {/* Center Laboratory Telemetry Status */}
+          <div
+            ref={loaderTextRef}
+            className="opacity-0 translate-y-3 flex flex-col items-center gap-2.5 mb-16 text-center"
+          >
+            <div className="flex items-center gap-2 text-xs font-mono tracking-[0.25em] uppercase text-black">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+              <span>ALIGNING MOLECULAR FORMULAS</span>
+            </div>
+            <span className="text-[10px] font-mono text-black/40 tracking-widest uppercase">
+              2.0S EQUILIBRIUM // STABILIZING
+            </span>
+          </div>
         </div>
+      )}
 
-        {/* Top Laboratory Blueprint Tagline */}
-        <div className="left-[172px] top-[148px] absolute z-30 flex items-center gap-3 text-black/50 font-mono text-xs tracking-[0.3em] uppercase">
-          <span className="w-2 h-2 rounded-full bg-black/80 animate-pulse" />
-          <span>RESEARCH & EXTRACTION ARCHIVE // 2026 EDITION</span>
-        </div>
-
-        {/* Big Editorial Headline */}
-        <div className="left-[172px] top-[185px] absolute z-30 pointer-events-none">
-          <h1 className="text-black text-[54px] font-normal font-['Conquera',sans-serif] leading-[62px] tracking-wider uppercase">
-            CHEMISTRY <br />
-            CAPTURED
-          </h1>
-        </div>
-
-        <div className="right-[172px] top-[185px] absolute z-30 pointer-events-none text-right">
-          <h2 className="text-black text-[54px] font-normal font-['Conquera',sans-serif] leading-[62px] tracking-wider uppercase">
-            IN A <br />
-            BOTTLE.
-          </h2>
-        </div>
-
-        {/* Central Model Canvas */}
-        <div className="w-[1576px] h-[983px] left-[172px] top-0 absolute overflow-hidden pointer-events-none">
-          <img
-            className="w-[1414px] h-[1050px] left-1/2 -translate-x-[48%] top-0 absolute object-cover object-top select-none pointer-events-none"
-            src={heroImg}
-            alt="Chembros Hero Model"
-            draggable={false}
-          />
-        </div>
-
-        {/* HERO SHOWCASE BOTTLE */}
-        <div className="left-[1060px] top-[370px] absolute z-30 flex flex-col items-center group pointer-events-auto">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/40 blur-[60px] rounded-full -z-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
-
-          <div className="relative">
+      {/* =========================================================================
+          DESKTOP & TABLET VIEWPORT (Parallax Composite)
+          ========================================================================= */}
+      <div className="hidden md:flex w-full h-full relative items-center justify-center overflow-hidden">
+        
+        {/* Full-width composite stage */}
+        <div className="relative w-full h-full max-h-screen flex items-center justify-center overflow-hidden">
+          
+          {/* Centered Graphic Canvas */}
+          <div className="relative w-full max-w-[1920px] aspect-[1920/1069] flex items-center justify-center">
+            
+            {/* Background Graphic: Slides up from bottom */}
             <img
-              className="w-[340px] h-[380px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.22)] group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ease-out select-none"
-              src={bottleImg}
-              alt="Chembros Flagship Perfume Bottle"
+              ref={heroBgRef}
+              className="w-full h-full object-contain select-none pointer-events-none absolute inset-0 z-0 will-change-transform"
+              src={angelWaterBg}
+              alt="Blue-Winged Angel in Crystal Waters"
               draggable={false}
             />
 
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white text-[10px] font-mono tracking-widest px-3 py-1 rounded-full border border-white/20 whitespace-nowrap shadow-lg">
-              {selectedFormula.name} · {selectedFormula.concentration}
-            </div>
-          </div>
-        </div>
-
-        {/* Interactive Batch Selector */}
-        <div className="left-[172px] bottom-[50px] absolute z-30 flex items-end gap-10">
-          
-          {/* Formula Card */}
-          <div className="w-[420px] p-6 bg-white/85 backdrop-blur-xl border border-black/10 rounded-[32px] shadow-[0_15px_35px_rgba(0,0,0,0.06)] flex flex-col gap-3">
-            <div className="flex items-center justify-between text-[11px] font-mono tracking-widest text-black/50 uppercase">
-              <span className="flex items-center gap-1.5 text-black">
-                <svg className="w-3.5 h-3.5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-                </svg>
-                ACTIVE FORMULATION
-              </span>
-              <span>BATCH // {selectedFormula.code}</span>
-            </div>
-
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-normal font-['Conquera',sans-serif] tracking-wider text-black uppercase">
-                {selectedFormula.name}
-              </div>
-              <span className="text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/60">
-                ₹1,299
-              </span>
-            </div>
-
-            <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide">
-              {selectedFormula.notes}
-            </p>
-
-            <div className="pt-2 flex items-center justify-between border-t border-black/5">
-              <span className="text-[10px] font-mono text-black/40 uppercase">30ML EXTRAIT DE PARFUM</span>
-              <a
-                href="#discovery"
-                className="text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-1 hover:opacity-70 transition-opacity"
-              >
-                <span>Inspect Formula</span>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M7 7h10v10" /><path d="M7 17 17 7" />
-                </svg>
-              </a>
-            </div>
-          </div>
-
-          {/* Formula Switcher Pills */}
-          <div className="flex items-center gap-3">
-            {FORMULAS.map((formula) => {
-              const isActive = selectedFormula.id === formula.id
-              return (
-                <button
-                  key={formula.id}
-                  onClick={() => setSelectedFormula(formula)}
-                  className={`px-5 py-3 rounded-2xl border text-xs font-mono tracking-wider transition-all duration-300 cursor-pointer ${
-                    isActive
-                      ? 'bg-black text-white border-black shadow-lg scale-105'
-                      : 'bg-white/90 backdrop-blur-md text-black/70 border-black/10 hover:border-black/40 hover:bg-white'
-                  }`}
+            {/* The 4 Bottles (Animated by GSAP with void-returning ref callbacks) */}
+            <div className={`absolute inset-0 w-full h-full pointer-events-none ${loadingFinished ? 'z-20' : 'z-[160]'}`}>
+              {BOTTLES.map((bottle, idx) => (
+                <Link
+                  key={bottle.id}
+                  to={`/fragrances/${bottle.id}`}
+                  ref={(el) => {
+                    bottleRefs.current[idx] = el
+                  }}
+                  style={{ width: bottle.finalStyle.width }}
+                  className="absolute block group cursor-pointer aspect-[1/1.05] will-change-transform pointer-events-auto"
                 >
-                  <span className="text-[10px] opacity-50 block text-left">F-{formula.code}</span>
-                  <span className="font-semibold uppercase">{formula.name.replace('MOLECULE ', 'M-')}</span>
-                </button>
-              )
-            })}
+                  {/* Hover Backlight */}
+                  <div className="absolute inset-0 bg-blue-400/25 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                  <img
+                    className="w-full h-full object-contain select-none pointer-events-none drop-shadow-[0_14px_28px_rgba(0,0,0,0.35)] group-hover:scale-105 group-hover:-translate-y-1.5 transition-all duration-500 ease-out"
+                    src={bottle.img}
+                    alt={bottle.name}
+                    draggable={false}
+                  />
+                </Link>
+              ))}
+            </div>
+
+            {/* Left-Side Typography: Parallax upward drift */}
+            <div
+              ref={leftTextRef}
+              className="absolute left-[4%] lg:left-[6%] top-[25%] lg:top-[27%] z-30 flex flex-col items-start max-w-[34%] pointer-events-auto will-change-transform"
+            >
+              <h1 className="text-black text-[clamp(22px,2.4vw,44px)] font-normal font-['Conquera',sans-serif] leading-[1.08] uppercase tracking-wider">
+                Chemistry captured
+              </h1>
+              <div className="text-black text-[clamp(20px,2.2vw,42px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] leading-[1.15] italic mt-0.5">
+                in a bottle.
+              </div>
+              <p className="text-black/75 text-[clamp(11px,0.95vw,16px)] font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed tracking-wide mt-2 max-w-[340px]">
+                Where science meets scent. Explore our molecular series.
+              </p>
+
+              <Link
+                to="/fragrances"
+                className="mt-4 px-6 lg:px-8 py-2.5 lg:py-3.5 bg-black hover:bg-neutral-800 active:scale-95 text-white text-[clamp(11px,0.85vw,15px)] font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wider uppercase rounded-full shadow-lg transition-all duration-300 group"
+              >
+                <span className="group-hover:scale-105 inline-block transition-transform duration-300">
+                  Explore collection
+                </span>
+              </Link>
+            </div>
+
+            {/* Right-Side Metadata: Parallax secondary drift */}
+            <div
+              ref={rightMetaRef}
+              className="absolute right-[4%] lg:right-[6%] top-[26%] lg:top-[28%] z-30 flex flex-col items-end text-right pointer-events-none will-change-transform"
+            >
+              <div className="inline-flex items-center gap-1.5 text-black/80 font-mono text-[clamp(9px,0.7vw,12px)] tracking-[0.25em] uppercase mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                <span>04 SCENTS // INFINITE POSSIBILITIES</span>
+              </div>
+              <div className="text-[clamp(8px,0.6vw,11px)] font-mono tracking-widest text-black/50 uppercase">
+                PURE EXTRAIT ARCHIVE · 28%–35% DENSITY
+              </div>
+              <div className="text-[clamp(7px,0.55vw,10px)] font-mono tracking-widest text-black/40 uppercase mt-0.5">
+                MADURAI [9.9252° N, 78.1198° E]
+              </div>
+            </div>
+
           </div>
 
         </div>
 
-        {/* Low-Profile Bottom Edge Blend */}
-        <div 
-          className="w-full h-24 absolute left-0 bottom-0 pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0.9) 25%, rgba(255, 255, 255, 0.4) 55%, transparent 100%)',
-          }}
-        />
+      </div>
+
+      {/* =========================================================================
+          MOBILE VIEWPORT (<768px)
+          ========================================================================= */}
+      <div className="md:hidden flex flex-col w-full pt-20 pb-10 px-5 relative z-10 overflow-y-auto">
+        
+        {/* Mobile Statue Banner */}
+        <div className="w-full h-[260px] relative rounded-[28px] overflow-hidden shadow-lg border border-black/5 mb-5">
+          <img
+            className="w-full h-full object-cover object-[center_30%]"
+            src={angelWaterBg}
+            alt="Blue-Winged Angel in Crystal Waters"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+          <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-widest text-white/80 uppercase">
+            <span>ARCHIVE // 2026</span>
+            <span>MADURAI · PARIS</span>
+          </div>
+        </div>
+
+        {/* Minimal Alpha Tag */}
+        <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-black/60 mb-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+          <span>04 SCENTS // INFINITE POSSIBILITIES</span>
+        </div>
+
+        {/* Headline */}
+        <div className="flex flex-col mb-4">
+          <h1 className="text-black text-2xl font-normal font-['Conquera',sans-serif] leading-tight uppercase tracking-wider">
+            Chemistry captured
+          </h1>
+          <span className="text-xl font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90">
+            in a bottle.
+          </span>
+          <p className="text-black/70 text-xs font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed mt-1.5">
+            Where science meets scent. Explore our molecular series.
+          </p>
+        </div>
+
+        {/* CTA Button */}
+        <Link
+          to="/fragrances"
+          className="w-full h-12 bg-black active:scale-95 text-white rounded-2xl flex items-center justify-center font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-sm uppercase tracking-wider shadow-md transition-all mb-6"
+        >
+          Explore collection
+        </Link>
+
+        {/* Mobile Swipeable Gallery */}
+        <div className="w-full">
+          <div className="flex items-center justify-between text-[10px] font-mono tracking-widest text-black/50 uppercase mb-3">
+            <span>THE 4 FORMULAS</span>
+            <span>SWIPE →</span>
+          </div>
+
+          <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-none snap-x snap-mandatory">
+            {BOTTLES.map((bottle) => (
+              <Link
+                key={bottle.id}
+                to={`/fragrances/${bottle.id}`}
+                className="w-48 shrink-0 bg-[#F7F9FA] rounded-[22px] p-4 flex flex-col items-center snap-center border border-black/5"
+              >
+                <img
+                  src={bottle.img}
+                  alt={bottle.name}
+                  className="w-28 h-28 object-contain drop-shadow-md my-2"
+                />
+                <span className="text-xs font-normal font-['Conquera',sans-serif] tracking-wider text-black uppercase mt-1">
+                  {bottle.name}
+                </span>
+                <span className="text-[10px] font-mono text-black/40 uppercase mt-0.5">
+                  30ML EXTRAIT
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
       </div>
     </section>
   )
