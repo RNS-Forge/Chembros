@@ -1,4 +1,5 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import boyImg from '../assets/tonedboy.png'
 import bottleImg from '../assets/bottle.png'
 import { getProductsApi } from '../services/api'
@@ -22,9 +23,9 @@ export default function HomeProduct() {
   }, [])
 
   const fourFormulas = products
-    .filter((item) => !item.is_archive)
-    .sort((a, b) => (a.code || '').localeCompare(b.code || '') || (Number(a.id) - Number(b.id)))
-  const discoveryArchive = products.find((item) => item.is_archive)
+    .filter((item: Product) => !item.is_archive)
+    .sort((a: Product, b: Product) => (a.code || '').localeCompare(b.code || '') || (Number(a.id) - Number(b.id)))
+  const discoveryArchive = products.find((item: Product) => item.is_archive)
 
   return (
     <section className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-16 px-4 sm:px-6 md:px-8 lg:px-12 flex justify-center">
@@ -55,37 +56,44 @@ export default function HomeProduct() {
           </h2>
 
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 justify-items-center">
-            {PRODUCTS.map((prod) => (
+            {fourFormulas.map((prod) => (
               <div
                 key={prod.id}
                 className="w-full max-w-[380px] h-[460px] sm:h-[500px] lg:h-[587px] relative bg-black rounded-[32px] sm:rounded-[40px] lg:rounded-[50px] overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.18)] group transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_45px_rgba(0,0,0,0.3)] flex flex-col justify-between items-center p-5 sm:p-6 lg:p-8"
               >
                 {/* Title */}
-                <div className="w-full text-center text-white text-[clamp(15px,1.2vw,22px)] font-normal font-['Conquera',sans-serif] tracking-widest uppercase pt-1">
-                  {prod.title}
-                </div>
+                <Link
+                  to={`/fragrances/${prod.slug || prod.id}`}
+                  className="w-full text-center text-white text-[clamp(15px,1.2vw,22px)] font-normal font-['Conquera',sans-serif] tracking-widest uppercase pt-1 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  {prod.name}
+                </Link>
 
                 {/* Bottle */}
-                <div className="my-auto py-2 flex items-center justify-center relative w-full">
+                <Link
+                  to={`/fragrances/${prod.slug || prod.id}`}
+                  className="my-auto py-2 flex items-center justify-center relative w-full cursor-pointer"
+                >
                   <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-full bg-white/5 blur-2xl absolute pointer-events-none group-hover:scale-125 transition-transform duration-700" />
                   <img
                     className="w-44 sm:w-48 lg:w-60 h-48 sm:h-52 lg:h-64 object-contain drop-shadow-[0_15px_30px_rgba(255,255,255,0.06)] group-hover:scale-105 group-hover:-translate-y-1 transition-transform duration-500 select-none pointer-events-none"
-                    src={bottleImg}
-                    alt={`${prod.title} Bottle`}
+                    src={prod.image_base64 || bottleImg}
+                    alt={`${prod.name} Bottle`}
                     draggable={false}
                   />
-                </div>
+                </Link>
 
                 {/* Price & CTA */}
                 <div className="w-full flex flex-col items-center gap-3 pb-1">
                   <div className="text-white text-[clamp(18px,1.4vw,26px)] font-normal font-['Conquera',sans-serif] tracking-wider">
-                    {prod.price}
+                    ₹{prod.price.toLocaleString('en-IN')}
                   </div>
 
                   <button
                     type="button"
+                    onClick={() => addToCart(prod)}
                     className="w-full max-w-[280px] h-11 sm:h-12 lg:h-14 bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-md"
-                    aria-label={`Add ${prod.title} to Cart`}
+                    aria-label={`Add ${prod.name} to Cart`}
                   >
                     <span className="text-white text-[clamp(13px,0.95vw,17px)] font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
                       Add to cart
@@ -116,46 +124,58 @@ export default function HomeProduct() {
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
 
               {/* Left Container with Big Bottle */}
-              <div className="lg:col-span-6 w-full h-[280px] sm:h-[360px] lg:h-[500px] bg-white rounded-[22px] sm:rounded-[28px] lg:rounded-[30px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex items-center justify-center p-4 sm:p-6 group">
+              <Link
+                to={`/fragrances/${discoveryArchive ? (discoveryArchive.slug || discoveryArchive.id) : 'the-discovery-archive'}`}
+                className="lg:col-span-6 w-full h-[280px] sm:h-[360px] lg:h-[500px] bg-white rounded-[22px] sm:rounded-[28px] lg:rounded-[30px] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex items-center justify-center p-4 sm:p-6 group cursor-pointer"
+              >
                 <img
                   className="w-auto h-full max-h-[440px] object-contain select-none pointer-events-none drop-shadow-[0_15px_25px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500"
-                  src={bottleImg}
+                  src={discoveryArchive?.image_base64 || bottleImg}
                   alt="The Discovery Archive Bottle"
                   draggable={false}
                 />
-              </div>
+              </Link>
 
               {/* Right Side: Typography & Button */}
               <div className="lg:col-span-6 flex flex-col justify-center space-y-3 sm:space-y-4 lg:space-y-5">
 
                 {/* Title */}
-                <h3 className="text-white text-[clamp(20px,2.2vw,36px)] font-normal font-['Conquera',sans-serif] leading-tight lg:leading-10 tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                  THE DISCOVERY <br />
-                  ARCHIVE
-                </h3>
+                <Link
+                  to={`/fragrances/${discoveryArchive ? (discoveryArchive.slug || discoveryArchive.id) : 'the-discovery-archive'}`}
+                  className="text-white text-[clamp(20px,2.2vw,36px)] font-normal font-['Conquera',sans-serif] leading-tight lg:leading-10 tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  {discoveryArchive ? discoveryArchive.name : (
+                    <>
+                      THE DISCOVERY <br />
+                      ARCHIVE
+                    </>
+                  )}
+                </Link>
 
                 {/* Subtitle */}
                 <p className="text-white text-[clamp(13px,0.95vw,17px)] font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-normal tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                  The complete Molecule Series, in miniature.
+                  {discoveryArchive?.subtitle || 'The complete Molecule Series, in miniature.'}
                 </p>
 
                 {/* Specs */}
                 <div className="text-white/90 text-[clamp(11px,0.85vw,15px)] font-normal font-['General_Sans','Poppins',sans-serif] leading-relaxed tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                  4 × 3ml Extrait<br />
-                  Extrait de Parfum<br />
-                  25% natural oil concentration<br />
-                  Unisex · 8+ hours
+                  {discoveryArchive?.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
+                  {discoveryArchive?.category || 'Extrait de Parfum'}<br />
+                  {discoveryArchive?.concentration || '25% natural oil concentration'}<br />
+                  {discoveryArchive?.gender || 'Unisex'} · {discoveryArchive?.longevity || '8+ hours'}
                 </div>
 
                 {/* Price and Add to Cart */}
                 <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
                   <div className="text-white text-[clamp(20px,1.6vw,28px)] font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-                    ₹1299
+                    {discoveryArchive ? `₹${discoveryArchive.price.toLocaleString('en-IN')}` : '₹1,299'}
                   </div>
 
                   <button
                     type="button"
-                    className="w-full sm:w-52 h-11 sm:h-13 lg:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn"
+                    disabled={!discoveryArchive}
+                    onClick={() => discoveryArchive && addToCart(discoveryArchive)}
+                    className="w-full sm:w-52 h-11 sm:h-13 lg:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn disabled:opacity-50"
                     aria-label="Add The Discovery Archive to Cart"
                   >
                     <span className="text-black text-[clamp(13px,0.95vw,17px)] font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">

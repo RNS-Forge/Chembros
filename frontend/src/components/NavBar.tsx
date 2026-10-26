@@ -80,7 +80,7 @@ export default function NavBar({
   ]
 
   return (
-    <header className="fixed top-4 sm:top-6 lg:top-8 left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] pointer-events-none z-[100] max-w-[calc(100vw-32px)]">
+    <header className={`fixed top-4 sm:top-6 lg:top-8 left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] pointer-events-none z-[100] max-w-[calc(100vw-32px)] transition-all duration-500 ${isAuthModalOpen ? 'opacity-20 scale-95 blur-xs pointer-events-none' : 'opacity-100 scale-100 blur-none'}`}>
       <nav
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -200,9 +200,9 @@ export default function NavBar({
             {/* Cart Pill */}
             <button
               type="button"
-              onClick={onOpenCart}
+              onClick={handleCartClick}
               className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:pl-3 sm:pr-3.5 py-1 sm:py-1.5 lg:py-2 rounded-full bg-black/5 hover:bg-black text-black hover:text-white border border-black/10 hover:border-black transition-all duration-300 active:scale-95 cursor-pointer shrink-0"
-              aria-label={`View Shopping Bag, ${cartCount} items`}
+              aria-label={`View Shopping Bag, ${displayedCartCount} items`}
             >
               <svg
                 className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4 transition-colors"
@@ -233,7 +233,7 @@ export default function NavBar({
                 />
               </svg>
               <span className="text-[11px] sm:text-xs lg:text-[13px] font-mono font-medium leading-none">
-                {cartCount}
+                {displayedCartCount}
               </span>
             </button>
           </div>
