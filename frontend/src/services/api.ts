@@ -1,4 +1,4 @@
-import type { Product, Order, User, AdminStats } from '../types'
+import type { Product, Order, User, AdminStats, CustomerReview, CreateReviewInput } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://chembros-server.onrender.com').replace(/\/+$/, '')
 
@@ -184,6 +184,20 @@ export async function getProductRecommendationsApi(productId: number | string, l
 
 export async function getFilterMetaApi(): Promise<{ families: string[]; categories: string[]; min_price: number; max_price: number }> {
   return request<{ families: string[]; categories: string[]; min_price: number; max_price: number }>('/api/products/filters/meta')
+}
+
+export async function getProductReviewsApi(productIdOrSlug: number | string): Promise<CustomerReview[]> {
+  return request<CustomerReview[]>(`/api/products/${productIdOrSlug}/reviews`)
+}
+
+export async function createProductReviewApi(
+  productIdOrSlug: number | string,
+  payload: CreateReviewInput
+): Promise<CustomerReview> {
+  return request<CustomerReview>(`/api/products/${productIdOrSlug}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 // ----------------- Orders Endpoints -----------------

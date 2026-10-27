@@ -89,3 +89,28 @@ export interface AdminStats {
     created_at: string
   }[]
 }
+
+export interface CustomerReview {
+  id: string | number
+  product_id?: number
+  author?: string
+  author_name?: string
+  location?: string
+  rating: number
+  date?: string
+  created_at?: string
+  title: string
+  comment: string
+  longevity?: string
+  sillage?: string
+}
+
+export interface CreateReviewInput {
+  author_name: string
+  location?: string
+  rating: number
+  title: string
+  comment: string
+  longevity?: string
+  sillage?: string
+}

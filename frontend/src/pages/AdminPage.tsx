@@ -32,12 +32,13 @@ import {
   Mail,
   Lock,
   AlertCircle,
+  LogOut,
 } from 'lucide-react'
 
 export default function AdminPage() {
-  const { user, isAdmin, setIsAuthModalOpen, loginWithPassword } = useAuth()
+  const { user, isAdmin, setIsAuthModalOpen, loginWithPassword, logout } = useAuth()
   const [inlineEmail, setInlineEmail] = useState('admin@chembros.com')
-  const [inlinePassword, setInlinePassword] = useState('Chenbros@tech')
+  const [inlinePassword, setInlinePassword] = useState('chembros@tech')
   const [inlineLoading, setInlineLoading] = useState(false)
   const [inlineError, setInlineError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview')
@@ -304,7 +305,7 @@ export default function AdminPage() {
                     required
                     value={inlinePassword}
                     onChange={(e) => setInlinePassword(e.target.value)}
-                    placeholder="Chenbros@tech"
+                    placeholder="chembros@tech"
                     className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
@@ -315,11 +316,11 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => {
                     setInlineEmail('admin@chembros.com')
-                    setInlinePassword('Chenbros@tech')
+                    setInlinePassword('chembros@tech')
                   }}
                   className="text-neutral-500 hover:text-black underline underline-offset-2 cursor-pointer font-medium"
                 >
-                  Use: admin@chembros.com / Chenbros@tech
+                  Use: admin@chembros.com / chembros@tech
                 </button>
               </div>
 
@@ -385,36 +386,57 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold font-['Cinzel',serif] text-black mt-1">
               Chembros Control Center
             </h1>
-            <p className="text-xs text-neutral-500 mt-1">
-              Signed in as: <strong className="text-black">{user?.email}</strong>
-            </p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <p className="text-xs text-neutral-500">
+                Signed in as: <strong className="text-black">{user?.email}</strong>
+              </p>
+              <button
+                type="button"
+                onClick={logout}
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-full text-[11px] font-semibold transition-all cursor-pointer"
+                title="End Administrative Session"
+              >
+                <LogOut className="w-3 h-3" />
+                Sign Out
+              </button>
+            </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex bg-neutral-100 p-1.5 rounded-full border border-neutral-200 text-xs font-medium">
+          {/* Navigation Tabs & Logout */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex bg-neutral-100 p-1.5 rounded-full border border-neutral-200 text-xs font-medium">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
+                  activeTab === 'overview' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('products')}
+                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
+                  activeTab === 'products' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Catalog & Stocks ({products.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
+                  activeTab === 'orders' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Orders & Shipments ({orders.length})
+              </button>
+            </div>
             <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                activeTab === 'overview' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-              }`}
+              onClick={logout}
+              className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title="Sign Out from Chembros"
             >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('products')}
-              className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                activeTab === 'products' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-              }`}
-            >
-              Catalog & Stocks ({products.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                activeTab === 'orders' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-              }`}
-            >
-              Orders & Shipments ({orders.length})
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
             </button>
           </div>
         </div>
