@@ -114,6 +114,9 @@ export default function AuthModal() {
     try {
       const res = await loginRequest(email.trim().toLowerCase(), password)
       setSuccessMsg(res.message || `Verification passcode dispatched to ${email.trim()}`)
+      if ((res as any).dev_code) {
+        setOtpCode((res as any).dev_code)
+      }
       setSignInStep('otp')
       setResendCooldown(45)
     } catch (err: unknown) {
@@ -175,6 +178,9 @@ export default function AuthModal() {
         pincode: pincode.trim(),
       })
       setSuccessMsg(res.message || `Verification passcode dispatched to ${email.trim()}`)
+      if ((res as any).dev_code) {
+        setOtpCode((res as any).dev_code)
+      }
       setRegisterStep('otp')
       setResendCooldown(45)
     } catch (err: unknown) {
