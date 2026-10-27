@@ -366,8 +366,12 @@ export default function ProductDetail() {
             </div>
             <div className="flex items-center gap-2 text-xs font-mono text-black/70 uppercase">
               <span className="text-amber-400 text-sm">★★★★★</span>
-              <span className="font-sans font-semibold">4.9 / 5.0</span>
-              <span className="text-black/40">· Based on 84 reviews</span>
+              <span className="font-sans font-semibold">
+                {product.rating ? `${product.rating} / 5.0` : '4.9 / 5.0'}
+              </span>
+              <span className="text-black/40">
+                · Based on {product.reviews_count || 38} reviews
+              </span>
             </div>
           </div>
 
