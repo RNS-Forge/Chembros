@@ -90,19 +90,23 @@ body {
 }
 
 @layer utilities {
+
   /* Headings */
   .text-title-hero {
     font-size: clamp(24px, 2.6vw, 44px);
     line-height: 1.1;
   }
+
   .text-title-card {
     font-size: clamp(14px, 1.15vw, 19px);
     line-height: 1.25;
   }
+
   .text-price {
     font-size: clamp(18px, 1.4vw, 24px);
     line-height: 1;
   }
+
   .text-meta {
     font-size: clamp(10px, 0.75vw, 12px);
     line-height: 1.4;

@@ -1,4 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
+import CartDrawer from './components/CartDrawer'
+import AuthModal from './components/AuthModal'
+
 import HomePage from './pages/HomePage'
 import Fragrances from './pages/Fragrances'
 import ProductDetail from './pages/ProductDetail'

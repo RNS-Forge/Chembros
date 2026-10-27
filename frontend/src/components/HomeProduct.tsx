@@ -171,9 +171,13 @@ export default function HomeProduct() {
                 key={prod.id}
                 className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[440px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black rounded-[28px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_12px_28px_rgba(0,0,0,0.18)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] flex flex-col justify-between items-center p-4 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
               >
-                <div className="w-full text-center text-white text-xs sm:text-sm lg:text-[13px] xl:text-base 2xl:text-xl font-normal font-['Conquera',sans-serif] tracking-widest uppercase pt-1">
-                  {prod.title}
-                </div>
+                {/* Title */}
+                <Link
+                  to={`/fragrances/${prod.slug || prod.id}`}
+                  className="w-full text-center text-white text-xs sm:text-sm lg:text-[13px] xl:text-base 2xl:text-xl font-normal font-['Conquera',sans-serif] tracking-widest uppercase pt-1 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  {prod.name}
+                </Link>
 
                 {/* Bottle Presentation Slot */}
                 <div className="my-auto flex items-center justify-center relative w-full h-[180px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px]">
@@ -184,17 +188,19 @@ export default function HomeProduct() {
                     alt={`${prod.title} Bottle`}
                     draggable={false}
                   />
-                </div>
+                </Link>
 
+                {/* Price & CTA */}
                 <div className="w-full flex flex-col items-center gap-2.5 lg:gap-2 xl:gap-3 pb-1">
                   <div className="text-white text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
-                    {prod.price}
+                    ₹{prod.price.toLocaleString('en-IN')}
                   </div>
 
                   <button
                     type="button"
+                    onClick={() => addToCart(prod)}
                     className="w-full max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-9 sm:h-10 lg:h-9 xl:h-12 2xl:h-14 bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-sm"
-                    aria-label={`Add ${prod.title} to Cart`}
+                    aria-label={`Add ${prod.name} to Cart`}
                   >
                     <span className="text-white text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
                       Add to cart
@@ -236,7 +242,7 @@ export default function HomeProduct() {
                   alt="The Discovery Archive Set"
                   draggable={false}
                 />
-              </div>
+              </Link>
 
               <div className="lg:col-span-6 flex flex-col justify-center space-y-3 lg:space-y-3 xl:space-y-5">
                 <h3 className="text-white text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-normal font-['Conquera',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
@@ -245,24 +251,26 @@ export default function HomeProduct() {
                 </h3>
 
                 <p className="text-white text-xs sm:text-sm lg:text-xs xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-normal tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                  The complete Molecule Series, in miniature.
+                  {discoveryArchive?.subtitle || 'The complete Molecule Series, in miniature.'}
                 </p>
 
                 <div className="text-white/90 text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-normal font-['General_Sans','Poppins',sans-serif] leading-relaxed tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                  4 × 3ml Extrait<br />
-                  Extrait de Parfum<br />
-                  25% natural oil concentration<br />
-                  Unisex · 8+ hours
+                  {discoveryArchive?.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
+                  {discoveryArchive?.category || 'Extrait de Parfum'}<br />
+                  {discoveryArchive?.concentration || '25% natural oil concentration'}<br />
+                  {discoveryArchive?.gender || 'Unisex'} · {discoveryArchive?.longevity || '8+ hours'}
                 </div>
 
                 <div className="pt-1.5 lg:pt-1 xl:pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 xl:gap-6">
                   <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-                    ₹1299
+                    {discoveryArchive ? `₹${discoveryArchive.price.toLocaleString('en-IN')}` : '₹1,299'}
                   </div>
 
                   <button
                     type="button"
-                    className="w-full sm:w-44 lg:w-40 xl:w-52 2xl:w-56 h-10 lg:h-9 xl:h-12 2xl:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn"
+                    disabled={!discoveryArchive}
+                    onClick={() => discoveryArchive && addToCart(discoveryArchive)}
+                    className="w-full sm:w-44 lg:w-40 xl:w-52 2xl:w-56 h-10 lg:h-9 xl:h-12 2xl:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn disabled:opacity-50"
                     aria-label="Add The Discovery Archive to Cart"
                   >
                     <span className="text-black text-xs lg:text-xs xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">

@@ -93,7 +93,7 @@ export default function BrandStoryProtocol({
     <section className="w-full bg-white flex justify-center overflow-hidden select-none py-10 sm:py-14 lg:py-20 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
       {/* Fluid Max-Width Container matching HomeProduct & HomeCta */}
       <div className="w-full max-w-[1583px] flex flex-col gap-12 sm:gap-16 lg:gap-20">
-        
+
         {/* ========================================================
             PART 1: CINEMATIC 16:9 VIDEO FRAME
             ======================================================== */}
@@ -188,11 +188,10 @@ export default function BrandStoryProtocol({
                   key={item.id}
                   onClick={() => setActiveCard(idx)}
                   onMouseEnter={() => setActiveCard(idx)}
-                  className={`relative min-h-[460px] sm:min-h-[480px] lg:h-[500px] xl:h-[520px] rounded-[28px] sm:rounded-[34px] lg:rounded-[40px] p-6 lg:p-7 flex flex-col justify-between transition-all duration-300 cursor-pointer overflow-hidden border ${
-                    isActive
+                  className={`relative min-h-[460px] sm:min-h-[480px] lg:h-[500px] xl:h-[520px] rounded-[28px] sm:rounded-[34px] lg:rounded-[40px] p-6 lg:p-7 flex flex-col justify-between transition-all duration-300 cursor-pointer overflow-hidden border ${isActive
                       ? 'bg-black text-white border-black shadow-[0_20px_40px_rgba(0,0,0,0.18)] -translate-y-1.5'
                       : 'bg-[#F7F9FA] text-black border-black/5 hover:border-black/15 hover:bg-[#EEF2F5]'
-                  }`}
+                    }`}
                 >
                   {/* Subtle Top-Right Ambient Glow */}
                   {isActive && (
@@ -212,11 +211,10 @@ export default function BrandStoryProtocol({
                       </div>
 
                       <span
-                        className={`text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
-                          isActive
+                        className={`text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${isActive
                             ? 'border-white/30 bg-white/10 text-white'
                             : 'border-black/15 bg-black/5 text-black'
-                        }`}
+                          }`}
                       >
                         {item.formula}
                       </span>
