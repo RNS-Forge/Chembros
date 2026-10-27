@@ -1,29 +1,185 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useCart } from '../context/CartContext'
+import { getProductsApi } from '../services/api'
+import type { Product } from '../types'
+
 import boyImg from '../assets/tonedboy.png'
-import bottleImg from '../assets/bg/1.png'
-import bottle3Img from '../assets/bg/4.png' // Molecule J (Hero bottle 3)
+import bottle1Img from '../assets/bg/1.png'
+import bottle2Img from '../assets/bg/2.png'
+import bottle3Img from '../assets/bg/4.png' // Molecule J (Hero bottle 3 flight target)
+import bottle4Img from '../assets/bg/3.png'
 import Discovery from '../assets/product/discovery.png'
 
 gsap.registerPlugin(ScrollTrigger)
 
-interface ProductCardItem {
-  id: number
-  title: string
-  price: string
-}
-
-const PRODUCTS: ProductCardItem[] = [
-  { id: 1, title: 'Molecule J', price: '₹1299' },
-  { id: 2, title: 'Molecule X', price: '₹1299' },
-  { id: 3, title: 'Molecule T', price: '₹1299' },
-  { id: 4, title: 'Molecule K', price: '₹1299' },
+// Default fallback data matching database specimens
+const FALLBACK_MOLECULES: Product[] = [
+  {
+    id: 1,
+    name: 'Molecule J',
+    slug: 'molecule-j',
+    price: 1299,
+    category: 'Extrait de Parfum',
+    concentration: '30% Extrait',
+    longevity: '12+ Hours',
+    gender: 'Unisex',
+    volume_ml: 50,
+    is_archive: false,
+    subtitle: 'Warm Amber & Solar Woods',
+    stock: 50,
+    fragrance_family: 'Warm Amber',
+    rating: 4.9,
+    reviews_count: 84,
+    is_trending: true,
+    is_featured: true,
+    sales_count: 120,
+  },
+  {
+    id: 2,
+    name: 'Molecule X',
+    slug: 'molecule-x',
+    price: 1299,
+    category: 'Extrait de Parfum',
+    concentration: '30% Extrait',
+    longevity: '10+ Hours',
+    gender: 'Unisex',
+    volume_ml: 50,
+    is_archive: false,
+    subtitle: 'Cybernetic Citrus & Ozone',
+    stock: 50,
+    fragrance_family: 'Fresh Citrus',
+    rating: 4.8,
+    reviews_count: 62,
+    is_trending: true,
+    is_featured: true,
+    sales_count: 98,
+  },
+  {
+    id: 3,
+    name: 'Molecule T',
+    slug: 'molecule-t',
+    price: 1299,
+    category: 'Extrait de Parfum',
+    concentration: '30% Extrait',
+    longevity: '14+ Hours',
+    gender: 'Unisex',
+    volume_ml: 50,
+    is_archive: false,
+    subtitle: 'Smoked Leather & Peppercorn',
+    stock: 50,
+    fragrance_family: 'Leather & Spice',
+    rating: 5.0,
+    reviews_count: 110,
+    is_trending: true,
+    is_featured: true,
+    sales_count: 145,
+  },
+  {
+    id: 4,
+    name: 'Molecule K',
+    slug: 'molecule-k',
+    price: 1299,
+    category: 'Extrait de Parfum',
+    concentration: '30% Extrait',
+    longevity: '10+ Hours',
+    gender: 'Unisex',
+    volume_ml: 50,
+    is_archive: false,
+    subtitle: 'Aquatic Minerals & Driftwood',
+    stock: 50,
+    fragrance_family: 'Aquatic Mineral',
+    rating: 4.9,
+    reviews_count: 54,
+    is_trending: true,
+    is_featured: true,
+    sales_count: 88,
+  },
 ]
+
+const FALLBACK_DISCOVERY: Product = {
+  id: 5,
+  name: 'The Discovery Archive',
+  slug: 'the-discovery-archive',
+  price: 1299,
+  category: 'Extrait de Parfum',
+  concentration: '25% natural oil concentration',
+  longevity: '8+ hours',
+  gender: 'Unisex',
+  volume_ml: 12,
+  is_archive: true,
+  subtitle: 'The complete Molecule Series, in miniature.',
+  stock: 100,
+  fragrance_family: 'Discovery Set',
+  rating: 5.0,
+  reviews_count: 142,
+  is_trending: true,
+  is_featured: true,
+  sales_count: 230,
+}
 
 export default function HomeProduct() {
   const sectionRef = useRef<HTMLDivElement>(null)
+  const { addToCart } = useCart()
+  const [moleculeProducts, setMoleculeProducts] = useState<Product[]>(FALLBACK_MOLECULES)
+  const [discoveryArchive, setDiscoveryArchive] = useState<Product>(FALLBACK_DISCOVERY)
 
+  // Fetch live products from backend database
+  useEffect(() => {
+    let isMounted = true
+    async function loadProducts() {
+      try {
+        const liveProducts = await getProductsApi()
+        if (!isMounted || !Array.isArray(liveProducts) || liveProducts.length === 0) return
+
+        const molecules = liveProducts.filter((p) => !p.is_archive)
+        const archive = liveProducts.find(
+          (p) => p.is_archive || p.slug === 'the-discovery-archive' || p.name.toLowerCase().includes('discovery')
+        )
+
+        if (molecules.length > 0) {
+          // Sort or preserve standard 4-molecule order (J, X, T, K)
+          const orderMap: Record<string, number> = {
+            'molecule-j': 0,
+            'molecule-x': 1,
+            'molecule-t': 2,
+            'molecule-k': 3,
+          }
+          const sortedMolecules = [...molecules].sort((a, b) => {
+            const posA = a.slug ? (orderMap[a.slug] ?? 99) : 99
+            const posB = b.slug ? (orderMap[b.slug] ?? 99) : 99
+            return posA - posB
+          })
+          setMoleculeProducts(sortedMolecules.slice(0, 4))
+        }
+
+        if (archive) {
+          setDiscoveryArchive(archive)
+        }
+      } catch (err) {
+        console.warn('Using default fallback catalog while backend establishes connection:', err)
+      }
+    }
+
+    loadProducts()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Dynamic bottle image resolver
+  const getProductImage = (prod: Product, idx: number) => {
+    if (idx === 0) return bottle3Img // Always Molecule J for docking
+    if (prod.slug === 'molecule-x') return bottle1Img
+    if (prod.slug === 'molecule-t') return bottle2Img
+    if (prod.slug === 'molecule-k') return bottle4Img
+    const list = [bottle3Img, bottle1Img, bottle2Img, bottle4Img]
+    return prod.image_base64 || list[idx % list.length]
+  }
+
+  // GSAP Flight Inertia Animation
   useEffect(() => {
     if (window.innerWidth < 768) return
 
@@ -83,18 +239,15 @@ export default function HomeProduct() {
           end: 'top 20%',
           scrub: 1.4, // Smooth inertial scrub
           onUpdate: (self) => {
-            // When in flight, show the clone and hide endpoints
             if (self.progress > 0.01 && self.progress < 0.99) {
               gsap.set(flightClone, { opacity: 1 })
               gsap.set(heroBottle, { opacity: 0 })
               gsap.set(targetSlot, { opacity: 0 })
             } else if (self.progress <= 0.01) {
-              // At the very top (Hero idle)
               gsap.set(flightClone, { opacity: 0 })
               gsap.set(heroBottle, { opacity: 1 })
               gsap.set(targetSlot, { opacity: 0 })
             } else if (self.progress >= 0.99) {
-              // Fully docked in Card 1
               gsap.set(flightClone, { opacity: 0 })
               gsap.set(heroBottle, { opacity: 0 })
               gsap.set(targetSlot, { opacity: 1 })
@@ -113,13 +266,13 @@ export default function HomeProduct() {
         return { deltaX, deltaY, scale }
       }
 
-      // Trajectory: Lifts, tilts -7 degrees mid-air, then settles back to 0deg in the card slot
+      // Trajectory: Lifts, tilts aerodynamic -7 degrees mid-air, then settles back to 0deg in the card slot
       scrollTween
         .to(flightClone, {
           x: () => getDelta().deltaX * 0.45,
           y: () => getDelta().deltaY * 0.45,
           scale: () => 1 + (getDelta().scale - 1) * 0.45,
-          rotation: -7, // Gentle aerodynamic tilt during float
+          rotation: -7,
           ease: 'power1.out',
           duration: 0.5,
         })
@@ -127,13 +280,12 @@ export default function HomeProduct() {
           x: () => getDelta().deltaX,
           y: () => getDelta().deltaY,
           scale: () => getDelta().scale,
-          rotation: 0, // Level out flat inside Card 1
+          rotation: 0,
           ease: 'power2.inOut',
           duration: 0.5,
         })
     }
 
-    // Initialize either immediately or upon hero entrance finish
     window.addEventListener('hero-animation-complete', initFlightAnimation)
     const timeout = setTimeout(initFlightAnimation, 2500)
 
@@ -166,7 +318,7 @@ export default function HomeProduct() {
           </h2>
 
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
-            {PRODUCTS.map((prod, idx) => (
+            {moleculeProducts.map((prod, idx) => (
               <div
                 key={prod.id}
                 className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[440px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black rounded-[28px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_12px_28px_rgba(0,0,0,0.18)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] flex flex-col justify-between items-center p-4 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
@@ -180,12 +332,15 @@ export default function HomeProduct() {
                 </Link>
 
                 {/* Bottle Presentation Slot */}
-                <div className="my-auto flex items-center justify-center relative w-full h-[180px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px]">
+                <Link
+                  to={`/fragrances/${prod.slug || prod.id}`}
+                  className="my-auto flex items-center justify-center relative w-full h-[180px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px] cursor-pointer"
+                >
                   <img
                     id={idx === 0 ? 'target-product-slot-1' : undefined}
                     className="w-auto h-full max-h-[170px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_10px_22px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
-                    src={idx === 0 ? bottle3Img : bottleImg}
-                    alt={`${prod.title} Bottle`}
+                    src={getProductImage(prod, idx)}
+                    alt={`${prod.name} Bottle`}
                     draggable={false}
                   />
                 </Link>
@@ -235,7 +390,10 @@ export default function HomeProduct() {
             }}
           >
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 xl:gap-12 items-center">
-              <div className="lg:col-span-6 w-full h-[260px] sm:h-[320px] lg:h-[380px] xl:h-[460px] 2xl:h-[510px] bg-white rounded-[20px] sm:rounded-[24px] lg:rounded-[26px] xl:rounded-[30px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.06)] group">
+              <Link
+                to={`/fragrances/${discoveryArchive.slug || discoveryArchive.id}`}
+                className="lg:col-span-6 w-full h-[260px] sm:h-[320px] lg:h-[380px] xl:h-[460px] 2xl:h-[510px] bg-white rounded-[20px] sm:rounded-[24px] lg:rounded-[26px] xl:rounded-[30px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.06)] group cursor-pointer block"
+              >
                 <img
                   className="w-full h-full object-cover object-center select-none pointer-events-none group-hover:scale-105 transition-transform duration-700 ease-out"
                   src={Discovery}
@@ -245,32 +403,40 @@ export default function HomeProduct() {
               </Link>
 
               <div className="lg:col-span-6 flex flex-col justify-center space-y-3 lg:space-y-3 xl:space-y-5">
-                <h3 className="text-white text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-normal font-['Conquera',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                  THE DISCOVERY <br />
-                  ARCHIVE
-                </h3>
+                <Link
+                  to={`/fragrances/${discoveryArchive.slug || discoveryArchive.id}`}
+                  className="text-white text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-normal font-['Conquera',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity cursor-pointer block"
+                >
+                  {discoveryArchive.name.toUpperCase().includes('DISCOVERY') ? (
+                    <>
+                      THE DISCOVERY <br />
+                      ARCHIVE
+                    </>
+                  ) : (
+                    discoveryArchive.name
+                  )}
+                </Link>
 
                 <p className="text-white text-xs sm:text-sm lg:text-xs xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-normal tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                  {discoveryArchive?.subtitle || 'The complete Molecule Series, in miniature.'}
+                  {discoveryArchive.subtitle || 'The complete Molecule Series, in miniature.'}
                 </p>
 
                 <div className="text-white/90 text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-normal font-['General_Sans','Poppins',sans-serif] leading-relaxed tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                  {discoveryArchive?.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
-                  {discoveryArchive?.category || 'Extrait de Parfum'}<br />
-                  {discoveryArchive?.concentration || '25% natural oil concentration'}<br />
-                  {discoveryArchive?.gender || 'Unisex'} · {discoveryArchive?.longevity || '8+ hours'}
+                  {discoveryArchive.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
+                  {discoveryArchive.category || 'Extrait de Parfum'}<br />
+                  {discoveryArchive.concentration || '25% natural oil concentration'}<br />
+                  {discoveryArchive.gender || 'Unisex'} · {discoveryArchive.longevity || '8+ hours'}
                 </div>
 
                 <div className="pt-1.5 lg:pt-1 xl:pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 xl:gap-6">
                   <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-                    {discoveryArchive ? `₹${discoveryArchive.price.toLocaleString('en-IN')}` : '₹1,299'}
+                    ₹{discoveryArchive.price.toLocaleString('en-IN')}
                   </div>
 
                   <button
                     type="button"
-                    disabled={!discoveryArchive}
-                    onClick={() => discoveryArchive && addToCart(discoveryArchive)}
-                    className="w-full sm:w-44 lg:w-40 xl:w-52 2xl:w-56 h-10 lg:h-9 xl:h-12 2xl:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn disabled:opacity-50"
+                    onClick={() => addToCart(discoveryArchive)}
+                    className="w-full sm:w-44 lg:w-40 xl:w-52 2xl:w-56 h-10 lg:h-9 xl:h-12 2xl:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn"
                     aria-label="Add The Discovery Archive to Cart"
                   >
                     <span className="text-black text-xs lg:text-xs xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
