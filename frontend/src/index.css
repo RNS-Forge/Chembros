@@ -1,5 +1,6 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+@import "lenis/dist/lenis.css";
+@import "tailwindcss";
 
 @font-face {
   font-family: 'Conquera';
@@ -70,13 +71,22 @@
   padding-right: clamp(20px, 8.958vw, 172px);
 }
 
+html {
+  scroll-behavior: initial;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
 body {
   margin: 0;
   padding: 0;
   background-color: #ffffff;
   color: #000000;
   font-family: var(--font-inter);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 @layer utilities {

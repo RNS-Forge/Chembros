@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import NavBar from './NavBar'
 
 // Assets
@@ -9,6 +10,8 @@ import bottle1 from '../assets/bg/1.png'
 import bottle2 from '../assets/bg/2.png'
 import bottle3 from '../assets/bg/3.png'
 import bottle4 from '../assets/bg/4.png'
+
+gsap.registerPlugin(ScrollTrigger)
 
 interface BottleConfig {
   id: string
@@ -78,7 +81,12 @@ export default function HomeHero() {
           const { isTablet1024 } = context.conditions as { isTablet1024: boolean }
 
           const tl = gsap.timeline({
-            onComplete: () => setLoadingFinished(true),
+            onComplete: () => {
+              setLoadingFinished(true)
+              ScrollTrigger.refresh()
+              // Dispatch event so HomeProduct knows hero animation is complete
+              window.dispatchEvent(new CustomEvent('hero-animation-complete'))
+            },
           })
 
           // 1. Initial State
@@ -105,38 +113,48 @@ export default function HomeHero() {
             duration: 0.8,
             stagger: 0.08,
             ease: 'power2.out',
-          })
-            .to(loaderTextRef.current, {
+          }).to(
+            loaderTextRef.current,
+            {
               opacity: 1,
               y: 0,
               duration: 0.5,
               ease: 'power2.out',
-            }, '-=0.4')
+            },
+            '-=0.4'
+          )
 
-          // 3. 2-Second Hold
+          // 3. Hold
           tl.to({}, { duration: 2.0 })
 
-          // 4. Loader Fadeout
+          // 4. Fadeout
           tl.to(loaderTextRef.current, {
             opacity: 0,
             y: -15,
             duration: 0.5,
             ease: 'power2.in',
-          })
-            .to(loaderOverlayRef.current, {
+          }).to(
+            loaderOverlayRef.current,
+            {
               opacity: 0,
               duration: 1.2,
               ease: 'power3.inOut',
-            }, '-=0.2')
+            },
+            '-=0.2'
+          )
 
           // 5. Hero Background Reveal
-          tl.to(heroBgRef.current, {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 1.8,
-            ease: 'power3.out',
-          }, '-=1.1')
+          tl.to(
+            heroBgRef.current,
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 1.8,
+              ease: 'power3.out',
+            },
+            '-=1.1'
+          )
 
           // 6. Direct Dispersion
           BOTTLES.forEach((bottle, idx) => {
@@ -170,17 +188,16 @@ export default function HomeHero() {
               ease: 'power3.out',
             },
             '-=1.3'
+          ).to(
+            rightMetaRef.current,
+            {
+              y: 0,
+              opacity: 1,
+              duration: 1.2,
+              ease: 'power3.out',
+            },
+            '-=1.1'
           )
-            .to(
-              rightMetaRef.current,
-              {
-                y: 0,
-                opacity: 1,
-                duration: 1.2,
-                ease: 'power3.out',
-              },
-              '-=1.1'
-            )
         }
       )
     }, containerRef)
@@ -191,13 +208,12 @@ export default function HomeHero() {
   return (
     <section
       ref={containerRef}
+      id="home-hero-section"
       className="w-full h-screen h-[100dvh] min-h-[600px] bg-white relative overflow-hidden select-none flex items-start justify-center"
     >
       <NavBar />
 
-      {/* =========================================================================
-          FULL-SCREEN WHITE LOADER OVERLAY
-          ========================================================================= */}
+      {/* Full-Screen Loader */}
       {!loadingFinished && (
         <div
           ref={loaderOverlayRef}
@@ -219,14 +235,9 @@ export default function HomeHero() {
         </div>
       )}
 
-      {/* =========================================================================
-          DESKTOP, LAPTOP & TABLET VIEWPORT (Zero Top Gap)
-          ========================================================================= */}
+      {/* Desktop & Tablet Artboard */}
       <div className="hidden md:flex w-full h-full relative items-start justify-center overflow-hidden">
-
         <div className="relative w-full h-full max-w-[1920px] flex items-start justify-center overflow-hidden">
-
-          {/* Background Graphic: object-top eliminates the top white gap on 1024px screens */}
           <img
             ref={heroBgRef}
             className="w-full h-full object-cover md:object-contain object-top md:object-[center_top] select-none pointer-events-none absolute inset-0 z-0 will-change-transform"
@@ -240,6 +251,7 @@ export default function HomeHero() {
             {BOTTLES.map((bottle, idx) => (
               <Link
                 key={bottle.id}
+                id={idx === 2 ? 'hero-scroll-bottle-3' : undefined}
                 to={`/fragrances/${bottle.id}`}
                 ref={(el) => {
                   bottleRefs.current[idx] = el
@@ -257,7 +269,7 @@ export default function HomeHero() {
             ))}
           </div>
 
-          {/* Left-Side Editorial Typography */}
+          {/* Left Text */}
           <div
             ref={leftTextRef}
             className="absolute left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] top-[20%] lg:top-[25%] z-30 flex flex-col items-start max-w-[42%] lg:max-w-[34%] pointer-events-auto will-change-transform"
@@ -282,7 +294,7 @@ export default function HomeHero() {
             </Link>
           </div>
 
-          {/* Right-Side Metadata */}
+          {/* Right Meta */}
           <div
             ref={rightMetaRef}
             className="absolute right-[4%] lg:right-[5%] top-[22%] lg:top-[26%] z-30 flex flex-col items-end text-right pointer-events-none will-change-transform"
@@ -297,14 +309,10 @@ export default function HomeHero() {
               MADURAI
             </div>
           </div>
-
         </div>
-
       </div>
 
-      {/* =========================================================================
-          MOBILE VIEWPORT (<768px)
-          ========================================================================= */}
+      {/* Mobile Fallback */}
       <div className="md:hidden flex flex-col w-full h-full pt-20 pb-8 px-5 relative z-10 overflow-y-auto justify-between">
         <div className="w-full h-[260px] relative rounded-[28px] overflow-hidden shadow-lg border border-black/5 shrink-0 mb-4">
           <img

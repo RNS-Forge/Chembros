@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import Vid from '../assets/video/introvideo.mp4'
 
 interface BrandStoryProtocolProps {
@@ -176,10 +176,6 @@ export default function BrandStoryProtocol({
               <h3 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
                 WEAR REPORTS & EXPERIENCE
               </h3>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] sm:text-xs font-mono text-black/60 uppercase">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-              <span>4.9 / 5.0 OVERALL RATING</span>
             </div>
           </div>
 
