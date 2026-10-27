@@ -86,10 +86,18 @@ export async function updateProfileApi(data: {
   city?: string
   state?: string
   pincode?: string
+  avatar_url?: string
 }): Promise<User> {
   return request<User>('/api/auth/profile', {
     method: 'PUT',
     body: JSON.stringify(data),
+  })
+}
+
+export async function changePasswordApi(current_password: string, new_password: string): Promise<{ status: string; message: string }> {
+  return request<{ status: string; message: string }>('/api/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password, new_password }),
   })
 }
 

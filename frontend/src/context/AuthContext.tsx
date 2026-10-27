@@ -10,8 +10,11 @@ import {
   verifyLoginOtpApi,
   registerRequestApi,
   verifyRegisterOtpApi,
-  updateProfileApi
+  updateProfileApi,
+  changePasswordApi
 } from '../services/api'
+
+export type ProfileTab = 'details' | 'avatar' | 'security' | 'help'
 
 interface AuthContextType {
   user: User | null
@@ -23,6 +26,11 @@ interface AuthContextType {
   setIsAuthModalOpen: (open: boolean) => void
   openAuthModal: () => void
   closeAuthModal: () => void
+  isProfileModalOpen: boolean
+  setIsProfileModalOpen: (open: boolean) => void
+  profileActiveTab: ProfileTab
+  openProfileModal: (tab?: ProfileTab) => void
+  closeProfileModal: () => void
   sendOtp: (email: string) => Promise<{ status: string; message: string; dev_code?: string }>
   verifyOtp: (email: string, code: string, name?: string) => Promise<User>
   loginRequest: (email: string, password: string) => Promise<{ status: string; message: string; email: string }>
@@ -49,6 +57,7 @@ interface AuthContextType {
     otp_code: string
   }) => Promise<User>
   updateProfile: (data: Partial<User>) => Promise<User>
+  changePassword: (current_pass: string, new_pass: string) => Promise<{ status: string; message: string }>
   login: (email: string, password: string) => Promise<User>
   loginWithPassword: (email: string, password: string) => Promise<User>
   register: (data: {
@@ -71,6 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('chembros_token'))
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
+  const [profileActiveTab, setProfileActiveTab] = useState<ProfileTab>('details')
 
   useEffect(() => {
     async function loadUser() {
@@ -88,6 +99,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     loadUser()
   }, [token])
+
+  const openProfileModal = (tab: ProfileTab = 'details') => {
+    setProfileActiveTab(tab)
+    setIsProfileModalOpen(true)
+  }
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false)
+  }
 
   const loginRequest = async (email: string, password: string) => {
     return await loginRequestApi(email, password)
@@ -125,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     state?: string
     pincode?: string
     otp_code: string
-  }): Promise<User> => {
+  }) => {
     const res = await verifyRegisterOtpApi(data)
     localStorage.setItem('chembros_token', res.access_token)
     setToken(res.access_token)
@@ -138,6 +158,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = await updateProfileApi(data)
     setUser(updated)
     return updated
+  }
+
+  const changePassword = async (current_pass: string, new_pass: string) => {
+    return await changePasswordApi(current_pass, new_pass)
   }
 
   const sendOtp = async (email: string) => {
@@ -184,6 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('chembros_token')
     setToken(null)
     setUser(null)
+    setIsProfileModalOpen(false)
   }
 
   const isAdmin = user?.role === 'admin'
@@ -201,6 +226,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthModalOpen,
         openAuthModal: () => setIsAuthModalOpen(true),
         closeAuthModal: () => setIsAuthModalOpen(false),
+        isProfileModalOpen,
+        setIsProfileModalOpen,
+        profileActiveTab,
+        openProfileModal,
+        closeProfileModal,
         sendOtp,
         verifyOtp,
         loginRequest,
@@ -208,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registerRequest,
         verifyRegisterOtp,
         updateProfile,
+        changePassword,
         login,
         loginWithPassword: login,
         register,

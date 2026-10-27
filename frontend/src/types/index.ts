@@ -42,6 +42,7 @@ export interface User {
   city?: string
   state?: string
   pincode?: string
+  avatar_url?: string
 }
 
 export interface OrderItem {

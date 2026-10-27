@@ -3,6 +3,16 @@ import { Link, useLocation } from 'react-router-dom'
 import cmlogo from '../assets/blacklogo.png'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import {
+  User,
+  Camera,
+  Lock,
+  HelpCircle,
+  Package,
+  ShieldCheck,
+  LogOut,
+  ChevronDown,
+} from 'lucide-react'
 
 interface NavBarProps {
   className?: string
@@ -19,7 +29,7 @@ export default function NavBar({
 }: NavBarProps) {
   const location = useLocation()
   const { totalItems, openCart } = useCart()
-  const { user, openAuthModal, logout, isAuthModalOpen } = useAuth()
+  const { user, openAuthModal, logout, isAuthModalOpen, openProfileModal } = useAuth()
 
   const isAuthRoute = location.pathname === '/auth' || location.pathname === '/login' || location.pathname === '/register'
 
@@ -139,50 +149,142 @@ export default function NavBar({
               })}
             </div>
 
-            {/* Auth / Account Trigger */}
+            {/* Auth / Profile Trigger */}
             <div className="relative shrink-0" ref={menuRef}>
               {user ? (
                 <div>
                   <button
                     type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-1.5 py-1 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/75 hover:text-black transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 py-1 px-1.5 sm:px-2 rounded-full hover:bg-black/5 active:scale-95 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/80 hover:text-black transition-all cursor-pointer"
+                    aria-label="User Account Profile Menu"
                   >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>{user.name?.split(' ')[0] || 'Client'}</span>
+                    {user.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt={user.name || 'Profile'}
+                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-black/15 shadow-xs"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-black text-white text-[10px] sm:text-[11px] font-bold flex items-center justify-center uppercase">
+                        {user.name ? user.name.charAt(0) : 'C'}
+                      </div>
+                    )}
+                    <span className="hidden sm:inline max-w-[90px] truncate">{user.name?.split(' ')[0] || 'Profile'}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 text-black/60 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 top-full mt-3 w-48 bg-white/95 backdrop-blur-xl border border-black/10 rounded-2xl shadow-xl py-2 z-50 text-xs font-['Inter',sans-serif]">
-                      <div className="px-4 py-2 border-b border-black/5 text-neutral-400 text-[10px] uppercase tracking-wider font-mono">
-                        {user.email}
+                    <div className="absolute right-0 top-full mt-3 w-64 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-2xl shadow-2xl py-2 z-50 text-xs font-['Inter',sans-serif] animate-in fade-in zoom-in-95 duration-200">
+                      {/* User Header */}
+                      <div className="px-4 py-3 border-b border-black/5 bg-neutral-50/70 rounded-t-xl">
+                        <div className="flex items-center gap-2.5">
+                          {user.avatar_url ? (
+                            <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border border-black/10" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-black text-white font-bold flex items-center justify-center text-xs">
+                              {user.name ? user.name.charAt(0).toUpperCase() : 'C'}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-black truncate uppercase text-[11px] font-['Cinzel',serif]">
+                              {user.name || 'Client Specimen'}
+                            </div>
+                            <div className="text-[10px] text-neutral-400 font-mono truncate">
+                              {user.email}
+                            </div>
+                            <span className="inline-block mt-0.5 text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-black/5 text-black/70">
+                              {user.role === 'admin' ? 'Master Admin' : 'Member'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <Link
-                        to="/my-orders"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-neutral-700 hover:bg-black/5 transition-colors"
-                      >
-                        My Orders
-                      </Link>
-                      {user.role === 'admin' && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="block px-4 py-2 text-neutral-700 hover:bg-black/5 transition-colors"
+
+                      {/* Menu Items */}
+                      <div className="py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false)
+                            openProfileModal('details')
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
                         >
-                          Admin Portal
+                          <User className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Edit Profile</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false)
+                            openProfileModal('avatar')
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Upload Photo</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false)
+                            openProfileModal('security')
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Change Password</span>
+                        </button>
+
+                        <Link
+                          to="/my-orders"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer font-medium"
+                        >
+                          <Package className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>My Orders</span>
                         </Link>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsUserMenuOpen(false)
-                          logout()
-                        }}
-                        className="w-full text-left px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                      >
-                        Sign Out
-                      </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false)
+                            openProfileModal('help')
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Help & Concierge</span>
+                        </button>
+
+                        {user.role === 'admin' && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer font-medium"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-black" />
+                            <span>Admin Portal</span>
+                          </Link>
+                        )}
+                      </div>
+
+                      {/* Sign Out */}
+                      <div className="border-t border-black/5 pt-1 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false)
+                            logout()
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left font-medium"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -190,9 +292,10 @@ export default function NavBar({
                 <button
                   type="button"
                   onClick={openAuthModal}
-                  className="py-1 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/65 hover:text-black transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 py-1 px-2.5 rounded-full hover:bg-black/5 active:scale-95 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/75 hover:text-black transition-colors cursor-pointer"
                 >
-                  Sign In
+                  <User className="w-3.5 h-3.5 text-black/60" />
+                  <span>Sign In</span>
                 </button>
               )}
             </div>
