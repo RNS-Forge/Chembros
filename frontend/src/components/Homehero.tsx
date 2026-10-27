@@ -21,34 +21,35 @@ interface BottleConfig {
   tablet1024: { left: string; top: string }
 }
 
+// Tablet coordinates locked to the model's palm & chest
 const BOTTLES: BottleConfig[] = [
   {
     id: 'molecule-x',
     name: 'MOLECULE X',
     img: bottle1,
     desktop: { left: '8.5%', top: '58%' },
-    tablet1024: { left: '8.5%', top: '53%' },
+    tablet1024: { left: '8.5%', top: '50%' },
   },
   {
     id: 'molecule-t',
     name: 'MOLECULE T',
     img: bottle2,
     desktop: { left: '32.5%', top: '64%' },
-    tablet1024: { left: '32.5%', top: '59%' },
+    tablet1024: { left: '32.5%', top: '56%' },
   },
   {
     id: 'molecule-j',
     name: 'MOLECULE J',
     img: bottle4,
     desktop: { left: '56.5%', top: '64%' },
-    tablet1024: { left: '56.5%', top: '59%' },
+    tablet1024: { left: '56.5%', top: '56%' }, // Molecule J flight origin
   },
   {
     id: 'molecule-k',
     name: 'MOLECULE K',
     img: bottle3,
     desktop: { left: '80.5%', top: '58%' },
-    tablet1024: { left: '80.5%', top: '53%' },
+    tablet1024: { left: '80.5%', top: '50%' },
   },
 ]
 
@@ -84,15 +85,14 @@ export default function HomeHero() {
             onComplete: () => {
               setLoadingFinished(true)
               ScrollTrigger.refresh()
-              // Dispatch event so HomeProduct knows hero animation is complete
               window.dispatchEvent(new CustomEvent('hero-animation-complete'))
             },
           })
 
           // 1. Initial State
-          gsap.set(heroBgRef.current, { y: 50, scale: 1.03, opacity: 0 })
-          gsap.set(leftTextRef.current, { y: 45, opacity: 0 })
-          gsap.set(rightMetaRef.current, { y: 35, opacity: 0 })
+          gsap.set(heroBgRef.current, { y: 35, scale: 1.02, opacity: 0 })
+          gsap.set(leftTextRef.current, { y: 35, opacity: 0 })
+          gsap.set(rightMetaRef.current, { y: 25, opacity: 0 })
 
           bottleRefs.current.forEach((el, index) => {
             if (!el) return
@@ -125,7 +125,7 @@ export default function HomeHero() {
           )
 
           // 3. Hold
-          tl.to({}, { duration: 2.0 })
+          tl.to({}, { duration: 1.8 })
 
           // 4. Fadeout
           tl.to(loaderTextRef.current, {
@@ -137,7 +137,7 @@ export default function HomeHero() {
             loaderOverlayRef.current,
             {
               opacity: 0,
-              duration: 1.2,
+              duration: 1.0,
               ease: 'power3.inOut',
             },
             '-=0.2'
@@ -150,10 +150,10 @@ export default function HomeHero() {
               opacity: 1,
               y: 0,
               scale: 1,
-              duration: 1.8,
+              duration: 1.6,
               ease: 'power3.out',
             },
-            '-=1.1'
+            '-=0.9'
           )
 
           // 6. Direct Dispersion
@@ -171,10 +171,10 @@ export default function HomeHero() {
                 left: targetPos.left,
                 top: targetPos.top,
                 scale: 1,
-                duration: 1.9,
+                duration: 1.8,
                 ease: 'power4.out',
               },
-              idx === 0 ? '-=1.6' : '-=1.75'
+              idx === 0 ? '-=1.4' : '-=1.6'
             )
           })
 
@@ -187,7 +187,7 @@ export default function HomeHero() {
               duration: 1.2,
               ease: 'power3.out',
             },
-            '-=1.3'
+            '-=1.2'
           ).to(
             rightMetaRef.current,
             {
@@ -196,7 +196,7 @@ export default function HomeHero() {
               duration: 1.2,
               ease: 'power3.out',
             },
-            '-=1.1'
+            '-=1.0'
           )
         }
       )
@@ -209,7 +209,7 @@ export default function HomeHero() {
     <section
       ref={containerRef}
       id="home-hero-section"
-      className="w-full h-screen h-[100dvh] min-h-[600px] bg-white relative overflow-hidden select-none flex items-start justify-center"
+      className="w-full h-screen h-[100dvh] min-h-[580px] bg-white relative overflow-hidden select-none flex items-start justify-center"
     >
       <NavBar />
 
@@ -235,12 +235,14 @@ export default function HomeHero() {
         </div>
       )}
 
-      {/* Desktop & Tablet Artboard */}
+      {/* Desktop & Tablet Artboard Stage */}
       <div className="hidden md:flex w-full h-full relative items-start justify-center overflow-hidden">
         <div className="relative w-full h-full max-w-[1920px] flex items-start justify-center overflow-hidden">
+          
+          {/* object-cover ensures the model graphic fills 100% of height without dead space */}
           <img
             ref={heroBgRef}
-            className="w-full h-full object-cover md:object-contain object-top md:object-[center_top] select-none pointer-events-none absolute inset-0 z-0 will-change-transform"
+            className="w-full h-full object-cover object-top select-none pointer-events-none absolute inset-0 z-0 will-change-transform"
             src={angelWaterBg}
             alt="Chembros Hero Graphic"
             draggable={false}
@@ -256,7 +258,7 @@ export default function HomeHero() {
                 ref={(el) => {
                   bottleRefs.current[idx] = el
                 }}
-                style={{ width: 'clamp(160px, 15.5vw, 260px)' }}
+                style={{ width: 'clamp(140px, 15vw, 250px)' }}
                 className="absolute block group cursor-pointer aspect-[1/1.05] will-change-transform pointer-events-auto"
               >
                 <img
@@ -272,7 +274,7 @@ export default function HomeHero() {
           {/* Left Text */}
           <div
             ref={leftTextRef}
-            className="absolute left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] top-[20%] lg:top-[25%] z-30 flex flex-col items-start max-w-[42%] lg:max-w-[34%] pointer-events-auto will-change-transform"
+            className="absolute left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] top-[16%] md:top-[17%] lg:top-[22%] z-30 flex flex-col items-start max-w-[42%] lg:max-w-[34%] pointer-events-auto will-change-transform"
           >
             <h1 className="text-black text-[clamp(22px,2.5vw,46px)] font-normal font-['Conquera',sans-serif] leading-[1.08] uppercase tracking-wider">
               Chemistry captured
@@ -297,7 +299,7 @@ export default function HomeHero() {
           {/* Right Meta */}
           <div
             ref={rightMetaRef}
-            className="absolute right-[4%] lg:right-[5%] top-[22%] lg:top-[26%] z-30 flex flex-col items-end text-right pointer-events-none will-change-transform"
+            className="absolute right-[4%] lg:right-[5%] top-[18%] md:top-[19%] lg:top-[24%] z-30 flex flex-col items-end text-right pointer-events-none will-change-transform"
           >
             <div className="inline-flex items-center gap-1.5 text-black/80 font-mono text-[clamp(8px,0.65vw,11px)] tracking-[0.25em] uppercase mb-1">
               <span>4 SCENTS INFINITE POSSIBILITIES</span>
@@ -312,7 +314,7 @@ export default function HomeHero() {
         </div>
       </div>
 
-      {/* Mobile Fallback */}
+      {/* Mobile Viewport */}
       <div className="md:hidden flex flex-col w-full h-full pt-20 pb-8 px-5 relative z-10 overflow-y-auto justify-between">
         <div className="w-full h-[260px] relative rounded-[28px] overflow-hidden shadow-lg border border-black/5 shrink-0 mb-4">
           <img

@@ -9,13 +9,12 @@ import type { Product } from '../types'
 import boyImg from '../assets/tonedboy.png'
 import bottle1Img from '../assets/bg/1.png'
 import bottle2Img from '../assets/bg/2.png'
-import bottle3Img from '../assets/bg/4.png' // Molecule J (Hero bottle 3 flight target)
+import bottle3Img from '../assets/bg/4.png' // Molecule J
 import bottle4Img from '../assets/bg/3.png'
 import Discovery from '../assets/product/discovery.png'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Default fallback data matching database specimens
 const FALLBACK_MOLECULES: Product[] = [
   {
     id: 1,
@@ -126,7 +125,6 @@ export default function HomeProduct() {
   const [moleculeProducts, setMoleculeProducts] = useState<Product[]>(FALLBACK_MOLECULES)
   const [discoveryArchive, setDiscoveryArchive] = useState<Product>(FALLBACK_DISCOVERY)
 
-  // Fetch live products from backend database
   useEffect(() => {
     let isMounted = true
     async function loadProducts() {
@@ -140,7 +138,6 @@ export default function HomeProduct() {
         )
 
         if (molecules.length > 0) {
-          // Sort or preserve standard 4-molecule order (J, X, T, K)
           const orderMap: Record<string, number> = {
             'molecule-j': 0,
             'molecule-x': 1,
@@ -159,7 +156,7 @@ export default function HomeProduct() {
           setDiscoveryArchive(archive)
         }
       } catch (err) {
-        console.warn('Using default fallback catalog while backend establishes connection:', err)
+        console.warn('Fallback catalog active:', err)
       }
     }
 
@@ -169,9 +166,8 @@ export default function HomeProduct() {
     }
   }, [])
 
-  // Dynamic bottle image resolver
   const getProductImage = (prod: Product, idx: number) => {
-    if (idx === 0) return bottle3Img // Always Molecule J for docking
+    if (idx === 0) return bottle3Img
     if (prod.slug === 'molecule-x') return bottle1Img
     if (prod.slug === 'molecule-t') return bottle2Img
     if (prod.slug === 'molecule-k') return bottle4Img
@@ -179,124 +175,117 @@ export default function HomeProduct() {
     return prod.image_base64 || list[idx % list.length]
   }
 
-  // GSAP Flight Inertia Animation
+  // 100% Symmetrical, Bidirectional Scroll Flight Animation
   useEffect(() => {
     if (window.innerWidth < 768) return
 
-    let scrollTween: gsap.core.Timeline | null = null
+    let flightTimeline: gsap.core.Timeline | null = null
     let flightClone: HTMLDivElement | null = null
 
-    const initFlightAnimation = () => {
+    const createFlight = () => {
       const heroBottle = document.getElementById('hero-scroll-bottle-3')
       const targetSlot = document.getElementById('target-product-slot-1')
 
       if (!heroBottle || !targetSlot) return
 
-      // Clean up previous instances if any
-      const existingClone = document.getElementById('gsap-floating-flight-bottle')
-      if (existingClone) existingClone.remove()
+      // Clean up previous proxy
+      const existing = document.getElementById('gsap-floating-flight-bottle')
+      if (existing) existing.remove()
+      if (flightTimeline) flightTimeline.kill()
 
-      // Create high-z-index flight vessel in absolute document space
+      // Fixed viewport coordinate translation avoids page scroll math errors completely
       flightClone = document.createElement('div')
       flightClone.id = 'gsap-floating-flight-bottle'
-      flightClone.style.position = 'absolute'
+      flightClone.style.position = 'fixed'
+      flightClone.style.top = '0px'
+      flightClone.style.left = '0px'
       flightClone.style.zIndex = '9999'
       flightClone.style.pointerEvents = 'none'
-      flightClone.style.willChange = 'transform'
+      flightClone.style.willChange = 'transform, opacity'
+      flightClone.style.opacity = '0'
 
       const img = document.createElement('img')
       img.src = bottle3Img
       img.style.width = '100%'
       img.style.height = '100%'
       img.style.objectFit = 'contain'
-      img.style.filter = 'drop-shadow(0 20px 35px rgba(0,0,0,0.28))'
+      img.style.filter = 'drop-shadow(0 18px 32px rgba(0,0,0,0.22))'
       flightClone.appendChild(img)
 
       document.body.appendChild(flightClone)
 
-      // Calculate initial placement in page coordinates
-      const startRect = heroBottle.getBoundingClientRect()
-      const scrollY = window.scrollY || window.pageYOffset
-
-      gsap.set(flightClone, {
-        left: startRect.left,
-        top: startRect.top + scrollY,
-        width: startRect.width,
-        height: startRect.height,
-        opacity: 0,
-        x: 0,
-        y: 0,
-        rotation: 0,
-        transformOrigin: '50% 50%',
-      })
-
-      // The scrubbed flight timeline
-      scrollTween = gsap.timeline({
+      // Dedicated single-timeline ScrollTrigger with symmetrical interpolation
+      flightTimeline = gsap.timeline({
         scrollTrigger: {
           trigger: '#home-hero-section',
           start: 'top top',
           endTrigger: sectionRef.current,
-          end: 'top 20%',
-          scrub: 1.4, // Smooth inertial scrub
+          end: 'top 25%',
+          scrub: true, // Direct 1:1 scrub binds forward and backward scroll to identical frames
           onUpdate: (self) => {
-            if (self.progress > 0.01 && self.progress < 0.99) {
-              gsap.set(flightClone, { opacity: 1 })
-              gsap.set(heroBottle, { opacity: 0 })
-              gsap.set(targetSlot, { opacity: 0 })
-            } else if (self.progress <= 0.01) {
+            const p = self.progress
+
+            if (p <= 0.015) {
+              // At hero rest
               gsap.set(flightClone, { opacity: 0 })
               gsap.set(heroBottle, { opacity: 1 })
               gsap.set(targetSlot, { opacity: 0 })
-            } else if (self.progress >= 0.99) {
+              return
+            }
+
+            if (p >= 0.985) {
+              // At Card 1 rest
               gsap.set(flightClone, { opacity: 0 })
               gsap.set(heroBottle, { opacity: 0 })
               gsap.set(targetSlot, { opacity: 1 })
+              return
             }
+
+            // In-flight
+            gsap.set(flightClone, { opacity: 1 })
+            gsap.set(heroBottle, { opacity: 0 })
+            gsap.set(targetSlot, { opacity: 0 })
+
+            // Get live viewport bounding boxes
+            const heroRect = heroBottle.getBoundingClientRect()
+            const targetRect = targetSlot.getBoundingClientRect()
+
+            // Calculate instantaneous positions
+            const x = heroRect.left + (targetRect.left - heroRect.left) * p
+            const y = heroRect.top + (targetRect.top - heroRect.top) * p
+            const width = heroRect.width + (targetRect.width - heroRect.width) * p
+            const height = heroRect.height + (targetRect.height - heroRect.height) * p
+
+            // Sine curve for smooth aerodynamic tilt: 0° -> -7° -> 0°
+            const rotation = Math.sin(p * Math.PI) * -7
+
+            gsap.set(flightClone, {
+              x,
+              y,
+              width,
+              height,
+              rotation,
+              transformOrigin: '50% 50%',
+            })
           },
         },
       })
-
-      // Compute Delta to Card 1
-      const getDelta = () => {
-        const curStart = heroBottle.getBoundingClientRect()
-        const curEnd = targetSlot.getBoundingClientRect()
-        const deltaX = (curEnd.left + curEnd.width / 2) - (curStart.left + curStart.width / 2)
-        const deltaY = (curEnd.top + curEnd.height / 2) - (curStart.top + curStart.height / 2)
-        const scale = curEnd.width / curStart.width
-        return { deltaX, deltaY, scale }
-      }
-
-      // Trajectory: Lifts, tilts aerodynamic -7 degrees mid-air, then settles back to 0deg in the card slot
-      scrollTween
-        .to(flightClone, {
-          x: () => getDelta().deltaX * 0.45,
-          y: () => getDelta().deltaY * 0.45,
-          scale: () => 1 + (getDelta().scale - 1) * 0.45,
-          rotation: -7,
-          ease: 'power1.out',
-          duration: 0.5,
-        })
-        .to(flightClone, {
-          x: () => getDelta().deltaX,
-          y: () => getDelta().deltaY,
-          scale: () => getDelta().scale,
-          rotation: 0,
-          ease: 'power2.inOut',
-          duration: 0.5,
-        })
     }
 
-    window.addEventListener('hero-animation-complete', initFlightAnimation)
-    const timeout = setTimeout(initFlightAnimation, 2500)
+    window.addEventListener('hero-animation-complete', createFlight)
+    const timer = setTimeout(createFlight, 2200)
 
-    window.addEventListener('resize', () => {
+    const handleResize = () => {
       ScrollTrigger.refresh()
-    })
+      createFlight()
+    }
+    window.addEventListener('resize', handleResize)
 
     return () => {
-      window.removeEventListener('hero-animation-complete', initFlightAnimation)
-      clearTimeout(timeout)
-      if (scrollTween) scrollTween.kill()
+      window.removeEventListener('hero-animation-complete', createFlight)
+      window.removeEventListener('resize', handleResize)
+      clearTimeout(timer)
+      if (flightTimeline) flightTimeline.kill()
       if (flightClone) flightClone.remove()
     }
   }, [])
@@ -306,7 +295,6 @@ export default function HomeProduct() {
       ref={sectionRef}
       className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center"
     >
-      {/* Main Grid Wrapper */}
       <div className="w-full max-w-[1583px] flex flex-col items-center gap-10 sm:gap-14 lg:gap-16 xl:gap-20 relative z-10">
         
         {/* =========================================================================
