@@ -64,9 +64,9 @@ export default function CheckoutPage() {
   // Sync state if user loads after mount
   useEffect(() => {
     if (user) {
-      if (!customerName) setCustomerName(user.name || '')
-      if (!customerEmail) setCustomerEmail(user.email || '')
-      if (!customerPhone) setCustomerPhone(user.phone || '')
+      if (user.name) setCustomerName(user.name)
+      if (user.email) setCustomerEmail(user.email)
+      if (user.phone) setCustomerPhone(user.phone)
       if (user.shipping_address) {
         setAddress(user.shipping_address)
         setCity(user.city || '')
@@ -111,8 +111,8 @@ export default function CheckoutPage() {
     const finalEmail = user?.email || customerEmail.trim()
     const finalPhone = addressChoice === 'saved' && user?.phone ? user.phone : customerPhone.trim()
     const finalAddress = addressChoice === 'saved' && user?.shipping_address ? user.shipping_address : address.trim()
-    const finalCity = addressChoice === 'saved' && user?.city ? user.city : city.trim()
-    const finalState = addressChoice === 'saved' && user?.state ? user.state : stateName.trim()
+    const finalCity = addressChoice === 'saved' && user?.city ? user.city : (city.trim() || 'Coimbatore')
+    const finalState = addressChoice === 'saved' && user?.state ? user.state : (stateName.trim() || 'Tamil Nadu')
     const finalPin = addressChoice === 'saved' && user?.pincode ? user.pincode : pinCode.trim()
 
     if (!finalName || !finalEmail || !finalPhone || !finalAddress || !finalCity || !finalPin) {
@@ -308,7 +308,7 @@ export default function CheckoutPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-black">{user.name}</span>
+                            <span className="text-xs font-bold text-black">{user.name || 'Saved Contact'}</span>
                             <span className="px-2 py-0.5 bg-neutral-200 text-neutral-800 text-[9px] uppercase font-bold tracking-widest rounded">
                               Default Saved Address
                             </span>
@@ -316,12 +316,16 @@ export default function CheckoutPage() {
                           <p className="text-xs text-neutral-700 mt-1 font-medium leading-relaxed">
                             {user.shipping_address}
                           </p>
-                          <p className="text-xs text-neutral-500 mt-0.5">
-                            {user.city}, {user.state} — {user.pincode}
-                          </p>
-                          <p className="text-xs text-neutral-500 mt-1 font-mono">
-                            Phone: {user.phone}
-                          </p>
+                          {(user.city || user.state || user.pincode) && (
+                            <p className="text-xs text-neutral-500 mt-0.5">
+                              {[user.city, user.state].filter(Boolean).join(', ')}{user.pincode ? ` — ${user.pincode}` : ''}
+                            </p>
+                          )}
+                          {user.phone && (
+                            <p className="text-xs text-neutral-500 mt-1 font-mono">
+                              Phone: {user.phone}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <Home className="w-5 h-5 text-neutral-400 shrink-0" />

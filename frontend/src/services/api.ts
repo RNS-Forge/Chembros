@@ -128,6 +128,116 @@ function formatReview(row: any): CustomerReview {
 // ----------------- Auth Endpoints -----------------
 // Real live 2FA OTP emails remain powered by the backend Gmail SMTP engine
 
+/**
+ * Automatically retrieves complete address details for the user.
+ * If user profile lacks a shipping address, city, state, pincode, or contact phone,
+ * it pulls the most recent shipping information from their past orders in Supabase
+ * and writes it back to the users table for permanent 1-click checkout.
+ */
+export async function enrichUserAddress(user: User): Promise<User> {
+  if (!user) return user
+
+  const userCopy: User = { ...user }
+  let changed = false
+
+  // If shipping_address exists but pincode is missing, extract it
+  if (userCopy.shipping_address && !userCopy.pincode) {
+    const pinMatch = userCopy.shipping_address.match(/\b\d{6}\b/)
+    if (pinMatch) {
+      userCopy.pincode = pinMatch[0]
+      changed = true
+    }
+  }
+
+  const needsAddress = !userCopy.shipping_address || !userCopy.phone || !userCopy.city || !userCopy.pincode
+  if (needsAddress) {
+    try {
+      let orderQuery = supabase
+        .from('orders')
+        .select('customer_name, customer_phone, shipping_address, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (userCopy.id && userCopy.email) {
+        orderQuery = orderQuery.or(`user_id.eq.${userCopy.id},customer_email.ilike.${userCopy.email}`)
+      } else if (userCopy.id) {
+        orderQuery = orderQuery.eq('user_id', userCopy.id)
+      } else if (userCopy.email) {
+        orderQuery = orderQuery.ilike('customer_email', userCopy.email)
+      }
+
+      const { data: orders, error } = await orderQuery
+      if (!error && orders && orders.length > 0) {
+        const order = orders[0]
+
+        if (!userCopy.name && order.customer_name) {
+          userCopy.name = order.customer_name
+          changed = true
+        }
+        if (!userCopy.phone && order.customer_phone) {
+          userCopy.phone = order.customer_phone
+          changed = true
+        }
+
+        if (order.shipping_address) {
+          const raw = order.shipping_address.trim()
+          const pinMatch = raw.match(/\b\d{6}\b/)
+          if (!userCopy.pincode && pinMatch) {
+            userCopy.pincode = pinMatch[0]
+            changed = true
+          }
+
+          if (!userCopy.shipping_address) {
+            const clean = raw.replace(/\s*[-–,]\s*\d{6}\s*$/, '').trim()
+            const parts = clean.split(',').map((p: string) => p.trim()).filter(Boolean)
+            if (parts.length >= 3) {
+              if (!userCopy.state) userCopy.state = parts[parts.length - 1]
+              if (!userCopy.city) userCopy.city = parts[parts.length - 2]
+              userCopy.shipping_address = parts.slice(0, parts.length - 2).join(', ')
+            } else if (parts.length === 2) {
+              if (!userCopy.city) userCopy.city = parts[1]
+              userCopy.shipping_address = parts[0]
+            } else {
+              userCopy.shipping_address = clean || raw
+            }
+            changed = true
+          }
+        }
+
+        if (!userCopy.state) {
+          userCopy.state = 'Tamil Nadu'
+          changed = true
+        }
+      }
+    } catch (err) {
+      console.warn('Could not enrich user address from orders:', err)
+    }
+  }
+
+  // Persist recovered details into Supabase users table
+  if (changed && userCopy.id) {
+    try {
+      await supabase
+        .from('users')
+        .update({
+          name: userCopy.name,
+          phone: userCopy.phone,
+          shipping_address: userCopy.shipping_address,
+          city: userCopy.city,
+          state: userCopy.state,
+          pincode: userCopy.pincode,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userCopy.id)
+    } catch (updateErr) {
+      console.warn('Could not persist recovered address to users table:', updateErr)
+    }
+  }
+
+  localStorage.setItem('chembros_user', JSON.stringify(userCopy))
+  return userCopy
+}
+
 export async function loginRequestApi(
   email: string,
   password: string
@@ -142,10 +252,17 @@ export async function verifyLoginOtpApi(
   email: string,
   otp_code: string
 ): Promise<{ access_token: string; user: User }> {
-  return request<{ access_token: string; user: User }>('/api/auth/verify-login-otp', {
+  const res = await request<{ access_token: string; user: User }>('/api/auth/verify-login-otp', {
     method: 'POST',
     body: JSON.stringify({ email, otp_code }),
   })
+  if (res.access_token) {
+    localStorage.setItem('chembros_token', res.access_token)
+  }
+  if (res.user) {
+    res.user = await enrichUserAddress(res.user)
+  }
+  return res
 }
 
 export async function registerRequestApi(data: {
@@ -175,10 +292,17 @@ export async function verifyRegisterOtpApi(data: {
   state?: string
   pincode?: string
 }): Promise<{ access_token: string; user: User }> {
-  return request<{ access_token: string; user: User }>('/api/auth/verify-register-otp', {
+  const res = await request<{ access_token: string; user: User }>('/api/auth/verify-register-otp', {
     method: 'POST',
     body: JSON.stringify(data),
   })
+  if (res.access_token) {
+    localStorage.setItem('chembros_token', res.access_token)
+  }
+  if (res.user) {
+    res.user = await enrichUserAddress(res.user)
+  }
+  return res
 }
 
 export async function sendOtpApi(email: string): Promise<{ status: string; message: string }> {
@@ -193,10 +317,17 @@ export async function verifyOtpApi(
   otp_code: string,
   name?: string
 ): Promise<{ access_token: string; user: User }> {
-  return request<{ access_token: string; user: User }>('/api/auth/verify-otp', {
+  const res = await request<{ access_token: string; user: User }>('/api/auth/verify-otp', {
     method: 'POST',
     body: JSON.stringify({ email, otp_code, name }),
   })
+  if (res.access_token) {
+    localStorage.setItem('chembros_token', res.access_token)
+  }
+  if (res.user) {
+    res.user = await enrichUserAddress(res.user)
+  }
+  return res
 }
 
 export async function updateProfileApi(data: {
@@ -360,19 +491,24 @@ export async function loginApi(email: string, password: string): Promise<{ acces
         pincode: matchedUser.pincode,
         avatar_url: matchedUser.avatar_url,
       }
-      const token = createLocalToken(userObj)
+      const enrichedUser = await enrichUserAddress(userObj)
+      const token = createLocalToken(enrichedUser)
       localStorage.setItem('chembros_token', token)
-      localStorage.setItem('chembros_user', JSON.stringify(userObj))
-      return { access_token: token, user: userObj }
+      localStorage.setItem('chembros_user', JSON.stringify(enrichedUser))
+      return { access_token: token, user: enrichedUser }
     }
   } catch (err) {
     console.warn('Direct Supabase login fallback to backend:', err)
   }
 
-  return request<{ access_token: string; user: User }>('/api/auth/login', {
+  const res = await request<{ access_token: string; user: User }>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
+  if (res.user) {
+    res.user = await enrichUserAddress(res.user)
+  }
+  return res
 }
 
 export async function registerApi(data: {
@@ -436,15 +572,15 @@ export async function getMeApi(): Promise<User> {
           pincode: userRow.pincode,
           avatar_url: userRow.avatar_url,
         }
-        localStorage.setItem('chembros_user', JSON.stringify(userObj))
-        return userObj
+        return await enrichUserAddress(userObj)
       }
     } catch (err) {
       console.warn('Supabase getMe fallback to backend:', err)
     }
   }
 
-  return request<User>('/api/auth/me')
+  const backendUser = await request<User>('/api/auth/me')
+  return await enrichUserAddress(backendUser)
 }
 
 // ----------------- Products Endpoints (Direct Supabase) -----------------
