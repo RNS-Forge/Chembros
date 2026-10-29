@@ -49,6 +49,7 @@ export default function AuthModal() {
   const [pincode, setPincode] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showExtraDetails, setShowExtraDetails] = useState(false)
 
   // Feedback State
   const [loading, setLoading] = useState(false)
@@ -114,9 +115,6 @@ export default function AuthModal() {
     try {
       const res = await loginRequest(email.trim().toLowerCase(), password)
       setSuccessMsg(res.message || `Verification passcode dispatched to ${email.trim()}`)
-      if ((res as any).dev_code) {
-        setOtpCode((res as any).dev_code)
-      }
       setSignInStep('otp')
       setResendCooldown(45)
     } catch (err: unknown) {
@@ -149,17 +147,17 @@ export default function AuthModal() {
     }
   }
 
-  // 2. Register Step 1: Submit Details & Request OTP
+  // 2. Register Step 1: Submit Email (and optional details) & Request OTP
   const handleRegisterRequest = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || !password || !name.trim() || !phone.trim() || !shippingAddress.trim() || !city.trim() || !pincode.trim()) {
-      setError('Please complete all required fields.')
+    if (!email.trim()) {
+      setError('Please provide your email address.')
       return
     }
 
-    // Verify strong password
-    if (!isStrongPassword) {
-      setError('Please provide a strong password meeting all 4 laboratory security criteria.')
+    // Verify password only if user opted to set one now
+    if (password && !isStrongPassword) {
+      setError('Please provide a password meeting laboratory security criteria, or leave it blank to authenticate with email passcodes.')
       return
     }
 
@@ -168,19 +166,16 @@ export default function AuthModal() {
     setSuccessMsg(null)
     try {
       const res = await registerRequest({
-        name: name.trim(),
         email: email.trim().toLowerCase(),
-        password,
-        phone: phone.trim(),
-        shipping_address: shippingAddress.trim(),
-        city: city.trim(),
-        state: stateName.trim(),
-        pincode: pincode.trim(),
+        name: name.trim() || undefined,
+        password: password || undefined,
+        phone: phone.trim() || undefined,
+        shipping_address: shippingAddress.trim() || undefined,
+        city: city.trim() || undefined,
+        state: stateName.trim() || undefined,
+        pincode: pincode.trim() || undefined,
       })
       setSuccessMsg(res.message || `Verification passcode dispatched to ${email.trim()}`)
-      if ((res as any).dev_code) {
-        setOtpCode((res as any).dev_code)
-      }
       setRegisterStep('otp')
       setResendCooldown(45)
     } catch (err: unknown) {
@@ -202,15 +197,15 @@ export default function AuthModal() {
     setError(null)
     try {
       const newUser = await verifyRegisterOtp({
-        name: name.trim(),
         email: email.trim().toLowerCase(),
-        password,
-        phone: phone.trim(),
-        shipping_address: shippingAddress.trim(),
-        city: city.trim(),
-        state: stateName.trim(),
-        pincode: pincode.trim(),
         otp_code: otpCode.trim(),
+        name: name.trim() || undefined,
+        password: password || undefined,
+        phone: phone.trim() || undefined,
+        shipping_address: shippingAddress.trim() || undefined,
+        city: city.trim() || undefined,
+        state: stateName.trim() || undefined,
+        pincode: pincode.trim() || undefined,
       })
       handleClose()
       if (newUser.role === 'admin') {
@@ -228,13 +223,13 @@ export default function AuthModal() {
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose()
       }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-2xl animate-modal-backdrop overflow-hidden cursor-pointer"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-2xl animate-modal-backdrop overflow-y-auto cursor-pointer"
     >
       {/* Modal Dialog Card */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full bg-white/90 backdrop-blur-3xl border border-white/60 rounded-[36px] p-7 sm:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.35),_inset_0_1px_1px_rgba(255,255,255,0.9)] overflow-y-auto max-h-[90vh] no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden animate-modal-card selection:bg-black selection:text-white cursor-default ${
-          tab === 'register' && registerStep === 'details' ? 'max-w-xl' : 'max-w-md'
+        className={`relative w-full bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[36px] p-7 sm:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.35),_inset_0_1px_1px_rgba(255,255,255,0.9)] overflow-y-auto max-h-[88vh] my-auto animate-modal-card selection:bg-black selection:text-white cursor-default ${
+          tab === 'register' && registerStep === 'details' && showExtraDetails ? 'max-w-xl' : 'max-w-md'
         }`}
       >
         {/* Sleek Close Button */}
@@ -461,52 +456,20 @@ export default function AuthModal() {
         )}
 
         {/* ========================================================= */}
-        {/* TAB 2: CREATE ACCOUNT (WITH ORDER & DELIVERY DETAILS)     */}
+        {/* TAB 2: CREATE ACCOUNT (EMAIL-FIRST FAST REGISTRATION)    */}
         {/* ========================================================= */}
         {tab === 'register' && (
           <>
             {registerStep === 'details' ? (
               <form onSubmit={handleRegisterRequest} className="space-y-3.5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                      Full Name *
-                    </label>
-                    <div className="relative">
-                      <UserIcon className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
-                      <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Eleanor Vance"
-                        className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                      Phone Number *
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
+                {/* 1. Email Address (Required) */}
                 <div>
-                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                    Email Address *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-mono tracking-widest text-black/70 uppercase block">
+                      Email Address *
+                    </label>
+                    <span className="text-[10px] font-mono text-black/40 uppercase">Required</span>
+                  </div>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
                     <input
@@ -515,100 +478,49 @@ export default function AuthModal() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="client@chembros.com"
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                      className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/15 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
                     />
                   </div>
+                  <p className="text-[10px] text-black/50 font-mono mt-1">
+                    A 6-digit verification passcode will be dispatched to this email to instantly create your account.
+                  </p>
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                    Delivery Address *
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
-                    <input
-                      type="text"
-                      required
-                      value={shippingAddress}
-                      onChange={(e) => setShippingAddress(e.target.value)}
-                      placeholder="Suite, Street, Residential Complex"
-                      className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Mumbai"
-                      className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={stateName}
-                      onChange={(e) => setStateName(e.target.value)}
-                      placeholder="State"
-                      className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                      PIN Code *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      value={pincode}
-                      onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="400001"
-                      className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Input with Real-time Strength Indicator */}
+                {/* 2. Full Name (Optional) */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block">
-                      Laboratory Password *
+                      Full Name
                     </label>
-                    {password.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${isStrongPassword ? 'bg-black' : 'bg-black/30'}`} />
-                        <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-black">
-                          {strengthScore <= 1
-                            ? 'Weak'
-                            : strengthScore === 2
-                            ? 'Moderate'
-                            : strengthScore === 3
-                            ? 'Good'
-                            : 'Archive Strong'}
-                        </span>
-                      </div>
-                    )}
+                    <span className="text-[10px] font-mono text-black/30 uppercase">Optional</span>
+                  </div>
+                  <div className="relative">
+                    <UserIcon className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Eleanor Vance (or leave blank)"
+                      className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Password (Optional) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block">
+                      Laboratory Password
+                    </label>
+                    <span className="text-[10px] font-mono text-black/30 uppercase">Optional</span>
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Minimum 8 characters"
+                      placeholder="Leave blank to use email OTP, or set password"
                       className="w-full pl-10 pr-10 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
                     />
                     <button
@@ -620,10 +532,9 @@ export default function AuthModal() {
                     </button>
                   </div>
 
-                  {/* Segmented Strength Meter & Criteria Badges (Pure Monochrome / Black & White) */}
+                  {/* Password Strength Indicator when user types password */}
                   {password.length > 0 && (
                     <div className="mt-2.5 space-y-2 p-3 bg-neutral-50/90 rounded-2xl border border-black/10 animate-in fade-in duration-200">
-                      {/* 4 Segmented Strength Bars - Pure Black & White */}
                       <div className="grid grid-cols-4 gap-1.5 h-1.5">
                         {[1, 2, 3, 4].map((step) => {
                           const isFilled = strengthScore >= step
@@ -638,7 +549,6 @@ export default function AuthModal() {
                         })}
                       </div>
 
-                      {/* 4 Security Criteria Pills - Pure Monochrome */}
                       <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1 text-[10px] font-mono">
                         <div className={`flex items-center gap-1.5 transition-colors ${hasMinLength ? 'text-black font-semibold' : 'text-black/40'}`}>
                           {hasMinLength ? (
@@ -676,6 +586,93 @@ export default function AuthModal() {
                     </div>
                   )}
                 </div>
+
+                {/* 4. Optional Extra Details Collapsible */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowExtraDetails(!showExtraDetails)}
+                    className="text-[11px] font-mono uppercase tracking-wider text-black/60 hover:text-black flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>{showExtraDetails ? '− Hide Delivery & Phone Details' : '+ Add Delivery Address & Phone (Optional)'}</span>
+                  </button>
+                </div>
+
+                {showExtraDetails && (
+                  <div className="space-y-3 pt-1 border-t border-black/5 animate-in fade-in duration-200">
+                    <div>
+                      <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                        Phone Number (Optional)
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+91 98765 43210"
+                          className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                        Delivery Address (Optional)
+                      </label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
+                        <input
+                          type="text"
+                          value={shippingAddress}
+                          onChange={(e) => setShippingAddress(e.target.value)}
+                          placeholder="Suite, Street, Residential Complex"
+                          className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="Mumbai"
+                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          value={stateName}
+                          onChange={(e) => setStateName(e.target.value)}
+                          placeholder="State"
+                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                          PIN Code
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={pincode}
+                          onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="400001"
+                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-2">
                   <button
@@ -761,14 +758,14 @@ export default function AuthModal() {
                       setLoading(true)
                       try {
                         await registerRequest({
-                          name: name.trim(),
                           email: email.trim().toLowerCase(),
-                          password,
-                          phone: phone.trim(),
-                          shipping_address: shippingAddress.trim(),
-                          city: city.trim(),
-                          state: stateName.trim(),
-                          pincode: pincode.trim(),
+                          name: name.trim() || undefined,
+                          password: password || undefined,
+                          phone: phone.trim() || undefined,
+                          shipping_address: shippingAddress.trim() || undefined,
+                          city: city.trim() || undefined,
+                          state: stateName.trim() || undefined,
+                          pincode: pincode.trim() || undefined,
                         })
                         setResendCooldown(45)
                         setSuccessMsg('Fresh passcode dispatched.')

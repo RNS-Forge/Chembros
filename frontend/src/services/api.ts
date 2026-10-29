@@ -149,9 +149,9 @@ export async function verifyLoginOtpApi(
 }
 
 export async function registerRequestApi(data: {
-  name: string
   email: string
-  password: string
+  name?: string
+  password?: string
   phone?: string
   shipping_address?: string
   city?: string
@@ -165,15 +165,15 @@ export async function registerRequestApi(data: {
 }
 
 export async function verifyRegisterOtpApi(data: {
-  name: string
   email: string
-  password: string
+  otp_code: string
+  name?: string
+  password?: string
   phone?: string
   shipping_address?: string
   city?: string
   state?: string
   pincode?: string
-  otp_code: string
 }): Promise<{ access_token: string; user: User }> {
   return request<{ access_token: string; user: User }>('/api/auth/verify-register-otp', {
     method: 'POST',
@@ -181,8 +181,8 @@ export async function verifyRegisterOtpApi(data: {
   })
 }
 
-export async function sendOtpApi(email: string): Promise<{ status: string; message: string; dev_code?: string }> {
-  return request<{ status: string; message: string; dev_code?: string }>('/api/auth/send-otp', {
+export async function sendOtpApi(email: string): Promise<{ status: string; message: string }> {
+  return request<{ status: string; message: string }>('/api/auth/send-otp', {
     method: 'POST',
     body: JSON.stringify({ email }),
   })

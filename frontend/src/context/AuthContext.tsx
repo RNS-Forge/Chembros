@@ -31,14 +31,14 @@ interface AuthContextType {
   profileActiveTab: ProfileTab
   openProfileModal: (tab?: ProfileTab) => void
   closeProfileModal: () => void
-  sendOtp: (email: string) => Promise<{ status: string; message: string; dev_code?: string }>
+  sendOtp: (email: string) => Promise<{ status: string; message: string }>
   verifyOtp: (email: string, code: string, name?: string) => Promise<User>
   loginRequest: (email: string, password: string) => Promise<{ status: string; message: string; email: string }>
   verifyLoginOtp: (email: string, otp_code: string) => Promise<User>
   registerRequest: (data: {
-    name: string
     email: string
-    password: string
+    name?: string
+    password?: string
     phone?: string
     shipping_address?: string
     city?: string
@@ -46,15 +46,15 @@ interface AuthContextType {
     pincode?: string
   }) => Promise<{ status: string; message: string; email: string }>
   verifyRegisterOtp: (data: {
-    name: string
     email: string
-    password: string
+    otp_code: string
+    name?: string
+    password?: string
     phone?: string
     shipping_address?: string
     city?: string
     state?: string
     pincode?: string
-    otp_code: string
   }) => Promise<User>
   updateProfile: (data: Partial<User>) => Promise<User>
   changePassword: (current_pass: string, new_pass: string) => Promise<{ status: string; message: string }>
@@ -146,9 +146,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const registerRequest = async (data: {
-    name: string
     email: string
-    password: string
+    name?: string
+    password?: string
     phone?: string
     shipping_address?: string
     city?: string
@@ -159,15 +159,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const verifyRegisterOtp = async (data: {
-    name: string
     email: string
-    password: string
+    otp_code: string
+    name?: string
+    password?: string
     phone?: string
     shipping_address?: string
     city?: string
     state?: string
     pincode?: string
-    otp_code: string
   }) => {
     const res = await verifyRegisterOtpApi(data)
     localStorage.setItem('chembros_token', res.access_token)
