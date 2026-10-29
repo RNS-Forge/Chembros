@@ -11,7 +11,7 @@ import {
   registerRequestApi,
   verifyRegisterOtpApi,
   updateProfileApi,
-  changePasswordApi
+  changePasswordApi,
 } from '../services/api'
 
 export type ProfileTab = 'details' | 'avatar' | 'security' | 'help'
@@ -76,24 +76,47 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('chembros_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('chembros_token'))
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isLoading, setIsLoading] = useState<boolean>(!user && !!token)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [profileActiveTab, setProfileActiveTab] = useState<ProfileTab>('details')
+
+  const setUserAndStore = (u: User | null) => {
+    setUser(u)
+    if (u) {
+      localStorage.setItem('chembros_user', JSON.stringify(u))
+    } else {
+      localStorage.removeItem('chembros_user')
+    }
+  }
 
   useEffect(() => {
     async function loadUser() {
       if (token) {
         try {
           const profile = await getMeApi()
-          setUser(profile)
+          setUserAndStore(profile)
         } catch {
-          localStorage.removeItem('chembros_token')
-          setToken(null)
-          setUser(null)
+          // If token completely invalid or expired, clear
+          if (!user) {
+            localStorage.removeItem('chembros_token')
+            localStorage.removeItem('chembros_user')
+            setToken(null)
+            setUser(null)
+          }
         }
+      } else {
+        localStorage.removeItem('chembros_user')
+        setUser(null)
       }
       setIsLoading(false)
     }
@@ -117,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await verifyLoginOtpApi(email, otp_code)
     localStorage.setItem('chembros_token', res.access_token)
     setToken(res.access_token)
-    setUser(res.user)
+    setUserAndStore(res.user)
     setIsAuthModalOpen(false)
     return res.user
   }
@@ -149,14 +172,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await verifyRegisterOtpApi(data)
     localStorage.setItem('chembros_token', res.access_token)
     setToken(res.access_token)
-    setUser(res.user)
+    setUserAndStore(res.user)
     setIsAuthModalOpen(false)
     return res.user
   }
 
   const updateProfile = async (data: Partial<User>): Promise<User> => {
     const updated = await updateProfileApi(data)
-    setUser(updated)
+    setUserAndStore(updated)
     return updated
   }
 
@@ -172,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await verifyOtpApi(email, code, name)
     localStorage.setItem('chembros_token', res.access_token)
     setToken(res.access_token)
-    setUser(res.user)
+    setUserAndStore(res.user)
     setIsAuthModalOpen(false)
     return res.user
   }
@@ -181,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await loginApi(email, password)
     localStorage.setItem('chembros_token', res.access_token)
     setToken(res.access_token)
-    setUser(res.user)
+    setUserAndStore(res.user)
     setIsAuthModalOpen(false)
     return res.user
   }
@@ -199,13 +222,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await registerApi(data)
     localStorage.setItem('chembros_token', res.access_token)
     setToken(res.access_token)
-    setUser(res.user)
+    setUserAndStore(res.user)
     setIsAuthModalOpen(false)
     return res.user
   }
 
   const logout = () => {
     localStorage.removeItem('chembros_token')
+    localStorage.removeItem('chembros_user')
     setToken(null)
     setUser(null)
     setIsProfileModalOpen(false)
