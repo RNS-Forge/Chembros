@@ -252,7 +252,13 @@ export async function loginRequestApi(
     const errMsg = err?.message || ''
     if (errMsg.includes('Unable to dispatch verification email') || errMsg.includes('Failed to fetch') || errMsg.includes('500') || errMsg.includes('NetworkError')) {
       console.warn('Backend SMTP blocked by host network; dispatching live verification code via Supabase HTTPS:', err)
-      const { error: supaErr } = await supabase.auth.signInWithOtp({ email: cleanEmail })
+      const { error: supaErr } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+          shouldCreateUser: true,
+        },
+      })
       if (!supaErr) {
         return {
           status: 'otp_sent',
@@ -358,7 +364,13 @@ export async function registerRequestApi(data: {
     const errMsg = err?.message || ''
     if (errMsg.includes('Unable to dispatch verification email') || errMsg.includes('Failed to fetch') || errMsg.includes('500') || errMsg.includes('NetworkError')) {
       console.warn('Backend SMTP blocked by host network; dispatching live registration code via Supabase HTTPS:', err)
-      const { error: supaErr } = await supabase.auth.signInWithOtp({ email: cleanEmail })
+      const { error: supaErr } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+          shouldCreateUser: true,
+        },
+      })
       if (!supaErr) {
         return {
           status: 'otp_sent',
@@ -463,7 +475,13 @@ export async function sendOtpApi(email: string): Promise<{ status: string; messa
     const errMsg = err?.message || ''
     if (errMsg.includes('Unable to dispatch verification email') || errMsg.includes('Failed to fetch') || errMsg.includes('500') || errMsg.includes('NetworkError')) {
       console.warn('Backend SMTP blocked by host network; dispatching live OTP code via Supabase HTTPS:', err)
-      const { error: supaErr } = await supabase.auth.signInWithOtp({ email: cleanEmail })
+      const { error: supaErr } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+          shouldCreateUser: true,
+        },
+      })
       if (!supaErr) {
         return {
           status: 'success',

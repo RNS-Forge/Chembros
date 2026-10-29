@@ -89,6 +89,16 @@ export default function AuthModal() {
     }
   }, [isAuthModalOpen])
 
+  // Active countdown timer for Resend Code button
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
+
   if (!isAuthModalOpen) return null
 
   // Password Strength Verification Logic
@@ -458,13 +468,16 @@ export default function AuthModal() {
                     type="button"
                     disabled={resendCooldown > 0 || loading}
                     onClick={async () => {
+                      if (resendCooldown > 0 || loading) return
                       setLoading(true)
+                      setError(null)
+                      setSuccessMsg(null)
                       try {
-                        await loginRequest(email.trim().toLowerCase(), password)
+                        const res = await loginRequest(email.trim().toLowerCase(), password)
                         setResendCooldown(45)
-                        setSuccessMsg('Fresh passcode dispatched.')
-                      } catch {
-                        setError('Failed to dispatch code.')
+                        setSuccessMsg(res?.message || 'Fresh verification code dispatched.')
+                      } catch (err: unknown) {
+                        setError(err instanceof Error ? err.message : 'Failed to dispatch code.')
                       } finally {
                         setLoading(false)
                       }
@@ -779,9 +792,12 @@ export default function AuthModal() {
                     type="button"
                     disabled={resendCooldown > 0 || loading}
                     onClick={async () => {
+                      if (resendCooldown > 0 || loading) return
                       setLoading(true)
+                      setError(null)
+                      setSuccessMsg(null)
                       try {
-                        await registerRequest({
+                        const res = await registerRequest({
                           email: email.trim().toLowerCase(),
                           name: name.trim() || undefined,
                           password: password || undefined,
@@ -792,9 +808,9 @@ export default function AuthModal() {
                           pincode: pincode.trim() || undefined,
                         })
                         setResendCooldown(45)
-                        setSuccessMsg('Fresh passcode dispatched.')
-                      } catch {
-                        setError('Failed to dispatch code.')
+                        setSuccessMsg(res?.message || 'Fresh verification code dispatched.')
+                      } catch (err: unknown) {
+                        setError(err instanceof Error ? err.message : 'Failed to dispatch code.')
                       } finally {
                         setLoading(false)
                       }
