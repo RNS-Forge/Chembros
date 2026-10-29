@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, useParams, Link } from 'react-router-dom'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import type { Order } from '../types'
 import { getOrderByNumberApi } from '../services/api'
-import { CheckCircle2, Package, Truck, Clock, ArrowRight, Loader2 } from 'lucide-react'
+import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Navigation, CreditCard, Copy, Check } from 'lucide-react'
 
 export default function OrderConfirmationPage() {
   const [searchParams] = useSearchParams()
-  const orderNumber = searchParams.get('order_id')
+  const { orderNumber: paramOrderNumber } = useParams<{ orderNumber?: string }>()
+  const orderNumber = paramOrderNumber || searchParams.get('order_id') || searchParams.get('orderNumber')
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
+  const [copiedTrack, setCopiedTrack] = useState(false)
 
   useEffect(() => {
     async function loadOrder() {
@@ -86,32 +88,100 @@ export default function OrderConfirmationPage() {
               </div>
             </div>
 
-            {/* Tracking Progress */}
+            {/* 5-Stage Live Fulfillment Timeline */}
             <div>
-              <h3 className="text-xs font-bold text-black uppercase tracking-widest mb-6">
-                Fulfillment Timeline
-              </h3>
-              <div className="grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xs font-bold text-black uppercase tracking-widest">
+                  Live Fulfillment Timeline
+                </h3>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+                  Real-time Status
+                </span>
+              </div>
+
+              <div className="grid grid-cols-5 gap-2 text-center text-xs">
                 {[
-                  { title: 'Placed', icon: CheckCircle2, active: true },
-                  { title: 'Processing', icon: Clock, active: ['Processing', 'Shipped', 'Delivered'].includes(order.order_status) },
-                  { title: 'Shipped', icon: Truck, active: ['Shipped', 'Delivered'].includes(order.order_status) },
-                  { title: 'Delivered', icon: Package, active: order.order_status === 'Delivered' },
+                  {
+                    title: 'Placed',
+                    icon: CheckCircle2,
+                    active: true
+                  },
+                  {
+                    title: 'Payment',
+                    icon: CreditCard,
+                    active: order.payment_status === 'PAID'
+                  },
+                  {
+                    title: 'Shipped',
+                    icon: Truck,
+                    active: ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.order_status)
+                  },
+                  {
+                    title: 'Out Today',
+                    icon: Navigation,
+                    active: ['Out for Delivery', 'Delivered'].includes(order.order_status)
+                  },
+                  {
+                    title: 'Delivered',
+                    icon: Package,
+                    active: order.order_status === 'Delivered'
+                  },
                 ].map((st, idx) => (
                   <div key={idx} className="flex flex-col items-center">
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 ${
-                        st.active ? 'bg-black text-white' : 'bg-neutral-200 text-neutral-400'
+                      className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 transition-all ${
+                        st.active ? 'bg-black text-white shadow-md' : 'bg-neutral-200 text-neutral-400'
                       }`}
                     >
-                      <st.icon className="w-4 h-4" />
+                      <st.icon className="w-4 h-4 stroke-[2]" />
                     </div>
-                    <span className={`text-[11px] font-medium ${st.active ? 'text-black' : 'text-neutral-400'}`}>
+                    <span className={`text-[10px] uppercase tracking-wider font-semibold ${st.active ? 'text-black' : 'text-neutral-400'}`}>
                       {st.title}
                     </span>
                   </div>
                 ))}
               </div>
+
+              {/* Waybill Tracking Pill if dispatched */}
+              {order.tracking_number && (
+                <div className="mt-6 p-4 bg-white border border-black/10 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-black">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">
+                        Consignment Waybill
+                      </div>
+                      <div className="text-sm font-mono font-bold text-black tracking-wider">
+                        {order.tracking_number}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(order.tracking_number || '')
+                      setCopiedTrack(true)
+                      setTimeout(() => setCopiedTrack(false), 2000)
+                    }}
+                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-black text-xs font-mono uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {copiedTrack ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Waybill</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Items Ordered */}
