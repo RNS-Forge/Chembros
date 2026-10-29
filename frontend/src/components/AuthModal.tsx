@@ -57,13 +57,34 @@ export default function AuthModal() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  // Prevent background page scrolling when modal is open
+  // Strictly prevent background page scrolling when modal is open
   useEffect(() => {
     if (isAuthModalOpen) {
-      const originalOverflow = document.body.style.overflow
+      const originalBodyOverflow = document.body.style.overflow
+      const originalHtmlOverflow = document.documentElement.style.overflow
+      const originalTouchAction = document.body.style.touchAction
+
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
+
+      // Block background wheel and touch events outside the modal card
+      const handlePreventBgScroll = (e: WheelEvent | TouchEvent) => {
+        const target = e.target as HTMLElement | null
+        if (!target || !target.closest('[data-modal-card]')) {
+          if (e.cancelable) e.preventDefault()
+        }
+      }
+
+      window.addEventListener('wheel', handlePreventBgScroll, { passive: false })
+      window.addEventListener('touchmove', handlePreventBgScroll, { passive: false })
+
       return () => {
-        document.body.style.overflow = originalOverflow
+        document.body.style.overflow = originalBodyOverflow
+        document.documentElement.style.overflow = originalHtmlOverflow
+        document.body.style.touchAction = originalTouchAction
+        window.removeEventListener('wheel', handlePreventBgScroll)
+        window.removeEventListener('touchmove', handlePreventBgScroll)
       }
     }
   }, [isAuthModalOpen])
@@ -220,15 +241,18 @@ export default function AuthModal() {
 
   return (
     <div
+      data-lenis-prevent
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose()
       }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-2xl animate-modal-backdrop overflow-y-auto cursor-pointer"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-2xl animate-modal-backdrop overflow-hidden cursor-pointer touch-none select-none overscroll-none"
     >
-      {/* Modal Dialog Card */}
+      {/* Modal Dialog Card (Only this element scrolls, scrollbar is completely hidden) */}
       <div
+        data-modal-card
+        data-lenis-prevent
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[36px] p-7 sm:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.35),_inset_0_1px_1px_rgba(255,255,255,0.9)] overflow-y-auto max-h-[88vh] my-auto animate-modal-card selection:bg-black selection:text-white cursor-default ${
+        className={`relative w-full bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[36px] p-7 sm:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.35),_inset_0_1px_1px_rgba(255,255,255,0.9)] overflow-y-auto max-h-[85vh] overscroll-contain no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden animate-modal-card selection:bg-black selection:text-white cursor-default my-auto ${
           tab === 'register' && registerStep === 'details' && showExtraDetails ? 'max-w-xl' : 'max-w-md'
         }`}
       >

@@ -84,13 +84,33 @@ export default function ProfileModal() {
     }
   }, [user, isProfileModalOpen])
 
-  // Prevent background scrolling while open
+  // Strictly prevent background scrolling while open
   useEffect(() => {
     if (isProfileModalOpen) {
-      const originalOverflow = document.body.style.overflow
+      const originalBodyOverflow = document.body.style.overflow
+      const originalHtmlOverflow = document.documentElement.style.overflow
+      const originalTouchAction = document.body.style.touchAction
+
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
+
+      const handlePreventBgScroll = (e: WheelEvent | TouchEvent) => {
+        const target = e.target as HTMLElement | null
+        if (!target || !target.closest('[data-modal-card]')) {
+          if (e.cancelable) e.preventDefault()
+        }
+      }
+
+      window.addEventListener('wheel', handlePreventBgScroll, { passive: false })
+      window.addEventListener('touchmove', handlePreventBgScroll, { passive: false })
+
       return () => {
-        document.body.style.overflow = originalOverflow
+        document.body.style.overflow = originalBodyOverflow
+        document.documentElement.style.overflow = originalHtmlOverflow
+        document.body.style.touchAction = originalTouchAction
+        window.removeEventListener('wheel', handlePreventBgScroll)
+        window.removeEventListener('touchmove', handlePreventBgScroll)
       }
     }
   }, [isProfileModalOpen])
@@ -220,7 +240,8 @@ export default function ProfileModal() {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
+      data-lenis-prevent
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 overflow-hidden touch-none select-none overscroll-none"
     >
       {/* Dimmed Blurred Backdrop */}
       <div
@@ -229,7 +250,11 @@ export default function ProfileModal() {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-[620px] max-h-[92vh] bg-white rounded-[28px] sm:rounded-[36px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-black/10 flex flex-col z-10 transition-all duration-300">
+      <div
+        data-modal-card
+        data-lenis-prevent
+        className="relative w-full max-w-[620px] max-h-[92vh] bg-white rounded-[28px] sm:rounded-[36px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] border border-black/10 flex flex-col z-10 transition-all duration-300"
+      >
         
         {/* Header Bar */}
         <div className="p-6 sm:p-7 bg-neutral-900 text-white flex items-center justify-between border-b border-white/10 shrink-0">
@@ -348,8 +373,8 @@ export default function ProfileModal() {
           </button>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="p-6 sm:p-7 overflow-y-auto space-y-5 flex-1">
+        {/* Scrollable Content Body (Hidden scrollbars with contained scrolling) */}
+        <div className="p-6 sm:p-7 overflow-y-auto space-y-5 flex-1 overscroll-contain no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {/* Notifications */}
           {error && (
             <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in duration-200">

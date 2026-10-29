@@ -111,4 +111,13 @@ body {
     font-size: clamp(10px, 0.75vw, 12px);
     line-height: 1.4;
   }
+
+  /* Universal scrollbar hiding utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
