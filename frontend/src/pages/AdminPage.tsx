@@ -37,8 +37,8 @@ import {
 
 export default function AdminPage() {
   const { user, isAdmin, setIsAuthModalOpen, loginWithPassword, logout } = useAuth()
-  const [inlineEmail, setInlineEmail] = useState('admin@chembros.com')
-  const [inlinePassword, setInlinePassword] = useState('chembros@tech')
+  const [inlineEmail, setInlineEmail] = useState('')
+  const [inlinePassword, setInlinePassword] = useState('')
   const [inlineLoading, setInlineLoading] = useState(false)
   const [inlineError, setInlineError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview')
@@ -288,7 +288,7 @@ export default function AdminPage() {
                     required
                     value={inlineEmail}
                     onChange={(e) => setInlineEmail(e.target.value)}
-                    placeholder="admin@chembros.com"
+                    placeholder="Enter admin email"
                     className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
@@ -305,23 +305,10 @@ export default function AdminPage() {
                     required
                     value={inlinePassword}
                     onChange={(e) => setInlinePassword(e.target.value)}
-                    placeholder="chembros@tech"
+                    placeholder="••••••••••••"
                     className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-              </div>
-
-              <div className="flex justify-between items-center text-[11px] pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInlineEmail('admin@chembros.com')
-                    setInlinePassword('chembros@tech')
-                  }}
-                  className="text-neutral-500 hover:text-black underline underline-offset-2 cursor-pointer font-medium"
-                >
-                  Use: admin@chembros.com / chembros@tech
-                </button>
               </div>
 
               <button
