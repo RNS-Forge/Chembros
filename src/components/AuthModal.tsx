@@ -26,6 +26,7 @@ export default function AuthModal() {
   const {
     isAuthModalOpen,
     setIsAuthModalOpen,
+    login,
     loginRequest,
     verifyLoginOtp,
     registerRequest,
@@ -214,7 +215,7 @@ export default function AuthModal() {
     }
   }
 
-  // 1. Sign In Step 1: Submit email & password
+  // 1. Sign In: Direct email & password login (No OTP verification)
   const handleSignInRequest = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !password) return
@@ -223,10 +224,11 @@ export default function AuthModal() {
     setError(null)
     setSuccessMsg(null)
     try {
-      const res = await loginRequest(email.trim().toLowerCase(), password)
-      setSuccessMsg(res.message || `Verification passcode dispatched to ${email.trim()}`)
-      setSignInStep('otp')
-      setResendCooldown(45)
+      const loggedUser = await login(email.trim().toLowerCase(), password)
+      handleClose()
+      if (loggedUser.role === 'admin') {
+        navigate('/admin')
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid laboratory email or password.')
     } finally {
@@ -494,11 +496,11 @@ export default function AuthModal() {
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Authenticating...</span>
+                        <span>Signing in...</span>
                       </>
                     ) : (
                       <>
-                        <span>Continue</span>
+                        <span>Sign In</span>
                         <ArrowRight className="w-4 h-4 stroke-[2]" />
                       </>
                     )}

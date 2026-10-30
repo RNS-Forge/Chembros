@@ -43,6 +43,20 @@ export interface User {
   state?: string
   pincode?: string
   avatar_url?: string
+  is_active?: boolean
+  created_at?: string
+  orders_count?: number
+  total_spent?: number
+}
+
+export interface AdminLogItem {
+  id: string
+  timestamp: string
+  action: string
+  category: 'ORDER' | 'AUTH' | 'USER' | 'CATALOG' | 'SYSTEM'
+  details: string
+  user_email?: string
+  status: 'SUCCESS' | 'WARNING' | 'INFO' | 'ERROR'
 }
 
 export interface OrderItem {

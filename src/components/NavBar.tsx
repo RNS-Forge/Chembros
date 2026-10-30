@@ -119,12 +119,13 @@ export default function NavBar({
 
         {/* Unfolding Menu Container */}
         <div
-          className={`grid transition-[grid-template-columns,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] items-center ${isExpanded
-              ? 'grid-cols-[1fr] opacity-100'
-              : 'grid-cols-[0fr] opacity-0 pointer-events-none'
-            }`}
+          className={`grid transition-[grid-template-columns,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] items-center ${
+            isExpanded
+              ? 'grid-cols-[1fr] opacity-100 overflow-visible'
+              : 'grid-cols-[0fr] opacity-0 pointer-events-none overflow-hidden'
+          }`}
         >
-          <div className="overflow-hidden flex items-center gap-3 sm:gap-6 lg:gap-8 whitespace-nowrap">
+          <div className={`${(isExpanded || isUserMenuOpen) ? 'overflow-visible' : 'overflow-hidden'} flex items-center gap-3 sm:gap-6 lg:gap-8 whitespace-nowrap`}>
             {/* Divider */}
             <span className="w-px h-3.5 sm:h-4 bg-black/15 shrink-0" />
 
@@ -156,9 +157,14 @@ export default function NavBar({
                 <div>
                   <button
                     type="button"
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-1.5 py-1 px-1.5 sm:px-2 rounded-full hover:bg-black/5 active:scale-95 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/80 hover:text-black transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setIsUserMenuOpen((prev) => !prev)
+                    }}
+                    className="flex items-center gap-1.5 py-1 px-1.5 sm:px-2 rounded-full hover:bg-black/5 active:scale-95 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/80 hover:text-black transition-all cursor-pointer select-none"
                     aria-label="User Account Profile Menu"
+                    aria-expanded={isUserMenuOpen}
                   >
                     {user.avatar_url ? (
                       <img
@@ -176,7 +182,10 @@ export default function NavBar({
                   </button>
 
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 top-full mt-3 w-64 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-2xl shadow-2xl py-2 z-50 text-xs font-['Inter',sans-serif] animate-in fade-in zoom-in-95 duration-200">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-0 top-full mt-2.5 w-64 bg-white border border-black/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] py-2 z-[9999] text-xs font-['Inter',sans-serif] pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
+                    >
                       {/* User Header */}
                       <div className="px-4 py-3 border-b border-black/5 bg-neutral-50/70 rounded-t-xl">
                         <div className="flex items-center gap-2.5">

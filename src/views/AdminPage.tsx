@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
-import type { Product, Order, AdminStats } from '../types'
+import type { Product, Order, AdminStats, User, AdminLogItem } from '../types'
 import {
   getAdminStatsApi,
   getProductsApi,
@@ -13,6 +13,10 @@ import {
   deleteAdminProductApi,
   getAdminOrdersApi,
   updateAdminOrderStatusApi,
+  getAdminUsersApi,
+  updateAdminUserStatusApi,
+  updateAdminUserRoleApi,
+  getAdminLogsApi,
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -34,6 +38,13 @@ import {
   Lock,
   AlertCircle,
   LogOut,
+  Users,
+  Activity,
+  UserCheck,
+  UserX,
+  RefreshCw,
+  KeyRound,
+  FileText,
 } from 'lucide-react'
 
 export default function AdminPage() {
@@ -42,11 +53,21 @@ export default function AdminPage() {
   const [inlinePassword, setInlinePassword] = useState('')
   const [inlineLoading, setInlineLoading] = useState(false)
   const [inlineError, setInlineError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview')
+  const { openProfileModal } = useAuth()
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'users' | 'logs'>('overview')
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
+  const [adminUsers, setAdminUsers] = useState<User[]>([])
+  const [adminLogs, setAdminLogs] = useState<AdminLogItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Users filter & search
+  const [userSearch, setUserSearch] = useState('')
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'deactivated'>('all')
+
+  // Logs filter
+  const [logCategoryFilter, setLogCategoryFilter] = useState<string>('ALL')
 
   // Product Editing / Creation state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -90,18 +111,51 @@ export default function AdminPage() {
   async function loadAllAdminData() {
     setLoading(true)
     try {
-      const [statsData, productsData, ordersData] = await Promise.all([
+      const [statsData, productsData, ordersData, usersData, logsData] = await Promise.all([
         getAdminStatsApi(),
         getProductsApi(),
         getAdminOrdersApi(orderStatusFilter, orderSearch),
+        getAdminUsersApi().catch(() => []),
+        getAdminLogsApi().catch(() => []),
       ])
       setStats(statsData)
       setProducts(productsData)
       setOrders(ordersData)
+      setAdminUsers(usersData)
+      setAdminLogs(logsData)
     } catch (err) {
       console.error('Failed to load admin dashboard data:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Deactivate or activate user account
+  const handleToggleUserStatus = async (targetUser: User) => {
+    const nextStatus = !targetUser.is_active
+    const actionName = nextStatus ? 'activate' : 'deactivate'
+    if (!confirm(`Are you sure you want to ${actionName} account for ${targetUser.name || targetUser.email}?`)) return
+
+    try {
+      await updateAdminUserStatusApi(targetUser.id, nextStatus)
+      setSaveFeedback(`User #${targetUser.id} (${targetUser.email}) successfully ${actionName}d.`)
+      loadAllAdminData()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to update user status')
+    }
+  }
+
+  // Toggle user role
+  const handleToggleUserRole = async (targetUser: User) => {
+    const nextRole = targetUser.role === 'admin' ? 'user' : 'admin'
+    if (!confirm(`Change permission level for ${targetUser.email} to ${nextRole === 'admin' ? 'Master Admin' : 'Member'}?`)) return
+
+    try {
+      await updateAdminUserRoleApi(targetUser.id, nextRole)
+      setSaveFeedback(`User #${targetUser.id} role updated to ${nextRole}.`)
+      loadAllAdminData()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to update user role')
     }
   }
 
@@ -417,6 +471,22 @@ export default function AdminPage() {
               >
                 Orders & Shipments ({orders.length})
               </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
+                  activeTab === 'users' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Clients & Users ({adminUsers.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
+                  activeTab === 'logs' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Audit Logs ({adminLogs.length})
+              </button>
             </div>
             <button
               onClick={logout}
@@ -445,6 +515,54 @@ export default function AdminPage() {
         {/* TAB 1: OVERVIEW & ANALYTICS */}
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-in fade-in duration-200">
+            {/* Administrator Profile Card */}
+            <div className="p-6 bg-neutral-900 text-white rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-neutral-800">
+              <div className="flex items-center gap-4">
+                <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 bg-neutral-800 flex items-center justify-center shrink-0">
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl font-bold font-['Cinzel',serif] text-white">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold font-['Cinzel',serif] uppercase tracking-wide">
+                      {user?.name || 'Chembros Administrator'}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono uppercase bg-white/20 text-white border border-white/30">
+                      Master Admin
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 font-mono mt-0.5">{user?.email}</p>
+                  <p className="text-[11px] text-neutral-500 mt-1">
+                    Studio Headquarters: Madurai & Chennai · Verified Session
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => openProfileModal('details')}
+                  className="px-4 py-2 bg-white text-black hover:bg-neutral-100 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>Edit Profile</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openProfileModal('security')}
+                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer border border-neutral-700 flex items-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Change Password</span>
+                </button>
+              </div>
+            </div>
+
             {/* Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2">
@@ -784,6 +902,307 @@ export default function AdminPage() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: USERS MANAGEMENT & DEACTIVATION */}
+        {activeTab === 'users' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header & Search */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black">
+                  Specimen Clients & User Accounts
+                </h2>
+                <p className="text-xs text-neutral-500">
+                  Inspect registered clients, update privileges, or deactivate account access.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search name, email, phone..."
+                    className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <select
+                  value={userStatusFilter}
+                  onChange={(e) => setUserStatusFilter(e.target.value as any)}
+                  className="py-2 px-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-black focus:outline-none"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active Only</option>
+                  <option value="deactivated">Deactivated Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="bg-white border border-neutral-200 rounded-3xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-200 bg-neutral-50 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      <th className="py-4 px-6">Client / Specimen</th>
+                      <th className="py-4 px-6">Contact & Location</th>
+                      <th className="py-4 px-6">Role</th>
+                      <th className="py-4 px-6 text-center">Orders</th>
+                      <th className="py-4 px-6 text-center">Status</th>
+                      <th className="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {adminUsers
+                      .filter((u) => {
+                        const s = userSearch.toLowerCase().trim()
+                        const matchSearch =
+                          !s ||
+                          (u.name || '').toLowerCase().includes(s) ||
+                          (u.email || '').toLowerCase().includes(s) ||
+                          (u.phone || '').includes(s) ||
+                          (u.city || '').toLowerCase().includes(s)
+
+                        const matchStatus =
+                          userStatusFilter === 'all'
+                            ? true
+                            : userStatusFilter === 'active'
+                            ? u.is_active !== false
+                            : u.is_active === false
+
+                        return matchSearch && matchStatus
+                      })
+                      .map((u) => {
+                        const isActive = u.is_active !== false
+                        return (
+                          <tr key={u.id} className="hover:bg-neutral-50/60 transition-colors">
+                            {/* User Avatar & Name */}
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3">
+                                {u.avatar_url ? (
+                                  <img
+                                    src={u.avatar_url}
+                                    alt=""
+                                    className="w-10 h-10 rounded-full object-cover border border-neutral-200 shadow-xs"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center font-bold text-black uppercase font-['Cinzel',serif]">
+                                    {u.name ? u.name.charAt(0) : 'C'}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-semibold text-neutral-900 uppercase tracking-wide font-['Cinzel',serif]">
+                                    {u.name || 'Anonymous Specimen'}
+                                  </div>
+                                  <div className="text-[11px] text-neutral-400 font-mono">
+                                    ID: #{u.id} · Registered {u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN') : 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Contact & Location */}
+                            <td className="py-4 px-6 font-mono text-[11px] text-neutral-600">
+                              <div>{u.email}</div>
+                              <div className="text-neutral-400">{u.phone || 'No phone recorded'}</div>
+                              <div className="text-[10px] text-neutral-400 mt-0.5">
+                                {[u.city, u.state, u.pincode].filter(Boolean).join(', ') || 'No address set'}
+                              </div>
+                            </td>
+
+                            {/* Role */}
+                            <td className="py-4 px-6">
+                              <span
+                                className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border ${
+                                  u.role === 'admin'
+                                    ? 'bg-neutral-900 text-white border-black font-semibold'
+                                    : 'bg-neutral-100 text-neutral-700 border-neutral-200'
+                                }`}
+                              >
+                                {u.role === 'admin' ? 'Master Admin' : 'Member'}
+                              </span>
+                            </td>
+
+                            {/* Orders Count & Spend */}
+                            <td className="py-4 px-6 text-center font-mono">
+                              <div className="font-semibold text-black">{u.orders_count || 0}</div>
+                              <div className="text-[10px] text-neutral-400">
+                                ₹{(u.total_spent || 0).toLocaleString('en-IN')}
+                              </div>
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-4 px-6 text-center">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
+                                  isActive
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                                }`}
+                              >
+                                {isActive ? (
+                                  <>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Active
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    Deactivated
+                                  </>
+                                )}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserStatus(u)}
+                                  className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-1 ${
+                                    isActive
+                                      ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                                  }`}
+                                  title={isActive ? 'Deactivate user' : 'Reactivate user'}
+                                >
+                                  {isActive ? (
+                                    <>
+                                      <UserX className="w-3.5 h-3.5" />
+                                      <span>Deactivate</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="w-3.5 h-3.5" />
+                                      <span>Activate</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserRole(u)}
+                                  className="px-2.5 py-1.5 rounded-xl text-[10px] font-mono uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-700 border border-neutral-200 transition-all cursor-pointer"
+                                  title="Toggle admin/user role"
+                                >
+                                  {u.role === 'admin' ? 'Demote' : 'Promote'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: LABORATORY AUDIT LOGS */}
+        {activeTab === 'logs' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header & Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black">
+                  Laboratory Activity & Audit Logs
+                </h2>
+                <p className="text-xs text-neutral-500">
+                  Comprehensive audit trail of orders, user security events, and dispatch operations.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {['ALL', 'ORDER', 'USER', 'SYSTEM'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setLogCategoryFilter(cat)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-mono uppercase transition-all cursor-pointer border ${
+                      logCategoryFilter === cat
+                        ? 'bg-black text-white border-black font-semibold shadow-xs'
+                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:text-black'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={loadAllAdminData}
+                  className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black border border-neutral-200 cursor-pointer"
+                  title="Refresh logs"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Logs List Card */}
+            <div className="bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm space-y-3 font-mono text-xs">
+              {adminLogs
+                .filter((log) => logCategoryFilter === 'ALL' || log.category === logCategoryFilter)
+                .map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-neutral-100/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 mt-0.5 ${
+                          log.category === 'ORDER'
+                            ? 'bg-blue-100 text-blue-800'
+                            : log.category === 'USER'
+                            ? 'bg-purple-100 text-purple-800'
+                            : log.category === 'SYSTEM'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-neutral-200 text-neutral-800'
+                        }`}
+                      >
+                        {log.category}
+                      </span>
+                      <div>
+                        <div className="font-semibold text-neutral-900">{log.action}</div>
+                        <div className="text-[11px] text-neutral-600 mt-0.5">{log.details}</div>
+                        {log.user_email && (
+                          <div className="text-[10px] text-neutral-400 mt-0.5">
+                            Entity: {log.user_email}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 sm:self-center">
+                      <div className="text-[10px] text-neutral-400">
+                        {new Date(log.timestamp).toLocaleString('en-IN', {
+                          month: 'short',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </div>
+                      <span
+                        className={`inline-block mt-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                          log.status === 'SUCCESS'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : log.status === 'WARNING'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-neutral-200 text-neutral-700'
+                        }`}
+                      >
+                        {log.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
         )}

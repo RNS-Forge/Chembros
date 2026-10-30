@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Product, Order, User, AdminStats, CustomerReview, CreateReviewInput } from '../types'
+import type { Product, Order, User, AdminStats, CustomerReview, CreateReviewInput, AdminLogItem } from '../types'
 
 const API_BASE_URL = (
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_BASE_URL) ||
@@ -1480,4 +1480,78 @@ export async function updateAdminOrderStatusApi(
     method: 'PATCH',
     body: JSON.stringify({ order_status, tracking_number }),
   })
+}
+
+
+export async function getAdminUsersApi(): Promise<User[]> {
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, email, name, phone, role, shipping_address, city, state, pincode, is_active, created_at, avatar_url')
+      .order('id', { ascending: false })
+
+    if (!error && users) {
+      return users.map((u: any) => ({
+        ...u,
+        is_active: u.is_active !== false,
+      }))
+    }
+  } catch (err) {
+    console.warn('Supabase getAdminUsers fallback to API route:', err)
+  }
+  return request<User[]>('/api/admin/users')
+}
+
+export async function updateAdminUserStatusApi(
+  userId: number,
+  is_active: boolean
+): Promise<{ status: string; message: string; user?: User }> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ is_active, updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select('id, email, name, phone, role, shipping_address, city, state, pincode, is_active, created_at, avatar_url')
+      .single()
+
+    if (!error && data) {
+      return { status: 'success', message: 'User status updated.', user: data }
+    }
+  } catch (err) {
+    console.warn('Supabase updateAdminUserStatus fallback:', err)
+  }
+
+  return request<{ status: string; message: string; user?: User }>('/api/admin/users', {
+    method: 'PATCH',
+    body: JSON.stringify({ userId, is_active }),
+  })
+}
+
+export async function updateAdminUserRoleApi(
+  userId: number,
+  role: 'admin' | 'user'
+): Promise<{ status: string; message: string; user?: User }> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role, updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select('id, email, name, phone, role, shipping_address, city, state, pincode, is_active, created_at, avatar_url')
+      .single()
+
+    if (!error && data) {
+      return { status: 'success', message: 'User role updated.', user: data }
+    }
+  } catch (err) {
+    console.warn('Supabase updateAdminUserRole fallback:', err)
+  }
+
+  return request<{ status: string; message: string; user?: User }>('/api/admin/users', {
+    method: 'PATCH',
+    body: JSON.stringify({ userId, role }),
+  })
+}
+
+export async function getAdminLogsApi(): Promise<AdminLogItem[]> {
+  return request<AdminLogItem[]>('/api/admin/logs')
 }

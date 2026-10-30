@@ -60,6 +60,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Invalid email or password.' }, { status: 401 })
     }
 
+    if (user.is_active === false && !isMasterAdmin) {
+      return NextResponse.json({ detail: 'This account has been deactivated by administration. Please contact concierge support.' }, { status: 403 })
+    }
+
     user = await enrichUserAddress(user)
 
     const token = createAccessToken({

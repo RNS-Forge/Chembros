@@ -30,7 +30,17 @@ import {
 export default function AuthPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { user, isAuthenticated, loginRequest, verifyLoginOtp, registerRequest, verifyRegisterOtp, forgotPasswordRequest, resetPassword } = useAuth()
+  const {
+    user,
+    isAuthenticated,
+    login,
+    loginRequest,
+    verifyLoginOtp,
+    registerRequest,
+    verifyRegisterOtp,
+    forgotPasswordRequest,
+    resetPassword,
+  } = useAuth()
 
   // Tab: 'signin' | 'register'
   const initialTab = searchParams.get('mode') === 'register' ? 'register' : 'signin'
@@ -185,7 +195,7 @@ export default function AuthPage() {
     }
   }
 
-  // 1. SIGN IN: Step 1
+  // 1. SIGN IN: Direct password authentication (No OTP verification)
   const handleSignInRequest = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!loginEmail.trim() || !loginPassword) return
@@ -195,10 +205,14 @@ export default function AuthPage() {
     setSuccessMsg(null)
 
     try {
-      const res = await loginRequest(loginEmail.trim().toLowerCase(), loginPassword)
-      setSuccessMsg(res.message || `Verification code sent to ${loginEmail.trim()}`)
-      setSignInStep('otp')
-      setResendCooldown(45)
+      const loggedInUser = await login(loginEmail.trim().toLowerCase(), loginPassword)
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin', { replace: true })
+      } else if (redirectUrl) {
+        navigate(redirectUrl, { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid email or password.')
     } finally {
@@ -466,11 +480,11 @@ export default function AuthPage() {
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Verifying...
+                        Signing In...
                       </>
                     ) : (
                       <>
-                        <span>Continue</span>
+                        <span>Sign In</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
