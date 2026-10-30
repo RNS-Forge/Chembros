@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { User } from '../types'
 import {
@@ -13,6 +13,8 @@ import {
   verifyRegisterOtpApi,
   updateProfileApi,
   changePasswordApi,
+  forgotPasswordRequestApi,
+  resetPasswordApi,
 } from '../services/api'
 
 export type ProfileTab = 'details' | 'avatar' | 'security' | 'help'
@@ -57,6 +59,8 @@ interface AuthContextType {
     state?: string
     pincode?: string
   }) => Promise<User>
+  forgotPasswordRequest: (email: string) => Promise<{ status: string; message: string; email: string }>
+  resetPassword: (email: string, otp_code: string, new_password: string) => Promise<{ status: string; message: string }>
   updateProfile: (data: Partial<User>) => Promise<User>
   changePassword: (current_pass: string, new_pass: string) => Promise<{ status: string; message: string }>
   login: (email: string, password: string) => Promise<User>
@@ -78,7 +82,7 @@ const safeStorage = {
   getItem: (key: string): string | null => {
     if (typeof window === 'undefined') return null
     try {
-      return safeStorage.getItem(key)
+      return localStorage.getItem(key)
     } catch {
       return null
     }
@@ -86,13 +90,13 @@ const safeStorage = {
   setItem: (key: string, value: string): void => {
     if (typeof window === 'undefined') return
     try {
-      safeStorage.setItem(key, value)
+      localStorage.setItem(key, value)
     } catch {}
   },
   removeItem: (key: string): void => {
     if (typeof window === 'undefined') return
     try {
-      safeStorage.removeItem(key)
+      localStorage.removeItem(key)
     } catch {}
   },
 }
@@ -211,6 +215,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await changePasswordApi(current_pass, new_pass)
   }
 
+  const forgotPasswordRequest = async (email: string) => {
+    return await forgotPasswordRequestApi(email)
+  }
+
+  const resetPassword = async (email: string, otp_code: string, new_password: string) => {
+    return await resetPasswordApi({ email, otp_code, new_password })
+  }
+
   const sendOtp = async (email: string) => {
     return await sendOtpApi(email)
   }
@@ -285,6 +297,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         verifyLoginOtp,
         registerRequest,
         verifyRegisterOtp,
+        forgotPasswordRequest,
+        resetPassword,
         updateProfile,
         changePassword,
         login,

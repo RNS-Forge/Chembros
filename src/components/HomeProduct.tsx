@@ -278,7 +278,7 @@ export default function HomeProduct() {
                   {/* Price & CTA */}
                   <div className="w-full flex flex-col items-center gap-2.5 lg:gap-2 xl:gap-3 pb-1">
                     <div className="text-white text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
-                      â‚¹{prod.price.toLocaleString('en-IN')}
+                      ₹{prod.price.toLocaleString('en-IN')}
                     </div>
 
                     <button
@@ -357,12 +357,12 @@ export default function HomeProduct() {
                     {discoveryArchive.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} Ã— 3ml Extrait` : '4 Ã— 3ml Extrait'}<br />
                     {discoveryArchive.category || 'Extrait de Parfum'}<br />
                     {discoveryArchive.concentration || '25% natural oil concentration'}<br />
-                    {discoveryArchive.gender || 'Unisex'} Â· {discoveryArchive.longevity || '8+ hours'}
+                    {discoveryArchive.gender || 'Unisex'} · {discoveryArchive.longevity || '8+ hours'}
                   </div>
 
                   <div className="pt-1.5 lg:pt-1 xl:pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 xl:gap-6">
                     <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-                      â‚¹{discoveryArchive.price.toLocaleString('en-IN')}
+                      ₹{discoveryArchive.price.toLocaleString('en-IN')}
                     </div>
 
                     <button

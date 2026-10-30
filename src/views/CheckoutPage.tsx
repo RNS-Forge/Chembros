@@ -319,7 +319,7 @@ export default function CheckoutPage() {
                           </p>
                           {(user.city || user.state || user.pincode) && (
                             <p className="text-xs text-neutral-500 mt-0.5">
-                              {[user.city, user.state].filter(Boolean).join(', ')}{user.pincode ? ` â€” ${user.pincode}` : ''}
+                              {[user.city, user.state].filter(Boolean).join(', ')}{user.pincode ? ` — ${user.pincode}` : ''}
                             </p>
                           )}
                           {user.phone && (
@@ -536,8 +536,8 @@ export default function CheckoutPage() {
                   <>
                     <Lock className="w-4 h-4" />
                     {addressChoice === 'saved' && isAuthenticated
-                      ? `Confirm & Pay â‚¹${total.toLocaleString('en-IN')}`
-                      : `Authorize Payment â€¢ â‚¹${total.toLocaleString('en-IN')}`}
+                      ? `Confirm & Pay ₹${total.toLocaleString('en-IN')}`
+                      : `Authorize Payment • ₹${total.toLocaleString('en-IN')}`}
                   </>
                 )}
               </button>
@@ -563,7 +563,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <span className="text-xs font-semibold text-black">
-                    â‚¹{(product.price * quantity).toLocaleString('en-IN')}
+                    ₹{(product.price * quantity).toLocaleString('en-IN')}
                   </span>
                 </div>
               ))}
@@ -572,15 +572,15 @@ export default function CheckoutPage() {
             <div className="space-y-2 pt-4 border-t border-neutral-200 text-xs text-neutral-600">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>â‚¹{subtotal.toLocaleString('en-IN')}</span>
+                <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
                 <span>White-Glove Shipping</span>
-                <span>{shippingFee === 0 ? 'Complimentary' : `â‚¹${shippingFee}`}</span>
+                <span>{shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}</span>
               </div>
               <div className="flex justify-between text-base font-bold text-black pt-3 border-t border-neutral-200">
                 <span>Total Due</span>
-                <span>â‚¹{total.toLocaleString('en-IN')}</span>
+                <span>₹{total.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -613,7 +613,7 @@ export default function CheckoutPage() {
             <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 text-left space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-neutral-500">Transaction Amount:</span>
-                <span className="font-bold text-black">â‚¹{simulationModal.amount.toLocaleString('en-IN')}</span>
+                <span className="font-bold text-black">₹{simulationModal.amount.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Gateway Session:</span>

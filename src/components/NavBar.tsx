@@ -212,41 +212,8 @@ export default function NavBar({
                           className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
                         >
                           <User className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>Edit Profile</span>
+                          <span>Profile</span>
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false)
-                            openProfileModal('avatar')
-                          }}
-                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
-                        >
-                          <Camera className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>Upload Photo</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsUserMenuOpen(false)
-                            openProfileModal('security')
-                          }}
-                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
-                        >
-                          <Lock className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>Change Password</span>
-                        </button>
-
-                        <Link
-                          to="/my-orders"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer font-medium"
-                        >
-                          <Package className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>My Orders</span>
-                        </Link>
 
                         <button
                           type="button"
@@ -257,7 +224,7 @@ export default function NavBar({
                           className="w-full flex items-center gap-2.5 px-4 py-2 text-neutral-700 hover:text-black hover:bg-black/5 transition-colors cursor-pointer text-left font-medium"
                         >
                           <HelpCircle className="w-3.5 h-3.5 text-neutral-400" />
-                          <span>Help & Concierge</span>
+                          <span>Help</span>
                         </button>
 
                         {user.role === 'admin' && (
@@ -272,7 +239,7 @@ export default function NavBar({
                         )}
                       </div>
 
-                      {/* Sign Out */}
+                      {/* Logout */}
                       <div className="border-t border-black/5 pt-1 mt-1">
                         <button
                           type="button"
@@ -283,7 +250,7 @@ export default function NavBar({
                           className="w-full flex items-center gap-2.5 px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left font-medium"
                         >
                           <LogOut className="w-3.5 h-3.5" />
-                          <span>Sign Out</span>
+                          <span>Logout</span>
                         </button>
                       </div>
                     </div>

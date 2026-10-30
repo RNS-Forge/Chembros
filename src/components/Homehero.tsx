@@ -326,7 +326,7 @@ export default function HomeHero() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
           <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-widest text-white/80 uppercase">
             <span>ARCHIVE // 2026</span>
-            <span>MADURAI Â· PARIS</span>
+            <span>MADURAI · PARIS</span>
           </div>
         </div>
 

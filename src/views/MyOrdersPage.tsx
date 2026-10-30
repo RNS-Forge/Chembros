@@ -122,10 +122,10 @@ export default function MyOrdersPage() {
                         <div key={idx} className="py-2.5 flex justify-between items-center text-xs">
                           <div>
                             <p className="font-['Cinzel',serif] font-bold text-black">{item.name}</p>
-                            <p className="text-neutral-500 text-[10px]">Qty: {item.quantity} â€¢ {item.volume_ml || 50}ml</p>
+                            <p className="text-neutral-500 text-[10px]">Qty: {item.quantity} • {item.volume_ml || 50}ml</p>
                           </div>
                           <span className="font-semibold text-black">
-                            â‚¹{(item.price * item.quantity).toLocaleString('en-IN')}
+                            ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                           </span>
                         </div>
                       ))}
@@ -149,7 +149,7 @@ export default function MyOrdersPage() {
 
                 <div className="pt-2 flex justify-between items-center text-xs border-t border-neutral-200">
                   <span className="text-neutral-500">Cashfree PG Transaction</span>
-                  <span className="text-sm font-bold text-black">Total Paid: â‚¹{o.total_amount.toLocaleString('en-IN')}</span>
+                  <span className="text-sm font-bold text-black">Total Paid: ₹{o.total_amount.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             ))}

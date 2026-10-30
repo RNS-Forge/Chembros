@@ -1,7 +1,8 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import OtpInput from './OtpInput'
 import {
   X,
   Mail,
@@ -28,15 +29,22 @@ export default function AuthModal() {
     loginRequest,
     verifyLoginOtp,
     registerRequest,
-    verifyRegisterOtp
+    verifyRegisterOtp,
+    forgotPasswordRequest,
+    resetPassword
   } = useAuth()
   const navigate = useNavigate()
 
   // Tab: 'signin' | 'register'
   const [tab, setTab] = useState<'signin' | 'register'>('signin')
 
-  // Step state: 'credentials' / 'details' vs 'otp'
-  const [signInStep, setSignInStep] = useState<'credentials' | 'otp'>('credentials')
+  // Step state: 'credentials' | 'otp' | 'forgot_request' | 'forgot_verify'
+  const [signInStep, setSignInStep] = useState<'credentials' | 'otp' | 'forgot_request' | 'forgot_verify'>('credentials')
+  const [forgotOtp, setForgotOtp] = useState('')
+  const [forgotNewPassword, setForgotNewPassword] = useState('')
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
+  const [showForgotPass, setShowForgotPass] = useState(false)
+  const [showForgotConfirmPass, setShowForgotConfirmPass] = useState(false)
   const [registerStep, setRegisterStep] = useState<'details' | 'otp'>('details')
 
   // Form Fields
@@ -118,11 +126,23 @@ export default function AuthModal() {
 
   const isStrongPassword = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial
 
+  // Forgot Password Strength Verification
+  const forgotHasMinLength = forgotNewPassword.length >= 8
+  const forgotHasUppercase = /[A-Z]/.test(forgotNewPassword)
+  const forgotHasLowercase = /[a-z]/.test(forgotNewPassword)
+  const forgotHasNumber = /[0-9]/.test(forgotNewPassword)
+  const forgotHasSpecial = /[^A-Za-z0-9]/.test(forgotNewPassword)
+  const isForgotStrong =
+    forgotHasMinLength && forgotHasUppercase && forgotHasLowercase && forgotHasNumber && forgotHasSpecial
+
   const handleClose = () => {
     setIsAuthModalOpen(false)
     setError(null)
     setSuccessMsg(null)
     setOtpCode('')
+    setForgotOtp('')
+    setForgotNewPassword('')
+    setForgotConfirmPassword('')
     setSignInStep('credentials')
     setRegisterStep('details')
   }
@@ -132,8 +152,66 @@ export default function AuthModal() {
     setError(null)
     setSuccessMsg(null)
     setOtpCode('')
+    setForgotOtp('')
+    setForgotNewPassword('')
+    setForgotConfirmPassword('')
     setSignInStep('credentials')
     setRegisterStep('details')
+  }
+
+  // Forgot Password Handlers
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) {
+      setError('Please enter your laboratory email.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+    try {
+      const res = await forgotPasswordRequest(email.trim().toLowerCase())
+      setSuccessMsg(res.message || `Verification passcode dispatched to ${email.trim()}`)
+      setSignInStep('forgot_verify')
+      setResendCooldown(45)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No registered laboratory account with this email address.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotVerifyAndReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!forgotOtp.trim() || forgotOtp.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code.')
+      return
+    }
+    if (!isForgotStrong) {
+      setError('New password must satisfy all 5 laboratory security standards.')
+      return
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+    try {
+      const res = await resetPassword(email.trim().toLowerCase(), forgotOtp.trim(), forgotNewPassword)
+      setSuccessMsg(res.message || 'Password reset successfully! You can now sign in with your new credentials.')
+      setPassword('')
+      setForgotOtp('')
+      setForgotNewPassword('')
+      setForgotConfirmPassword('')
+      setSignInStep('credentials')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Invalid or expired verification code.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 1. Sign In Step 1: Submit email & password
@@ -286,6 +364,10 @@ export default function AuthModal() {
             {tab === 'signin'
               ? signInStep === 'otp'
                 ? 'SECURITY PASSCODE'
+                : signInStep === 'forgot_request'
+                ? 'FORGOT PASSWORD'
+                : signInStep === 'forgot_verify'
+                ? 'RESET PASSWORD'
                 : 'CLIENT SIGN IN'
               : registerStep === 'otp'
               ? 'CONFIRM EMAIL'
@@ -293,7 +375,9 @@ export default function AuthModal() {
           </h2>
           <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] mt-1.5 tracking-wide">
             {tab === 'signin'
-              ? 'Access private monographs, acquisitions and tracked lab batches'
+              ? signInStep === 'forgot_request' || signInStep === 'forgot_verify'
+                ? 'Cryptographic email verification to reset and secure your account'
+                : 'Access private monographs, acquisitions and tracked lab batches'
               : 'Register for priority formulations and white-glove dispatch'}
           </p>
         </div>
@@ -365,9 +449,22 @@ export default function AuthModal() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1.5">
-                    Password *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block">
+                      Password *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSignInStep('forgot_request')
+                        setError(null)
+                        setSuccessMsg(null)
+                      }}
+                      className="text-[10px] font-mono uppercase tracking-wider text-black/50 hover:text-black transition-colors cursor-pointer underline underline-offset-2"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-black/40 stroke-[1.5]" />
                     <input
@@ -408,7 +505,7 @@ export default function AuthModal() {
                   </button>
                 </div>
               </form>
-            ) : (
+            ) : signInStep === 'otp' ? (
               <form onSubmit={handleSignInVerifyOtp} className="space-y-5">
                 <div className="text-center space-y-1.5 py-2">
                   <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
@@ -422,16 +519,11 @@ export default function AuthModal() {
                   </p>
                 </div>
 
-                <div>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    autoFocus
+                <div className="py-2">
+                  <OtpInput
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="â€¢ â€¢ â€¢ â€¢ â€¢ â€¢"
-                    className="w-full py-3.5 px-4 bg-[#FAFBFB] border border-black/15 rounded-2xl text-2xl font-mono tracking-[0.6em] text-center text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                    onChange={setOtpCode}
+                    autoFocus
                   />
                 </div>
 
@@ -475,6 +567,224 @@ export default function AuthModal() {
                       setSuccessMsg(null)
                       try {
                         const res = await loginRequest(email.trim().toLowerCase(), password)
+                        setResendCooldown(45)
+                        setSuccessMsg(res?.message || 'Fresh verification code dispatched.')
+                      } catch (err: unknown) {
+                        setError(err instanceof Error ? err.message : 'Failed to dispatch code.')
+                      } finally {
+                        setLoading(false)
+                      }
+                    }}
+                    className="text-[11px] text-black/70 hover:text-black font-semibold cursor-pointer disabled:opacity-40"
+                  >
+                    {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Code'}
+                  </button>
+                </div>
+              </form>
+            ) : signInStep === 'forgot_request' ? (
+              <form onSubmit={handleForgotRequest} className="space-y-4">
+                <div className="text-center space-y-1.5 py-1">
+                  <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
+                    <KeyRound className="w-5 h-5 stroke-[1.5]" />
+                  </div>
+                  <h3 className="text-sm font-semibold font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                    VERIFY EMAIL ADDRESS
+                  </h3>
+                  <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+                    We will send a 6-digit verification code to reset your password.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1.5">
+                    Registered Email *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-black/40 stroke-[1.5]" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="client@chembros.com"
+                      className="w-full pl-10 pr-4 py-3 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs sm:text-sm text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-['Inter',sans-serif]"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-6 bg-black hover:bg-neutral-800 active:scale-[0.99] text-white rounded-full text-xs font-semibold uppercase tracking-[0.2em] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] flex items-center justify-center gap-2.5 transition-all duration-300 shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Transmitting Code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Send Verification Code</span>
+                        <ArrowRight className="w-4 h-4 stroke-[2]" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignInStep('credentials')
+                      setError(null)
+                      setSuccessMsg(null)
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs text-black/60 hover:text-black font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Sign In</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* signInStep === 'forgot_verify' */
+              <form onSubmit={handleForgotVerifyAndReset} className="space-y-4">
+                <div className="text-center space-y-1.5 py-1">
+                  <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
+                    <ShieldCheck className="w-5 h-5 stroke-[1.5]" />
+                  </div>
+                  <h3 className="text-sm font-semibold font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                    ENTER CODE & NEW PASSWORD
+                  </h3>
+                  <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+                    Dispatched to <strong className="text-black font-semibold">{email}</strong>
+                  </p>
+                </div>
+
+                <div className="py-2">
+                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-2 text-center">
+                    6-Digit Verification Code *
+                  </label>
+                  <OtpInput
+                    value={forgotOtp}
+                    onChange={setForgotOtp}
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1.5">
+                    New Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-black/40 stroke-[1.5]" />
+                    <input
+                      type={showForgotPass ? 'text' : 'password'}
+                      required
+                      value={forgotNewPassword}
+                      onChange={(e) => setForgotNewPassword(e.target.value)}
+                      placeholder="Enter new strong password"
+                      className="w-full pl-10 pr-10 py-3 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs sm:text-sm text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-['Inter',sans-serif]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPass(!showForgotPass)}
+                      className="absolute right-3.5 top-3.5 text-black/40 hover:text-black transition-colors cursor-pointer"
+                    >
+                      {showForgotPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Security Checklist */}
+                {forgotNewPassword && (
+                  <div className="p-3 bg-[#FAFBFB] border border-black/10 rounded-2xl space-y-1 text-[11px] font-mono">
+                    <div className={`flex items-center gap-1.5 ${forgotHasMinLength ? 'text-emerald-700' : 'text-neutral-400'}`}>
+                      <Check className={`w-3.5 h-3.5 ${forgotHasMinLength ? 'text-emerald-600' : 'opacity-30'}`} />
+                      <span>8+ characters</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${forgotHasUppercase && forgotHasLowercase ? 'text-emerald-700' : 'text-neutral-400'}`}>
+                      <Check className={`w-3.5 h-3.5 ${forgotHasUppercase && forgotHasLowercase ? 'text-emerald-600' : 'opacity-30'}`} />
+                      <span>Uppercase & lowercase letters</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${forgotHasNumber ? 'text-emerald-700' : 'text-neutral-400'}`}>
+                      <Check className={`w-3.5 h-3.5 ${forgotHasNumber ? 'text-emerald-600' : 'opacity-30'}`} />
+                      <span>At least one number (0-9)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${forgotHasSpecial ? 'text-emerald-700' : 'text-neutral-400'}`}>
+                      <Check className={`w-3.5 h-3.5 ${forgotHasSpecial ? 'text-emerald-600' : 'opacity-30'}`} />
+                      <span>Special character (!@#$%^&*)</span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1.5">
+                    Confirm New Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-black/40 stroke-[1.5]" />
+                    <input
+                      type={showForgotConfirmPass ? 'text' : 'password'}
+                      required
+                      value={forgotConfirmPassword}
+                      onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                      placeholder="Re-enter new password"
+                      className="w-full pl-10 pr-10 py-3 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs sm:text-sm text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-['Inter',sans-serif]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotConfirmPass(!showForgotConfirmPass)}
+                      className="absolute right-3.5 top-3.5 text-black/40 hover:text-black transition-colors cursor-pointer"
+                    >
+                      {showForgotConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading || forgotOtp.length !== 6 || !isForgotStrong || forgotNewPassword !== forgotConfirmPassword}
+                    className="w-full py-3.5 px-6 bg-black hover:bg-neutral-800 active:scale-[0.99] text-white rounded-full text-xs font-semibold uppercase tracking-[0.2em] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] flex items-center justify-center gap-2.5 transition-all duration-300 shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 stroke-[2]" />
+                        <span>Reset Password</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-black/5 font-mono">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignInStep('forgot_request')
+                      setError(null)
+                    }}
+                    className="flex items-center gap-1 text-[11px] text-black/50 hover:text-black transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={resendCooldown > 0 || loading}
+                    onClick={async () => {
+                      if (resendCooldown > 0 || loading) return
+                      setLoading(true)
+                      setError(null)
+                      setSuccessMsg(null)
+                      try {
+                        const res = await forgotPasswordRequest(email.trim().toLowerCase())
                         setResendCooldown(45)
                         setSuccessMsg(res?.message || 'Fresh verification code dispatched.')
                       } catch (err: unknown) {
@@ -746,16 +1056,11 @@ export default function AuthModal() {
                   </p>
                 </div>
 
-                <div>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    autoFocus
+                <div className="py-2">
+                  <OtpInput
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="â€¢ â€¢ â€¢ â€¢ â€¢ â€¢"
-                    className="w-full py-3.5 px-4 bg-[#FAFBFB] border border-black/15 rounded-2xl text-2xl font-mono tracking-[0.6em] text-center text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                    onChange={setOtpCode}
+                    autoFocus
                   />
                 </div>
 

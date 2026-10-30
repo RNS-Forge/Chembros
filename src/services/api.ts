@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase'
+import { supabase } from './supabase'
 import type { Product, Order, User, AdminStats, CustomerReview, CreateReviewInput } from '../types'
 
 const API_BASE_URL = (
@@ -13,7 +13,7 @@ const safeStorage = {
   getItem: (key: string): string | null => {
     if (typeof window === 'undefined') return null
     try {
-      return safeStorage.getItem(key)
+      return localStorage.getItem(key)
     } catch {
       return null
     }
@@ -21,13 +21,13 @@ const safeStorage = {
   setItem: (key: string, value: string): void => {
     if (typeof window === 'undefined') return
     try {
-      safeStorage.setItem(key, value)
+      localStorage.setItem(key, value)
     } catch {}
   },
   removeItem: (key: string): void => {
     if (typeof window === 'undefined') return
     try {
-      safeStorage.removeItem(key)
+      localStorage.removeItem(key)
     } catch {}
   },
 }
@@ -217,7 +217,7 @@ export async function enrichUserAddress(user: User): Promise<User> {
           }
 
           if (!userCopy.shipping_address) {
-            const clean = raw.replace(/\s*[-â€“,]\s*\d{6}\s*$/, '').trim()
+            const clean = raw.replace(/\s*[-–,]\s*\d{6}\s*$/, '').trim()
             const parts = clean.split(',').map((p: string) => p.trim()).filter(Boolean)
             if (parts.length >= 3) {
               if (!userCopy.state) userCopy.state = parts[parts.length - 1]
@@ -658,42 +658,35 @@ export async function changePasswordApi(
     throw new Error(strength.message)
   }
 
-  const token = safeStorage.getItem('chembros_token')
-  const payload = decodeJwt(token || '')
-  const savedUserJson = safeStorage.getItem('chembros_user')
-  const userId = payload?.sub ? Number(payload.sub) : savedUserJson ? JSON.parse(savedUserJson).id : null
-
-  if (userId) {
-    try {
-      const { data: userRow } = await supabase.from('users').select('password_hash').eq('id', userId).single()
-      if (userRow) {
-        const currentHash = await hashPassword(current_password)
-        if (userRow.password_hash && userRow.password_hash !== currentHash) {
-          throw new Error('Current password is incorrect.')
-        }
-        const newHash = await hashPassword(new_password)
-        await supabase
-          .from('users')
-          .update({
-            password_hash: newHash,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', userId)
-
-        return { status: 'success', message: 'Password changed successfully.' }
-      }
-    } catch (err: any) {
-      if (err.message === 'Current password is incorrect.') throw err
-      console.warn('Supabase changePassword fallback to backend:', err)
-    }
-  }
-
   return request<{ status: string; message: string }>('/api/auth/change-password', {
     method: 'POST',
     body: JSON.stringify({ current_password, new_password }),
   })
 }
 
+
+export async function forgotPasswordRequestApi(email: string): Promise<{ status: string; message: string; email: string }> {
+  const cleanEmail = email.trim().toLowerCase()
+  return request<{ status: string; message: string; email: string }>('/api/auth/forgot-password-request', {
+    method: 'POST',
+    body: JSON.stringify({ email: cleanEmail }),
+  })
+}
+
+export async function resetPasswordApi(data: {
+  email: string
+  otp_code: string
+  new_password: string
+}): Promise<{ status: string; message: string }> {
+  return request<{ status: string; message: string }>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: data.email.trim().toLowerCase(),
+      otp_code: data.otp_code.trim(),
+      new_password: data.new_password,
+    }),
+  })
+}
 export async function loginApi(email: string, password: string): Promise<{ access_token: string; user: User }> {
   const cleanEmail = email.trim().toLowerCase()
   const cleanPassword = password.trim()

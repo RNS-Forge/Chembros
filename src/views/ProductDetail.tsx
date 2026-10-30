@@ -232,7 +232,7 @@ export default function ProductDetail() {
             <div>
               <div className="flex items-center justify-between gap-4 mb-2">
                 <span className="text-[10px] sm:text-xs font-mono tracking-[0.3em] uppercase text-black/40">
-                  {product.fragrance_family || 'WOODY'} Â· {product.category || 'EXTRAIT DE PARFUM'}
+                  {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
                 </span>
                 <span className="text-[11px] font-mono uppercase tracking-wider text-black/60">
                   â˜… {product.rating ? `${product.rating} / 5.0` : '4.9 / 5.0'}
@@ -252,15 +252,15 @@ export default function ProductDetail() {
               {/* Price Row */}
               <div className="mt-6 flex items-baseline gap-3">
                 <span className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] text-black tracking-tight">
-                  â‚¹{product.price.toLocaleString('en-IN')}
+                  ₹{product.price.toLocaleString('en-IN')}
                 </span>
                 {product.original_price && product.original_price > product.price && (
                   <span className="text-sm sm:text-base font-normal font-['Conquera',sans-serif] text-black/40 line-through">
-                    â‚¹{product.original_price.toLocaleString('en-IN')}
+                    ₹{product.original_price.toLocaleString('en-IN')}
                   </span>
                 )}
                 <span className="text-[11px] font-mono text-black/50 ml-1">
-                  Â· Inclusive of all luxury duties & taxes
+                  · Inclusive of all luxury duties & taxes
                 </span>
               </div>
 
@@ -358,7 +358,7 @@ export default function ProductDetail() {
                   {product.rating ? `${product.rating} / 5.0` : '4.9 / 5.0'}
                 </span>
                 <span className="text-black/40">
-                  Â· Based on {reviews.length || product.reviews_count || 0} reviews
+                  · Based on {reviews.length || product.reviews_count || 0} reviews
                 </span>
               </div>
               <button
@@ -400,7 +400,7 @@ export default function ProductDetail() {
                   >
                     <div>
                       <div className="flex items-center justify-between pb-3 border-b border-black/5 font-mono text-[10px] sm:text-[11px]">
-                        <span className="text-black font-bold uppercase">{authorDisplay} Â· {locationDisplay}</span>
+                        <span className="text-black font-bold uppercase">{authorDisplay} · {locationDisplay}</span>
                         <span className="text-black/50">{dateDisplay}</span>
                       </div>
 
@@ -662,7 +662,7 @@ export default function ProductDetail() {
 
                   <div className="w-full flex items-center justify-between border-t border-white/10 pt-3">
                     <div className="text-white text-base sm:text-lg font-normal font-['Conquera',sans-serif] tracking-wider">
-                      â‚¹{other.price.toLocaleString('en-IN')}
+                      ₹{other.price.toLocaleString('en-IN')}
                     </div>
                     <span className="text-[10px] font-mono uppercase text-white/60 tracking-wider">
                       Explore â†’

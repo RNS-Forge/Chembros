@@ -169,7 +169,7 @@ export default function AdminPage() {
     if (newPrice === undefined) return
     try {
       await updateProductPriceApi(id, newPrice)
-      setSaveFeedback(`Price for product #${id} updated to â‚¹${newPrice}.`)
+      setSaveFeedback(`Price for product #${id} updated to ₹${newPrice}.`)
       loadAllAdminData()
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to update price')
@@ -306,7 +306,7 @@ export default function AdminPage() {
                     required
                     value={inlinePassword}
                     onChange={(e) => setInlinePassword(e.target.value)}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••••••"
                     className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
@@ -453,7 +453,7 @@ export default function AdminPage() {
                   <TrendingUp className="w-4 h-4 text-emerald-700" />
                 </div>
                 <p className="text-2xl font-bold font-['Poppins',sans-serif] text-black">
-                  â‚¹{stats?.total_revenue?.toLocaleString('en-IN') || 0}
+                  ₹{stats?.total_revenue?.toLocaleString('en-IN') || 0}
                 </p>
                 <p className="text-[11px] text-neutral-500">{stats?.paid_orders || 0} Paid transactions</p>
               </div>
@@ -511,10 +511,10 @@ export default function AdminPage() {
                   <div key={o.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
                     <div>
                       <p className="font-mono font-bold text-black">#{o.order_number}</p>
-                      <p className="text-neutral-500 text-[11px]">{o.customer_name} â€¢ {o.customer_email}</p>
+                      <p className="text-neutral-500 text-[11px]">{o.customer_name} • {o.customer_email}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-black">â‚¹{o.total_amount.toLocaleString('en-IN')}</span>
+                      <span className="font-bold text-black">₹{o.total_amount.toLocaleString('en-IN')}</span>
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black text-white">
                         {o.order_status}
                       </span>
@@ -557,7 +557,7 @@ export default function AdminPage() {
                       <th className="py-4 px-6">Flacon</th>
                       <th className="py-4 px-4">Fragrance</th>
                       <th className="py-4 px-4">Family / Notes</th>
-                      <th className="py-4 px-4">Price (â‚¹)</th>
+                      <th className="py-4 px-4">Price (₹)</th>
                       <th className="py-4 px-4">Stock Units</th>
                       <th className="py-4 px-6 text-right">Actions</th>
                     </tr>
@@ -590,7 +590,7 @@ export default function AdminPage() {
                         {/* Price Inline Edit */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-neutral-500">â‚¹</span>
+                            <span className="text-neutral-500">₹</span>
                             <input
                               type="number"
                               defaultValue={p.price}
@@ -771,12 +771,12 @@ export default function AdminPage() {
                           {o.items.map((it, idx) => (
                             <div key={idx} className="flex justify-between text-neutral-700">
                               <span>{it.name} x {it.quantity}</span>
-                              <span className="font-semibold text-black">â‚¹{(it.price * it.quantity).toLocaleString('en-IN')}</span>
+                              <span className="font-semibold text-black">₹{(it.price * it.quantity).toLocaleString('en-IN')}</span>
                             </div>
                           ))}
                           <div className="pt-2 border-t border-neutral-200 flex justify-between font-bold text-black">
                             <span>Total</span>
-                            <span>â‚¹{o.total_amount.toLocaleString('en-IN')}</span>
+                            <span>₹{o.total_amount.toLocaleString('en-IN')}</span>
                           </div>
                         </div>
                       </div>
@@ -866,7 +866,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Selling Price (â‚¹) *
+                      Selling Price (₹) *
                     </label>
                     <input
                       type="number"
@@ -879,7 +879,7 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Original Price (â‚¹)
+                      Original Price (₹)
                     </label>
                     <input
                       type="number"

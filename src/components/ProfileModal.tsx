@@ -141,8 +141,9 @@ export default function ProfileModal() {
         city: city.trim(),
         state: stateName.trim(),
         pincode: pincode.trim(),
+        avatar_url: avatarPreview !== null ? avatarPreview : undefined,
       })
-      setSuccess('Profile details and saved delivery address updated successfully.')
+      setSuccess('Profile details and avatar updated successfully.')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update profile details.')
     } finally {
@@ -391,11 +392,65 @@ export default function ProfileModal() {
             </div>
           )}
 
+          {/* Hidden Global File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
           {/* =========================================================
               TAB 1: EDIT PROFILE DETAILS
               ========================================================= */}
           {activeTab === 'details' && (
             <form onSubmit={handleSaveDetails} className="space-y-4 text-xs font-['Inter',sans-serif]">
+              {/* Profile Photo Quick Section */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-neutral-50 border border-neutral-200">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-black/10 shrink-0 bg-neutral-200 flex items-center justify-center">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt={user.name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xl font-bold text-black font-['Cinzel',serif]">
+                      {name ? name.charAt(0).toUpperCase() : (user.name ? user.name.charAt(0).toUpperCase() : 'C')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-semibold uppercase text-black font-['Cinzel',serif]">
+                    Profile Photo
+                  </div>
+                  <div className="text-[11px] text-neutral-500 mt-0.5">
+                    JPG, PNG or WEBP up to 5MB
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-white rounded-lg text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Camera className="w-3 h-3" />
+                      <span>{avatarPreview ? 'Change Photo' : 'Upload Photo'}</span>
+                    </button>
+                    {avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        disabled={loading}
+                        className="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider mb-1.5">
                   Full Name
@@ -594,7 +649,7 @@ export default function ProfileModal() {
                     required
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••••••"
                     className="w-full pl-10 pr-10 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all"
                   />
                   <button
@@ -719,7 +774,7 @@ export default function ProfileModal() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-500 font-mono text-[11px]">Working Hours:</span>
-                    <span className="font-semibold text-black">Mon â€“ Sat, 09:00 â€“ 20:00 IST</span>
+                    <span className="font-semibold text-black">Mon – Sat, 09:00 – 20:00 IST</span>
                   </div>
                 </div>
               </div>
@@ -763,7 +818,7 @@ export default function ProfileModal() {
         {/* Footer Logout Action */}
         <div className="p-4 sm:p-5 bg-neutral-50 border-t border-neutral-200 flex items-center justify-between shrink-0 font-['Inter',sans-serif]">
           <span className="text-[11px] text-neutral-500 font-mono">
-            Client ID: #{user.id} Â· {user.role === 'admin' ? 'Administrator' : 'Verified Member'}
+            Client ID: #{user.id} · {user.role === 'admin' ? 'Administrator' : 'Verified Member'}
           </span>
 
           <button

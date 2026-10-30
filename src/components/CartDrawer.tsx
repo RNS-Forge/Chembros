@@ -48,7 +48,7 @@ export default function CartDrawer() {
               </span>
             ) : (
               <span>
-                Add <strong className="text-black font-semibold">â‚¹{(1500 - subtotal).toLocaleString('en-IN')}</strong> more for complimentary delivery.
+                Add <strong className="text-black font-semibold">₹{(1500 - subtotal).toLocaleString('en-IN')}</strong> more for complimentary delivery.
               </span>
             )}
           </div>
@@ -95,7 +95,7 @@ export default function CartDrawer() {
                       {product.subtitle || `${product.concentration} // ${product.volume_ml}ml`}
                     </p>
                     <p className="text-xs font-semibold text-neutral-900 mt-1">
-                      â‚¹{product.price.toLocaleString('en-IN')}
+                      ₹{product.price.toLocaleString('en-IN')}
                     </p>
 
                     {/* Quantity Selector */}
@@ -136,15 +136,15 @@ export default function CartDrawer() {
             <div className="p-6 border-t border-neutral-100 bg-neutral-50/50 space-y-3">
               <div className="flex justify-between text-xs text-neutral-600">
                 <span>Subtotal</span>
-                <span>â‚¹{subtotal.toLocaleString('en-IN')}</span>
+                <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-xs text-neutral-600">
                 <span>Shipping</span>
-                <span>{shippingFee === 0 ? 'Complimentary' : `â‚¹${shippingFee}`}</span>
+                <span>{shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-black pt-2 border-t border-neutral-200">
                 <span>Total</span>
-                <span>â‚¹{total.toLocaleString('en-IN')}</span>
+                <span>₹{total.toLocaleString('en-IN')}</span>
               </div>
 
               <button

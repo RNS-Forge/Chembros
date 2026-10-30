@@ -73,11 +73,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="mt-5 pt-3 border-t border-neutral-100 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-base font-bold text-black font-['Poppins',sans-serif]">
-              â‚¹{product.price.toLocaleString('en-IN')}
+              ₹{product.price.toLocaleString('en-IN')}
             </span>
             {product.original_price && product.original_price > product.price && (
               <span className="text-xs text-neutral-400 line-through">
-                â‚¹{product.original_price.toLocaleString('en-IN')}
+                ₹{product.original_price.toLocaleString('en-IN')}
               </span>
             )}
           </div>

@@ -323,7 +323,7 @@ export const OurStoryHero: React.FC = () => {
                             CRAFTED FOR A WIDER WORLD
                           </h4>
                           <p className="mt-3 text-xs text-black/70 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
-                            A vertically integrated ecosystem â€” from flower fields directly into molecular fine fragrances.
+                            A vertically integrated ecosystem — from flower fields directly into molecular fine fragrances.
                           </p>
                         </div>
                       );

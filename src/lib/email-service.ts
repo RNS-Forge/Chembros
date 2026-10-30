@@ -140,9 +140,17 @@ export async function sendOtpEmail(to_email: string, otp_code: string): Promise<
                 <p style="font-size: 14px; line-height: 1.6; color: #52525b; margin: 0 0 28px;">
                     Enter the one-time verification passcode below to access your bespoke formulations, orders, and laboratory archive.
                 </p>
-                <div style="background-color: #fafafa; border: 1px solid #000000; border-radius: 12px; padding: 22px 20px; margin: 0 auto 24px; text-align: center;">
-                    <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #000000; text-align: center; margin: 0 auto; user-select: all;">
+                <div style="background-color: #fafafa; border: 1px solid #000000; border-radius: 14px; padding: 24px 20px; margin: 0 auto 24px; text-align: center;">
+                    <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #000000; text-align: center; margin: 0 auto; user-select: all; -webkit-user-select: all;">
                         ${otp_code}
+                    </div>
+                    <div style="margin-top: 14px;">
+                        <span style="display: inline-block; padding: 8px 18px; background-color: #000000; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 9999px; user-select: all; -webkit-user-select: all;">
+                            Copy Code: ${otp_code}
+                        </span>
+                    </div>
+                    <div style="font-size: 11px; color: #71717a; margin-top: 8px;">
+                        Tap or click above to copy code to clipboard
                     </div>
                 </div>
                 <div style="border-top: 1px solid #f4f4f5; padding-top: 24px; text-align: left;">
@@ -150,6 +158,73 @@ export async function sendOtpEmail(to_email: string, otp_code: string): Promise<
                         <tr>
                             <td style="font-size: 12px; line-height: 1.6; color: #71717a;">
                                 <strong style="color: #18181b;">Security Protocol:</strong> This passcode remains valid for 10 minutes and is single-use. Chembros representatives will never ask for this code.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 24px 32px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #71717a; text-transform: uppercase;">
+                    Chembros Parfums Private Limited
+                </div>
+                <div style="font-size: 11px; color: #a1a1aa; margin-top: 6px;">
+                    Chemistry Captured in a Bottle. All rights reserved.
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+  return await sendEmail({ to: to_email, subject, html })
+}
+
+export async function sendPasswordResetOtpEmail(to_email: string, otp_code: string): Promise<boolean> {
+  const subject = `Chembros Password Reset Passcode: ${otp_code}`
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chembros Password Reset</title>
+</head>
+<body style="margin: 0; padding: 40px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);">
+        <tr>
+            <td style="background-color: #000000; padding: 36px 32px 30px; text-align: center;">
+                <div style="font-size: 22px; font-weight: 700; letter-spacing: 6px; color: #ffffff; text-transform: uppercase;">CHEM BROS</div>
+                <div style="font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #a1a1aa; text-transform: uppercase; margin-top: 8px;">Haute Parfumerie &amp; Chemistry</div>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 1px; background-color: #27272a; line-height: 1px; font-size: 1px;">&nbsp;</td>
+        </tr>
+        <tr>
+            <td style="padding: 40px 36px 32px; text-align: center;">
+                <div style="font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #71717a; margin-bottom: 12px;">Laboratory Security Protocol</div>
+                <h1 style="font-size: 20px; font-weight: 600; color: #18181b; margin: 0 0 16px; line-height: 1.4;">Reset Your Account Password</h1>
+                <p style="font-size: 14px; line-height: 1.6; color: #52525b; margin: 0 0 28px;">
+                    We received a request to reset the password associated with your Chembros client account. Enter the verification passcode below to choose a new password.
+                </p>
+                <div style="background-color: #fafafa; border: 1px solid #000000; border-radius: 14px; padding: 24px 20px; margin: 0 auto 24px; text-align: center;">
+                    <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #000000; text-align: center; margin: 0 auto; user-select: all; -webkit-user-select: all;">
+                        ${otp_code}
+                    </div>
+                    <div style="margin-top: 14px;">
+                        <span style="display: inline-block; padding: 8px 18px; background-color: #000000; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 9999px; user-select: all; -webkit-user-select: all;">
+                            Copy Code: ${otp_code}
+                        </span>
+                    </div>
+                    <div style="font-size: 11px; color: #71717a; margin-top: 8px;">
+                        Tap or click above to copy code to clipboard
+                    </div>
+                </div>
+                <div style="border-top: 1px solid #f4f4f5; padding-top: 24px; text-align: left;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td style="font-size: 12px; line-height: 1.6; color: #71717a;">
+                                <strong style="color: #18181b;">Security Notice:</strong> This reset code expires in 10 minutes. If you did not initiate this request, your account remains secure and you may safely disregard this message.
                             </td>
                         </tr>
                     </table>

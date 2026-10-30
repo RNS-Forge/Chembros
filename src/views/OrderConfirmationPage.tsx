@@ -195,10 +195,10 @@ export default function OrderConfirmationPage() {
                   <div key={idx} className="py-3.5 flex justify-between items-center text-xs">
                     <div>
                       <p className="font-['Cinzel',serif] font-bold text-black text-sm">{item.name}</p>
-                      <p className="text-neutral-500 text-[11px]">Quantity: {item.quantity} â€¢ {item.volume_ml || 50}ml</p>
+                      <p className="text-neutral-500 text-[11px]">Quantity: {item.quantity} • {item.volume_ml || 50}ml</p>
                     </div>
                     <span className="font-semibold text-black">
-                      â‚¹{(item.price * item.quantity).toLocaleString('en-IN')}
+                      ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                     </span>
                   </div>
                 ))}
@@ -216,15 +216,15 @@ export default function OrderConfirmationPage() {
               <div className="space-y-1.5 md:text-right">
                 <div className="flex justify-between md:justify-end md:gap-8 text-neutral-600">
                   <span>Subtotal:</span>
-                  <span>â‚¹{order.subtotal.toLocaleString('en-IN')}</span>
+                  <span>₹{order.subtotal.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between md:justify-end md:gap-8 text-neutral-600">
                   <span>White-Glove Shipping:</span>
-                  <span>{order.shipping_fee === 0 ? 'Complimentary' : `â‚¹${order.shipping_fee}`}</span>
+                  <span>{order.shipping_fee === 0 ? 'Complimentary' : `₹${order.shipping_fee}`}</span>
                 </div>
                 <div className="flex justify-between md:justify-end md:gap-8 font-bold text-black text-base pt-2 border-t border-neutral-200">
                   <span>Total Paid:</span>
-                  <span>â‚¹{order.total_amount.toLocaleString('en-IN')}</span>
+                  <span>₹{order.total_amount.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>

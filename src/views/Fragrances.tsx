@@ -149,7 +149,7 @@ export default function Fragrances() {
                         {prod.subtitle || 'Extrait de Parfum'}
                       </div>
                       <div className="text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider text-white mt-0.5">
-                        â‚¹{prod.price.toLocaleString('en-IN')}
+                        ₹{prod.price.toLocaleString('en-IN')}
                       </div>
                     </div>
 

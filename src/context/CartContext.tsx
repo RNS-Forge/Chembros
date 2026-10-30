@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { Product, CartItem } from '../types'
 
@@ -58,7 +58,7 @@ const safeStorage = {
   getItem: (key: string): string | null => {
     if (typeof window === 'undefined') return null
     try {
-      return safeStorage.getItem(key)
+      return localStorage.getItem(key)
     } catch {
       return null
     }
@@ -66,13 +66,13 @@ const safeStorage = {
   setItem: (key: string, value: string): void => {
     if (typeof window === 'undefined') return
     try {
-      safeStorage.setItem(key, value)
+      localStorage.setItem(key, value)
     } catch {}
   },
   removeItem: (key: string): void => {
     if (typeof window === 'undefined') return
     try {
-      safeStorage.removeItem(key)
+      localStorage.removeItem(key)
     } catch {}
   },
 }
