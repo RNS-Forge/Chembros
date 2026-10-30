@@ -1,6 +1,6 @@
 export const serverConfig = {
   SUPABASE_URL: process.env.SUPABASE_URL || 'https://sbbqxtqiuafjceayaigp.supabase.co',
-  SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || 'sb_secret_jxKT2',
+  SUPABASE_SECRET_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '',
   SUPABASE_PUBLISHABLE_KEY:
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||

@@ -3,39 +3,31 @@
 > **Chemistry Captured in a Bottle.**  
 > Bespoke extrait de parfum crafted through modern molecular synthesis and natural extractions.
 
-[![Next.js 15](https://img.shields.io/badge/Next.js-15.5.28-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![React 19](https://img.shields.io/badge/React-19.0.0-blue?style=flat-square&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database-3ecf8e?style=flat-square&logo=supabase)](https://supabase.com/)
-[![Cashfree Payments](https://img.shields.io/badge/Cashfree-PG_v3-green?style=flat-square)](https://www.cashfree.com/)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/RNS-Forge/Chembros)
-
 ---
 
-## 🏛️ Architecture Overview
+## Architecture Overview
 
 Chembros is built on a **Unified Full-Stack Next.js 15 App Router** architecture. The entire system—luxury storefront, administrative operations, database communication, Cashfree payment gateway, and Gmail SMTP 2FA/tracking email pipelines—runs within a single, self-contained Next.js deployment.
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        CHEM BROS PLATFORM                              │
-├───────────────────────────────────┬────────────────────────────────────┤
-│       CLIENT LAYER                │       SERVER / API LAYER           │
-│   (Next.js 15 App Router)         │   (Next.js Route Handlers)         │
-│                                   │                                    │
-│ • Lenis Smooth Scrolling          │ • 2FA Authentication & OTP API     │
-│ • GSAP & ScrollTrigger Animations │ • Cashfree Payment Gateway v3      │
-│ • Conquera & Cinzel Luxury Fonts  │ • Multi-Stage Tracking Emails      │
-│ • Slide-out Cart Drawer           │ • Supabase Admin Client (Service)  │
-│ • 1-Click Saved Address Recovery  │ • Admin Dashboard & Order Controls │
-└─────────────────┬─────────────────┴──────────────────┬─────────────────┘
-                  │                                    │
-                  ▼                                    ▼
-       ┌─────────────────────┐              ┌─────────────────────┐
++------------------------------------------------------------------------+
+|                        CHEM BROS PLATFORM                              |
++-----------------------------------+------------------------------------+
+|       CLIENT LAYER                |       SERVER / API LAYER           |
+|   (Next.js 15 App Router)         |   (Next.js Route Handlers)         |
+|                                   |                                    |
+| - Lenis Smooth Scrolling          | - 2FA Authentication & OTP API     |
+| - GSAP & ScrollTrigger Animations | - Cashfree Payment Gateway v3      |
+| - Conquera & Cinzel Luxury Fonts  | - Multi-Stage Tracking Emails      |
+| - Slide-out Cart Drawer           | - Supabase Admin Client (Service)  |
+| - 1-Click Saved Address Recovery  | - Admin Dashboard & Order Controls |
++-----------------+-----------------+------------------+-----------------+
+                  |                                    |
+                  v                                    v
+       +---------------------+              +---------------------+
        │   SUPABASE CLOUD    │              │   GMAIL SMTP ENGINE │
        │  PostgreSQL & Auth  │              │  2FA & Order Mails  │
-       └─────────────────────┘              └─────────────────────┘
+       +---------------------+              +---------------------+
 ```
 
 ### Key Architectural Advantages
@@ -45,13 +37,13 @@ Chembros is built on a **Unified Full-Stack Next.js 15 App Router** architecture
 
 ---
 
-## ✨ Features & Capabilities
+## Features and Capabilities
 
 ### 1. Haute Parfumerie Storefront
 - **Visual Design**: High-end black-and-white aesthetic with custom `Conquera` typography, `Cinzel` serif accents, and `Inter`/`Poppins` body hierarchy.
 - **Micro-Interactions & Motion**: Seamless page transitions powered by Lenis smooth scrolling, GSAP physical coordinate flacon animations, and ScrollTrigger reveals.
 - **Flacon Detail & Discovery**: Interactive size selectors (`30ml Extrait`, `50ml Extrait`, `Discovery Archive`), olfactory pyramid notes (Top, Heart, Base), verified reviews, longevity and sillage ratings.
-- **Persistent Slide-out Cart**: Real-time quantity manipulation, complimentary luxury shipping threshold calculation (free for orders $\ge$ ₹1,500), and subtotal breakdown.
+- **Persistent Slide-out Cart**: Real-time quantity manipulation, complimentary luxury shipping threshold calculation (free for orders >= Rs. 1,500), and subtotal breakdown.
 
 ### 2. Live 2FA Authentication & Address Auto-Recovery
 - **Password Hashing & JWT**: Bcrypt salt hashing and 7-day HMAC-SHA256 authenticated sessions.
@@ -72,7 +64,7 @@ Dispatches responsive, branded HTML emails to customers at every step of the ord
 4. **Delivery by Today**: Courier dispatch alert indicating same-day arrival.
 5. **Safely Delivered**: Final delivery confirmation and flacon maceration resting guidance.
 
-*Multi-transport failover:* Gmail SMTP $\rightarrow$ Brevo HTTPS $\rightarrow$ Resend $\rightarrow$ Webhook fallback.
+*Multi-transport failover:* Gmail SMTP -> Brevo HTTPS -> Resend -> Webhook fallback.
 
 ### 5. Administrator Command Center (`/admin`)
 - **Metric Dashboard**: Live metrics for gross revenue, paid orders, total flacons in catalogue, and low stock warnings.
@@ -81,7 +73,7 @@ Dispatches responsive, branded HTML emails to customers at every step of the ord
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 Chembros/
@@ -144,7 +136,7 @@ Chembros/
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 Create a `.env.local` file in the root directory (or configure them in your Vercel Project Settings):
 
@@ -190,7 +182,7 @@ FRONTEND_URL=https://chembros.vercel.app
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - **Node.js**: `v18.18.0` or higher (Node 20+ recommended)
@@ -224,12 +216,12 @@ npm start
 
 ---
 
-## 🌐 Deploying to Vercel (1-Click Deployment)
+## Deploying to Vercel (1-Click Deployment)
 
 Deploying Chembros to Vercel takes less than two minutes:
 
 1. Push your changes to GitHub (e.g. `RNS-Forge/Chembros` on branch `main`).
-2. Log into [Vercel](https://vercel.com) and click **Add New... $\rightarrow$ Project**.
+2. Log into [Vercel](https://vercel.com) and click **Add New... -> Project**.
 3. Import your **`Chembros`** repository.
 4. Vercel automatically detects the **Next.js** framework with Root Directory `./`.
 5. Under **Environment Variables**, paste the keys from `.env.example`.
@@ -239,7 +231,7 @@ Vercel will build the frontend pages and serverless API functions into a global 
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 All endpoints accept and return JSON. Endpoints requiring authentication expect `Authorization: Bearer <token>`.
 
@@ -273,7 +265,7 @@ All endpoints accept and return JSON. Endpoints requiring authentication expect 
 
 ---
 
-## 🧪 Database Tables (Supabase)
+## Database Tables (Supabase)
 
 The platform integrates with your Supabase PostgreSQL instance:
 
@@ -287,7 +279,7 @@ The platform integrates with your Supabase PostgreSQL instance:
 
 ---
 
-## 📄 License & Credits
+## License and Credits
 
-- **Brand & Formulations**: Chembros Haute Parfumerie © 2026. All rights reserved.
+- **Brand & Formulations**: Chembros Haute Parfumerie (c) 2026. All rights reserved.
 - **Engineered by**: RNS-Forge Engineering Team.
