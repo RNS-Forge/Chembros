@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect } from 'react'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
@@ -302,11 +302,9 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="w-full min-h-screen bg-white flex flex-col items-center">
-        <div className="w-full flex justify-center pt-8 pb-6 sticky top-0 z-40 bg-white/80 backdrop-blur-md">
-          <NavBar />
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-md my-8">
+      <div className="w-full min-h-screen bg-white flex flex-col items-center font-['Inter',sans-serif]">
+        <NavBar />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-md pt-28 sm:pt-36 pb-16">
           <div className="w-full bg-white border border-neutral-200 rounded-3xl p-8 shadow-2xl text-center space-y-5">
             <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mx-auto text-black border border-neutral-300">
               <ShieldCheck className="w-7 h-7" />
@@ -411,13 +409,10 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-white flex flex-col items-center">
-      {/* Top Floating Navigation */}
-      <div className="w-full flex justify-center pt-8 pb-6 sticky top-0 z-40 bg-white/80 backdrop-blur-md">
-        <NavBar />
-      </div>
+    <div className="w-full min-h-screen bg-white flex flex-col items-center font-['Inter',sans-serif]">
+      <NavBar />
 
-      <main className="w-full max-w-[1576px] px-6 py-8 flex-1">
+      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-28 sm:pt-36 pb-16 flex-1">
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-neutral-200 gap-4 mb-8">
           <div>

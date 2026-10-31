@@ -130,10 +130,12 @@ export default function NavBar({
     }
   }
 
+  const isAdminPage = location.pathname.startsWith('/admin')
+
   const navLinks = [
     { label: 'Fragrances', path: '/fragrances' },
     { label: 'Our Story', path: '/our-story' },
-    ...(user?.role === 'admin' ? [{ label: 'Admin', path: '/admin' }] : []),
+    ...(user?.role === 'admin' && !isAdminPage ? [{ label: 'Admin', path: '/admin' }] : []),
   ]
 
   return (
@@ -395,7 +397,7 @@ export default function NavBar({
             </Link>
 
             {/* Admin portal if applicable */}
-            {user?.role === 'admin' && (
+            {user?.role === 'admin' && !isAdminPage && (
               <Link
                 to="/admin"
                 className="text-black font-semibold flex items-center gap-1.5 hover:text-black/60 transition-colors py-1"
