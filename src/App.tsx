@@ -1,4 +1,4 @@
-﻿import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import CartDrawer from './components/CartDrawer'
@@ -11,6 +11,7 @@ import ProductDetail from './views/ProductDetail'
 import CheckoutPage from './views/CheckoutPage'
 import OrderConfirmationPage from './views/OrderConfirmationPage'
 import MyOrdersPage from './views/MyOrdersPage'
+import DashboardPage from './views/DashboardPage'
 import AdminPage from './views/AdminPage'
 import OurStoryPage from './views/OurStoryPage'
 import AuthPage from './views/AuthPage'
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
                 <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmationPage />} />
                 <Route path="/my-orders" element={<MyOrdersPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/our-story" element={<OurStoryPage />} />
                 <Route path="/auth" element={<AuthPage />} />

@@ -1,4 +1,5 @@
-﻿import MyOrdersPage from '@/views/MyOrdersPage'
+import MyOrdersPage from '@/views/MyOrdersPage'
 
-export default MyOrdersPage
-
+export default function Page() {
+  return <MyOrdersPage />
+}

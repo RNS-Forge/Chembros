@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { useSearchParams, useParams, Link } from 'react-router-dom'
 import NavBar from '../components/NavBar'
@@ -237,7 +237,7 @@ export default function OrderConfirmationPage() {
 
         <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4">
           <Link
-            to="/my-orders"
+            to="/dashboard?tab=orders"
             className="px-8 py-3.5 bg-black text-white rounded-full text-xs font-semibold uppercase tracking-widest text-center hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
           >
             Track in My Orders

@@ -68,112 +68,82 @@ export default function HomeHero() {
   const bottleRefs = useRef<(HTMLAnchorElement | null)[]>([])
 
   // Mobile Animation Targets
-  const mobileStaticSlotRef = useRef<HTMLDivElement>(null)
-  const mobileFlightCardRef = useRef<HTMLDivElement>(null)
-  const mobileFlightImgRef = useRef<HTMLImageElement>(null)
-  const mobileFlightBadgesRef = useRef<HTMLDivElement>(null)
+  const mobileMaskLayerRef = useRef<HTMLDivElement>(null)
+  const mobileTargetSlotRef = useRef<HTMLDivElement>(null)
+  const mobileStaticImgRef = useRef<HTMLImageElement>(null)
+  const mobileStaticBadgesRef = useRef<HTMLDivElement>(null)
+  const mobileBadgesRef = useRef<HTMLDivElement>(null)
   const mobileTextRef = useRef<HTMLDivElement>(null)
+  const mobileFooterMetaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 1. MOBILE ANIMATION: Direct Fullscreen-to-Slot Trajectory (No Center Step)
+    // 1. MOBILE ANIMATION (< 768px): Smooth Shrink with Balanced Layout Fill
     // ─────────────────────────────────────────────────────────────────────────────
     if (isMobile) {
       const mobileCtx = gsap.context(() => {
-        const slot = mobileStaticSlotRef.current
-        const card = mobileFlightCardRef.current
-        const cardImg = mobileFlightImgRef.current
-        const badges = mobileFlightBadgesRef.current
+        const maskLayer = mobileMaskLayerRef.current
+        const slot = mobileTargetSlotRef.current
+        const staticImg = mobileStaticImgRef.current
+        const staticBadges = mobileStaticBadgesRef.current
+        const badges = mobileBadgesRef.current
         const text = mobileTextRef.current
+        const footerMeta = mobileFooterMetaRef.current
 
-        if (!slot || !card || !cardImg || !text) {
+        if (!maskLayer || !slot || !text || !badges) {
           setLoadingFinished(true)
           return
         }
 
-        // Measure destination slot coordinates in page flow
-        const slotRect = slot.getBoundingClientRect()
-        const targetTop = slotRect.top
-        const targetLeft = slotRect.left
-        const targetW = slotRect.width
-        const targetH = slotRect.height
+        const rect = slot.getBoundingClientRect()
+        const topInset = rect.top
+        const leftInset = rect.left
+        const rightInset = window.innerWidth - rect.right
+        const bottomInset = window.innerHeight - rect.bottom
 
-        const vw = window.innerWidth
-        const vh = window.innerHeight
-
-        // Initial setup
-        gsap.set(slot, { opacity: 0 })
-        gsap.set(text, { opacity: 0, y: 16 })
+        gsap.set(text, { opacity: 0, y: 15 })
         gsap.set(badges, { opacity: 0 })
+        if (footerMeta) gsap.set(footerMeta, { opacity: 0 })
+        if (staticImg) gsap.set(staticImg, { opacity: 0 })
+        if (staticBadges) gsap.set(staticBadges, { opacity: 0 })
 
-        // Flight card begins exactly at full screen viewport boundaries
-        gsap.set(card, {
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: vw,
-          height: vh,
-          borderRadius: 0,
-          zIndex: 80,
-          boxShadow: 'none',
+        gsap.set(maskLayer, {
+          clipPath: 'inset(0px 0px 0px 0px round 0px)',
+          opacity: 1,
+          visibility: 'visible',
           display: 'block',
-        })
-
-        // Image starts locked to full screen dimensions (no scaling)
-        gsap.set(cardImg, {
-          width: vw,
-          height: vh,
-          maxWidth: 'none',
-          maxHeight: 'none',
-          x: 0,
-          y: 0,
         })
 
         const mobileTl = gsap.timeline({
           onComplete: () => {
-            // Seamless handoff: reveal static in-flow card, hide flight proxy
-            gsap.set(slot, { opacity: 1 })
-            gsap.set(card, { display: 'none' })
+            if (staticImg) gsap.set(staticImg, { opacity: 1 })
+            if (staticBadges) gsap.set(staticBadges, { opacity: 1 })
+            gsap.set(maskLayer, { display: 'none' })
+
             setLoadingFinished(true)
             ScrollTrigger.refresh()
             window.dispatchEvent(new CustomEvent('hero-animation-complete'))
           },
         })
 
-        // 1. Hold full-screen view briefly
-        mobileTl.to({}, { duration: 0.35 })
+        // 1. Hold full-screen for 1 second
+        mobileTl.to({}, { duration: 1.0 })
 
-        // 2. Direct single-arc tween straight into the slot coordinates
-        mobileTl.to(card, {
-          top: targetTop,
-          left: targetLeft,
-          width: targetW,
-          height: targetH,
-          borderRadius: 28,
+        // 2. Shrink aperture down into the exact card bounds
+        mobileTl.to(maskLayer, {
+          clipPath: `inset(${topInset}px ${rightInset}px ${bottomInset}px ${leftInset}px round 28px)`,
           duration: 1.3,
           ease: 'power3.inOut',
         })
 
-        // 3. Counter-translate image synchronously so image does not shift or distort
-        mobileTl.to(
-          cardImg,
-          {
-            x: -targetLeft,
-            y: -targetTop,
-            duration: 1.3,
-            ease: 'power3.inOut',
-          },
-          '<'
-        )
-
-        // 4. Reveal badges and editorial text right as card docks
+        // 3. Reveal badges, text, and footer meta
         mobileTl.to(
           badges,
           {
             opacity: 1,
-            duration: 0.4,
+            duration: 0.35,
             ease: 'power2.out',
           },
           '-=0.3'
@@ -187,6 +157,18 @@ export default function HomeHero() {
           },
           '-=0.3'
         )
+
+        if (footerMeta) {
+          mobileTl.to(
+            footerMeta,
+            {
+              opacity: 1,
+              duration: 0.45,
+              ease: 'power2.out',
+            },
+            '-=0.2'
+          )
+        }
       }, containerRef)
 
       return () => mobileCtx.revert()
@@ -327,7 +309,8 @@ export default function HomeHero() {
     <section
       ref={containerRef}
       id="home-hero-section"
-      className="w-full h-screen h-[100dvh] md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative overflow-hidden select-none flex items-start justify-center"
+      /* On mobile, use h-[100dvh] with flex justify-between so elements fill the screen proportionally */
+      className="w-full h-[100dvh] md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex items-start justify-center"
     >
       <NavBar />
 
@@ -437,25 +420,50 @@ export default function HomeHero() {
       </div>
 
       {/* =========================================================================
-          MOBILE VIEWPORT (< 768px): Direct Shrink to Slot
+          MOBILE VIEWPORT (< 768px): Proportional Full-Height Presentation
           ========================================================================= */}
-      <div className="md:hidden flex flex-col w-full h-full pt-20 pb-8 px-5 relative z-10 justify-center overflow-hidden">
-        
-        {/* Animated Flight Overlay: travels straight to slot position */}
+
+      {/* Mask Overlay: active only during loading, removed on completion */}
+      <div
+        ref={mobileMaskLayerRef}
+        className="md:hidden fixed inset-0 w-screen h-screen z-50 pointer-events-none overflow-hidden will-change-[clip-path]"
+      >
+        <img
+          className="w-screen h-screen object-cover object-[center_20%] select-none pointer-events-none"
+          src={DEFAULT_MOBILE_PORTRAIT}
+          alt="Chembros Mobile Editorial"
+          draggable={false}
+        />
         <div
-          ref={mobileFlightCardRef}
-          className="overflow-hidden shadow-2xl border border-black/5 will-change-transform pointer-events-none"
+          ref={mobileBadgesRef}
+          className="absolute inset-0 pointer-events-none"
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-widest text-white/90 uppercase">
+            <span>ARCHIVE // 2026</span>
+            <span>MADURAI · PARIS</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Natural Document Flow: vertically balanced with zero dead bottom space */}
+      <div className="md:hidden flex flex-col w-full h-[100dvh] pt-20 pb-5 px-5 relative z-10 justify-between">
+        
+        {/* Top: Resting in-flow card with proportional height */}
+        <div
+          ref={mobileTargetSlotRef}
+          className="w-full h-[min(48vh,380px)] min-h-[290px] relative rounded-[28px] shrink-0 border border-black/5 shadow-2xl overflow-hidden bg-neutral-100"
         >
           <img
-            ref={mobileFlightImgRef}
-            className="object-cover object-center select-none pointer-events-none will-change-transform"
+            ref={mobileStaticImgRef}
+            className="w-full h-full object-cover object-[center_20%] select-none pointer-events-none transition-opacity duration-300"
             src={DEFAULT_MOBILE_PORTRAIT}
-            alt="Chembros Mobile Animation"
+            alt="Chembros Mobile Editorial"
             draggable={false}
           />
           <div
-            ref={mobileFlightBadgesRef}
-            className="absolute inset-0 pointer-events-none"
+            ref={mobileStaticBadgesRef}
+            className="absolute inset-0 pointer-events-none transition-opacity duration-300"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
             <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-widest text-white/90 uppercase">
@@ -465,38 +473,19 @@ export default function HomeHero() {
           </div>
         </div>
 
-        {/* Static In-Flow Card: reserves exact slot */}
-        <div
-          ref={mobileStaticSlotRef}
-          className="w-full h-[310px] sm:h-[350px] relative rounded-[28px] overflow-hidden shadow-2xl border border-black/5 shrink-0 mb-6"
-        >
-          <img
-            className="w-full h-full object-cover object-center select-none pointer-events-none"
-            src={DEFAULT_MOBILE_PORTRAIT}
-            alt="Chembros Mobile Editorial"
-            draggable={false}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-widest text-white/90 uppercase pointer-events-none">
-            <span>ARCHIVE // 2026</span>
-            <span>MADURAI · PARIS</span>
-          </div>
-        </div>
-
-        {/* Editorial Text & CTA */}
-        <div ref={mobileTextRef} className="flex flex-col will-change-transform relative z-0">
+        {/* Middle: Editorial Text & CTA */}
+        <div ref={mobileTextRef} className="flex flex-col will-change-transform relative z-0 my-auto">
           <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-black/60 mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-            <span>04 SCENTS // INFINITE POSSIBILITIES</span>
+            <span>4 SCENTS INFINITE POSSIBILITIES</span>
           </div>
           
-          <h1 className="text-black text-2xl font-normal font-['Conquera',sans-serif] leading-tight uppercase tracking-wider">
+          <h1 className="text-black text-[clamp(22px,6vw,28px)] font-normal font-['Conquera',sans-serif] leading-[1.12] uppercase tracking-wider">
             Chemistry captured
           </h1>
-          <span className="text-xl font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90">
+          <span className="text-[clamp(19px,5vw,24px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90">
             in a bottle.
           </span>
-          <p className="text-black/70 text-xs font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed mt-1.5">
+          <p className="text-black/70 text-xs font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed mt-1.5 max-w-sm">
             Where science meets scent. Explore our molecular series.
           </p>
 
@@ -506,6 +495,17 @@ export default function HomeHero() {
           >
             Explore collection
           </Link>
+        </div>
+
+        {/* Bottom Editorial Strip: Eliminates empty dead space, anchors the scroll indicator */}
+        <div
+          ref={mobileFooterMetaRef}
+          className="w-full pt-3 flex items-center justify-between text-[9px] font-mono tracking-widest text-black/45 uppercase shrink-0"
+        >
+          <span className="flex items-center gap-1 text-black/70 font-semibold animate-bounce">
+            <span>SCROLL</span>
+            <span>↓</span>
+          </span>
         </div>
 
       </div>

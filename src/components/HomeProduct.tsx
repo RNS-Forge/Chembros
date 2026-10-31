@@ -218,7 +218,7 @@ export default function HomeProduct() {
   return (
     <section
       ref={sectionRef}
-      className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center"
+      className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center"
     >
       <div className="w-full max-w-[1583px] flex flex-col items-center gap-10 sm:gap-14 lg:gap-16 xl:gap-20 relative z-10">
         
@@ -231,32 +231,32 @@ export default function HomeProduct() {
           </h2>
 
           {loading && moleculeProducts.length === 0 ? (
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
+            <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
               {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
-                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[440px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black/90 rounded-[28px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden p-6 flex flex-col justify-between items-center animate-pulse"
+                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[320px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black/90 rounded-[20px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden p-3 sm:p-6 flex flex-col justify-between items-center animate-pulse"
                 >
-                  <div className="w-28 h-4 bg-white/10 rounded-full" />
-                  <div className="w-20 h-44 bg-white/5 rounded-2xl" />
-                  <div className="w-full flex flex-col items-center gap-3">
-                    <div className="w-16 h-5 bg-white/10 rounded" />
-                    <div className="w-full max-w-[200px] h-10 bg-white/10 rounded-2xl" />
+                  <div className="w-16 sm:w-28 h-3 sm:h-4 bg-white/10 rounded-full" />
+                  <div className="w-14 sm:w-20 h-28 sm:h-44 bg-white/5 rounded-xl sm:rounded-2xl" />
+                  <div className="w-full flex flex-col items-center gap-2 sm:gap-3">
+                    <div className="w-12 sm:w-16 h-3 sm:h-5 bg-white/10 rounded" />
+                    <div className="w-full max-w-[120px] sm:max-w-[200px] h-7 sm:h-10 bg-white/10 rounded-xl sm:rounded-2xl" />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
+            <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
               {moleculeProducts.map((prod, idx) => (
                 <div
                   key={prod.id}
-                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[440px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black rounded-[28px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_12px_28px_rgba(0,0,0,0.18)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] flex flex-col justify-between items-center p-4 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
+                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[330px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black rounded-[20px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_12px_28px_rgba(0,0,0,0.18)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] flex flex-col justify-between items-center p-3 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
                 >
                   {/* Title */}
                   <Link
                     to={`/fragrances/${prod.slug || prod.id}`}
-                    className="w-full text-center text-white text-xs sm:text-sm lg:text-[13px] xl:text-base 2xl:text-xl font-normal font-['Conquera',sans-serif] tracking-widest uppercase pt-1 hover:opacity-80 transition-opacity cursor-pointer"
+                    className="w-full text-center text-white text-[10px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-xl font-normal font-['Conquera',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-80 transition-opacity cursor-pointer truncate px-1"
                   >
                     {prod.name}
                   </Link>
@@ -264,11 +264,11 @@ export default function HomeProduct() {
                   {/* Bottle Presentation Slot */}
                   <Link
                     to={`/fragrances/${prod.slug || prod.id}`}
-                    className="my-auto flex items-center justify-center relative w-full h-[180px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px] cursor-pointer"
+                    className="my-auto flex items-center justify-center relative w-full h-[140px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px] cursor-pointer"
                   >
                     <img
                       id={idx === 0 ? 'target-product-slot-1' : undefined}
-                      className="w-auto h-full max-h-[170px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_10px_22px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                      className="w-auto h-full max-h-[130px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_10px_22px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
                       src={getProductImage(prod, idx)}
                       alt={`${prod.name} Bottle`}
                       draggable={false}
@@ -276,18 +276,18 @@ export default function HomeProduct() {
                   </Link>
 
                   {/* Price & CTA */}
-                  <div className="w-full flex flex-col items-center gap-2.5 lg:gap-2 xl:gap-3 pb-1">
-                    <div className="text-white text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
+                  <div className="w-full flex flex-col items-center gap-1.5 sm:gap-2.5 lg:gap-2 xl:gap-3 pb-0.5 sm:pb-1">
+                    <div className="text-white text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
                       ₹{prod.price.toLocaleString('en-IN')}
                     </div>
 
                     <button
                       type="button"
                       onClick={() => addToCart(prod)}
-                      className="w-full max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-9 sm:h-10 lg:h-9 xl:h-12 2xl:h-14 bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-sm"
+                      className="w-full max-w-[130px] sm:max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-7 sm:h-9 md:h-10 lg:h-9 xl:h-12 2xl:h-14 bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-xl sm:rounded-2xl xl:rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-sm"
                       aria-label={`Add ${prod.name} to Cart`}
                     >
-                      <span className="text-white text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
+                      <span className="text-white text-[9px] sm:text-[11px] md:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
                         Add to cart
                       </span>
                     </button>
@@ -354,7 +354,7 @@ export default function HomeProduct() {
                   </p>
 
                   <div className="text-white/90 text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-normal font-['General_Sans','Poppins',sans-serif] leading-relaxed tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                    {discoveryArchive.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} Ã— 3ml Extrait` : '4 Ã— 3ml Extrait'}<br />
+                    {discoveryArchive.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
                     {discoveryArchive.category || 'Extrait de Parfum'}<br />
                     {discoveryArchive.concentration || '25% natural oil concentration'}<br />
                     {discoveryArchive.gender || 'Unisex'} · {discoveryArchive.longevity || '8+ hours'}

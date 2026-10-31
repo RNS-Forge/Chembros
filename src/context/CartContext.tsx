@@ -4,7 +4,7 @@ import type { Product, CartItem } from '../types'
 
 export interface CartContextType {
   items: CartItem[]
-  addToCart: (product: Product, quantity?: number) => void
+  addToCart: (product: Product, quantity?: number, openDrawer?: boolean) => void
   removeFromCart: (productId: number | string) => void
   updateQuantity: (productId: number | string, quantity: number) => void
   clearCart: () => void
@@ -96,7 +96,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [items])
 
-  const addToCart = (productInput: Product, quantity = 1) => {
+  const addToCart = (productInput: Product, quantity = 1, openDrawer = false) => {
     const product = normalizeProduct(productInput)
     setItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id)
@@ -111,7 +111,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [...prev, { product, quantity: Math.min(product.stock, quantity) }]
       }
     })
-    setIsCartOpen(true)
+    if (openDrawer) {
+      setIsCartOpen(true)
+    }
   }
 
   const removeFromCart = (productId: number | string) => {

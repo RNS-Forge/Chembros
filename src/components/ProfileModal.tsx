@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import {
   X,
@@ -782,7 +782,7 @@ export default function ProfileModal() {
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <Link
-                  to="/my-orders"
+                  to="/dashboard?tab=orders"
                   onClick={closeProfileModal}
                   className="p-4 rounded-xl border border-neutral-200 hover:border-black bg-white hover:bg-neutral-50 transition-all flex flex-col justify-between cursor-pointer group"
                 >
