@@ -24,13 +24,20 @@ import {
   Truck,
   Copy,
   ExternalLink,
+  Plus,
+  Trash2,
+  Edit3,
+  ArrowLeft,
+  Building,
+  Home as HomeIcon,
+  Briefcase,
 } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { getMyOrdersApi } from '../services/api'
-import type { Order } from '../types'
+import { getMyOrdersApi, cancelOrderApi } from '../services/api'
+import type { Order, UserAddress } from '../types'
 
 export type DashboardTab = 'overview' | 'orders' | 'repurchase' | 'addresses' | 'security' | 'help'
 
@@ -53,6 +60,384 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
 
   const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab || 'overview')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Manage Address & New Address State
+  const [addresses, setAddresses] = useState<UserAddress[]>([])
+  const [addressView, setAddressView] = useState<'list' | 'form'>('list')
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+
+  // Detailed Address Form Fields
+  const [addrLabel, setAddrLabel] = useState<'Home' | 'Office' | 'Other'>('Home')
+  const [addrFullName, setAddrFullName] = useState('')
+  const [addrPhone, setAddrPhone] = useState('') // Main Phone (Required, 10 digits)
+  const [addrSecondaryPhone, setAddrSecondaryPhone] = useState('') // Secondary Phone (Optional)
+  const [addrHouseNo, setAddrHouseNo] = useState('') // House / Flat No (Required)
+  const [addrHouseColor, setAddrHouseColor] = useState('') // House / Building Color
+  const [addrStreet, setAddrStreet] = useState('') // Street / Area / Colony (Required)
+  const [addrLandmark, setAddrLandmark] = useState('') // Near Place / Landmark (Easy Delivery)
+  const [addrCity, setAddrCity] = useState('') // City / Town (Required)
+  const [addrDistrict, setAddrDistrict] = useState('') // District (Required)
+  const [addrState, setAddrState] = useState('Tamil Nadu') // State (Required)
+  const [addrCountry, setAddrCountry] = useState('India') // Country (Required)
+  const [addrPincode, setAddrPincode] = useState('') // PIN Code (Required, 6 digits)
+  const [addrIsDefault, setAddrIsDefault] = useState(false)
+  const [addrPinLoading, setAddrPinLoading] = useState(false)
+  const [addrPinSuccess, setAddrPinSuccess] = useState(false)
+  const [addrPinError, setAddrPinError] = useState<string | null>(null)
+
+  // Load and sync addresses for active user
+  useEffect(() => {
+    if (!user) return
+    const storageKey = `chembros_addresses_${user.id || user.email}`
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAddresses(parsed)
+          return
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved addresses:', e)
+    }
+
+    // Initialize with current profile address if available
+    if (user.shipping_address || user.phone) {
+      const streetParts = user.shipping_address ? user.shipping_address.split(',').map((p: string) => p.trim()) : []
+      const initialAddr: UserAddress = {
+        id: 'addr_default_1',
+        label: 'Home',
+        full_name: user.name || 'Primary Client',
+        phone: user.phone || '',
+        secondary_phone: user.secondary_phone || '',
+        house_no: user.house_no || (streetParts.length > 0 ? streetParts[0] : 'Residence'),
+        house_color: user.house_color || '',
+        landmark: user.landmark || '',
+        street: user.shipping_address || (streetParts.length > 1 ? streetParts.slice(1).join(', ') : 'Central Avenue'),
+        city: user.city || 'Chennai',
+        district: user.district || user.city || 'Chennai',
+        state: user.state || 'Tamil Nadu',
+        country: user.country || 'India',
+        pincode: user.pincode || '600001',
+        is_default: true,
+        created_at: new Date().toISOString(),
+      }
+      setAddresses([initialAddr])
+      try {
+        localStorage.setItem(storageKey, JSON.stringify([initialAddr]))
+      } catch {}
+    }
+  }, [user])
+
+  // Instant Postal PIN Code Lookup
+  const handleAddrPinChange = async (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 6)
+    setAddrPincode(cleaned)
+    setAddrPinError(null)
+
+    if (cleaned.length === 6) {
+      setAddrPinLoading(true)
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`)
+        const data = await res.json()
+        if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0]
+          if (po.District) {
+            setAddrDistrict(po.District)
+            if (!addrCity) setAddrCity(po.District)
+          } else if (po.Division) {
+            setAddrDistrict(po.Division)
+          }
+          if (po.State) {
+            setAddrState(po.State)
+          }
+          setAddrPinSuccess(true)
+          setAddrPinError(null)
+        } else {
+          setAddrPinError('Invalid PIN code.')
+          setAddrPinSuccess(false)
+        }
+      } catch (err) {
+        console.warn('Postal PIN lookup error:', err)
+      } finally {
+        setAddrPinLoading(false)
+      }
+    } else {
+      setAddrPinSuccess(false)
+    }
+  }
+
+  // Open Add New Address Form
+  const handleOpenNewAddress = () => {
+    setEditingAddressId(null)
+    setAddrLabel('Home')
+    setAddrFullName(user?.name || '')
+    setAddrPhone(user?.phone || '')
+    setAddrSecondaryPhone(user?.secondary_phone || '')
+    setAddrHouseNo('')
+    setAddrHouseColor('')
+    setAddrStreet('')
+    setAddrLandmark('')
+    setAddrCity(user?.city || '')
+    setAddrDistrict(user?.district || user?.city || '')
+    setAddrState(user?.state || 'Tamil Nadu')
+    setAddrCountry(user?.country || 'India')
+    setAddrPincode(user?.pincode || '')
+    setAddrIsDefault(addresses.length === 0)
+    setAddrPinError(null)
+    setAddrPinSuccess(false)
+    setAddressView('form')
+    setError(null)
+    setSuccess(null)
+  }
+
+  // Open Edit Address Form
+  const handleOpenEditAddress = (addr: UserAddress) => {
+    setEditingAddressId(addr.id)
+    setAddrLabel((addr.label as any) || 'Home')
+    setAddrFullName(addr.full_name || '')
+    setAddrPhone(addr.phone || '')
+    setAddrSecondaryPhone(addr.secondary_phone || '')
+    setAddrHouseNo(addr.house_no || '')
+    setAddrHouseColor(addr.house_color || '')
+    setAddrStreet(addr.street || '')
+    setAddrLandmark(addr.landmark || '')
+    setAddrCity(addr.city || '')
+    setAddrDistrict(addr.district || '')
+    setAddrState(addr.state || 'Tamil Nadu')
+    setAddrCountry(addr.country || 'India')
+    setAddrPincode(addr.pincode || '')
+    setAddrIsDefault(!!addr.is_default)
+    setAddrPinError(null)
+    setAddrPinSuccess(false)
+    setAddressView('form')
+    setError(null)
+    setSuccess(null)
+  }
+
+  // Delete an Address
+  const handleDeleteAddress = async (id: string) => {
+    if (!user) return
+    const storageKey = `chembros_addresses_${user.id || user.email}`
+    const target = addresses.find((a) => a.id === id)
+    const updated = addresses.filter((a) => a.id !== id)
+
+    if (target?.is_default && updated.length > 0) {
+      updated[0].is_default = true
+      const def = updated[0]
+      const compositeAddress = [
+        `House No: ${def.house_no}`,
+        def.house_color ? `Building Color: ${def.house_color}` : null,
+        def.street,
+        def.landmark ? `Near / Landmark: ${def.landmark}` : null,
+        def.city,
+        def.district,
+        def.state,
+        def.country,
+        `PIN: ${def.pincode}`,
+      ].filter(Boolean).join(', ')
+
+      await updateProfile({
+        phone: def.phone,
+        secondary_phone: def.secondary_phone,
+        shipping_address: compositeAddress,
+        city: def.city,
+        district: def.district,
+        state: def.state,
+        country: def.country,
+        pincode: def.pincode,
+        house_no: def.house_no,
+        house_color: def.house_color,
+        landmark: def.landmark,
+      })
+    }
+
+    setAddresses(updated)
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(updated))
+    } catch {}
+    setSuccess('Address successfully removed from your account.')
+  }
+
+  // Set Address as Default
+  const handleSetDefaultAddress = async (id: string) => {
+    if (!user) return
+    const storageKey = `chembros_addresses_${user.id || user.email}`
+    const updated = addresses.map((a) => ({
+      ...a,
+      is_default: a.id === id,
+    }))
+    setAddresses(updated)
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(updated))
+    } catch {}
+
+    const def = updated.find((a) => a.id === id)
+    if (def) {
+      const compositeAddress = [
+        `House No: ${def.house_no}`,
+        def.house_color ? `Building Color: ${def.house_color}` : null,
+        def.street,
+        def.landmark ? `Near / Landmark: ${def.landmark}` : null,
+        def.city,
+        def.district,
+        def.state,
+        def.country,
+        `PIN: ${def.pincode}`,
+      ].filter(Boolean).join(', ')
+
+      try {
+        await updateProfile({
+          phone: def.phone,
+          secondary_phone: def.secondary_phone,
+          shipping_address: compositeAddress,
+          city: def.city,
+          district: def.district,
+          state: def.state,
+          country: def.country,
+          pincode: def.pincode,
+          house_no: def.house_no,
+          house_color: def.house_color,
+          landmark: def.landmark,
+        })
+        setSuccess(`Default delivery destination set to ${def.label || 'Address'}.`)
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to update default address in profile.')
+      }
+    }
+  }
+
+  // Save Address Form (New or Edit)
+  const handleSaveAddressForm = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    if (!addrFullName.trim()) {
+      setError('Please provide recipient full name.')
+      return
+    }
+    const cleanPhone = addrPhone.replace(/\D/g, '')
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setError('Main Phone number is required (at least 10 digits for courier delivery OTP).')
+      return
+    }
+    if (addrSecondaryPhone.trim()) {
+      const cleanSecPhone = addrSecondaryPhone.replace(/\D/g, '')
+      if (cleanSecPhone.length < 10) {
+        setError('Secondary Phone number must have at least 10 digits if provided.')
+        return
+      }
+    }
+    if (!addrHouseNo.trim()) {
+      setError('House / Flat / Building No. is required.')
+      return
+    }
+    if (!addrStreet.trim()) {
+      setError('Street / Area / Landmark is required.')
+      return
+    }
+    const cleanPin = addrPincode.replace(/\D/g, '')
+    if (!cleanPin || cleanPin.length !== 6) {
+      setError('Please enter a valid 6-digit postal PIN code.')
+      return
+    }
+    if (!addrCity.trim()) {
+      setError('City / Town is required.')
+      return
+    }
+    if (!addrDistrict.trim()) {
+      setError('District is required.')
+      return
+    }
+    if (!addrState.trim()) {
+      setError('State is required.')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    const shouldBeDefault = addrIsDefault || addresses.length === 0
+
+    const addressRecord: UserAddress = {
+      id: editingAddressId || `addr_${Date.now()}`,
+      label: addrLabel,
+      full_name: addrFullName.trim(),
+      phone: cleanPhone,
+      secondary_phone: addrSecondaryPhone.trim() ? addrSecondaryPhone.replace(/\D/g, '') : undefined,
+      house_no: addrHouseNo.trim(),
+      house_color: addrHouseColor.trim() || undefined,
+      street: addrStreet.trim(),
+      landmark: addrLandmark.trim() || undefined,
+      city: addrCity.trim(),
+      district: addrDistrict.trim(),
+      state: addrState.trim(),
+      country: addrCountry.trim() || 'India',
+      pincode: cleanPin,
+      is_default: shouldBeDefault,
+      created_at: new Date().toISOString(),
+    }
+
+    let updatedList: UserAddress[]
+    if (editingAddressId) {
+      updatedList = addresses.map((a) => {
+        if (a.id === editingAddressId) {
+          return addressRecord
+        }
+        return shouldBeDefault ? { ...a, is_default: false } : a
+      })
+    } else {
+      updatedList = shouldBeDefault
+        ? [...addresses.map((a) => ({ ...a, is_default: false })), addressRecord]
+        : [...addresses, addressRecord]
+    }
+
+    const storageKey = `chembros_addresses_${user.id || user.email}`
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(updatedList))
+    } catch {}
+
+    setAddresses(updatedList)
+
+    if (shouldBeDefault) {
+      const compositeAddress = [
+        `House No: ${addressRecord.house_no}`,
+        addressRecord.house_color ? `Building Color: ${addressRecord.house_color}` : null,
+        addressRecord.street,
+        addressRecord.landmark ? `Near / Landmark: ${addressRecord.landmark}` : null,
+        addressRecord.city,
+        addressRecord.district,
+        addressRecord.state,
+        addressRecord.country,
+        `PIN: ${addressRecord.pincode}`,
+      ].filter(Boolean).join(', ')
+
+      try {
+        await updateProfile({
+          phone: addressRecord.phone,
+          secondary_phone: addressRecord.secondary_phone,
+          shipping_address: compositeAddress,
+          city: addressRecord.city,
+          district: addressRecord.district,
+          state: addressRecord.state,
+          country: addressRecord.country,
+          pincode: addressRecord.pincode,
+          house_no: addressRecord.house_no,
+          house_color: addressRecord.house_color,
+          landmark: addressRecord.landmark,
+        })
+      } catch (err: unknown) {
+        console.warn('Could not sync default address to backend profile:', err)
+      }
+    }
+
+    setLoading(false)
+    setAddressView('list')
+    setEditingAddressId(null)
+    setSuccess(editingAddressId ? 'Address updated successfully.' : 'New delivery address added successfully.')
+  }
 
   // Profile Form States
   const [name, setName] = useState('')
@@ -259,12 +644,20 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
   }
 
   // Handle Order Cancellation
-  const confirmCancelOrder = (orderId: number | string) => {
-    setOrders((prev) =>
-      prev.map((ord) => (String(ord.id) === String(orderId) ? { ...ord, order_status: 'Cancelled' } : ord))
-    )
-    setCancellingOrderId(null)
-    setSuccess('Order has been cancelled. If paid, your refund will reflect within 3 to 5 business days.')
+  const confirmCancelOrder = async (orderId: number | string) => {
+    try {
+      setLoading(true)
+      await cancelOrderApi(orderId)
+      setOrders((prev) =>
+        prev.map((ord) => (String(ord.id) === String(orderId) ? { ...ord, order_status: 'Cancelled' } : ord))
+      )
+      setSuccess('Order has been cancelled successfully. If paid, your refund will reflect within 3 to 5 business days.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel order.')
+    } finally {
+      setLoading(false)
+      setCancellingOrderId(null)
+    }
   }
 
   // Copy Tracking ID to Clipboard
@@ -855,135 +1248,473 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                   </div>
                 )}
 
-                {/* 4. SAVED ADDRESSES */}
+                {/* 4. MANAGE ADDRESS & NEW ADDRESS */}
                 {activeTab === 'addresses' && (
                   <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-                    <div>
-                      <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
-                        Delivery Address
-                      </h2>
-                      <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
-                        Update your primary delivery address and phone number for shipping.
-                      </p>
-                    </div>
+                    {/* View 1: Manage Addresses List */}
+                    {addressView === 'list' && (
+                      <div className="space-y-6">
+                        {/* Header with Title & + New Address button */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-black/5">
+                          <div>
+                            <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                              Manage Addresses
+                            </h2>
+                            <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+                              Detailed delivery locations for courier dispatch and verified OTP delivery.
+                            </p>
+                          </div>
 
-                    <form onSubmit={handleSaveDetails} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Your Name"
-                            className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
+                          <button
+                            type="button"
+                            onClick={handleOpenNewAddress}
+                            className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-full text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95 shrink-0 self-start sm:self-auto"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>New Address</span>
+                          </button>
                         </div>
 
-                        <div>
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                            Phone Number (For Delivery OTP) *
-                          </label>
-                          <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+91 98765 43210"
-                            className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
-                        </div>
+                        {/* Address Cards List */}
+                        {addresses.length === 0 ? (
+                          <div className="text-center py-12 px-4 border border-dashed border-neutral-300 rounded-2xl bg-neutral-50/50">
+                            <div className="w-12 h-12 rounded-full bg-neutral-200/60 flex items-center justify-center text-neutral-500 mx-auto mb-3">
+                              <MapPin className="w-6 h-6 stroke-[1.5]" />
+                            </div>
+                            <h4 className="font-['Conquera',sans-serif] text-sm uppercase tracking-wider text-black">
+                              No Delivery Addresses Saved
+                            </h4>
+                            <p className="text-xs text-neutral-500 mt-1 mb-4 max-w-sm mx-auto">
+                              Add your primary residence or workplace for rapid 1-click checkout and seamless dispatch.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleOpenNewAddress}
+                              className="px-6 py-2.5 bg-black text-white hover:bg-neutral-800 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer inline-flex items-center gap-2 shadow-sm"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add New Address</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {addresses.map((addr) => (
+                              <div
+                                key={addr.id}
+                                className={`p-5 rounded-2xl border transition-all relative flex flex-col justify-between ${
+                                  addr.is_default
+                                    ? 'border-black bg-neutral-50/60 shadow-sm'
+                                    : 'border-neutral-200 bg-white hover:border-neutral-300'
+                                }`}
+                              >
+                                <div>
+                                  {/* Badge Row */}
+                                  <div className="flex items-center justify-between gap-2 mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/5 text-black border border-black/10 font-semibold">
+                                        {addr.label || 'Home'}
+                                      </span>
+                                      {addr.is_default && (
+                                        <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black text-white font-semibold">
+                                          Default Address
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Recipient Name */}
+                                  <h3 className="text-sm font-bold text-black uppercase tracking-wide font-['Cinzel',serif]">
+                                    {addr.full_name}
+                                  </h3>
+
+                                  {/* Phone Numbers Display: Main vs Secondary */}
+                                  <div className="mt-2.5 space-y-1.5 pb-3 border-b border-neutral-100">
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <Phone className="w-3.5 h-3.5 text-black shrink-0" />
+                                      <span className="font-mono font-semibold text-black">+91 {addr.phone}</span>
+                                      <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Main Phone (Required)
+                                      </span>
+                                    </div>
+
+                                    {addr.secondary_phone && (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                        <span className="font-mono text-neutral-600">+91 {addr.secondary_phone}</span>
+                                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 border border-neutral-200">
+                                          Secondary Phone (Optional)
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Detailed Address Specifics */}
+                                  <div className="mt-3 space-y-1 text-xs text-neutral-700 font-['Inter',sans-serif]">
+                                    <div className="font-medium text-black">
+                                      House / Flat No: <span className="font-semibold">{addr.house_no}</span>
+                                    </div>
+                                    {addr.house_color && (
+                                      <div className="text-[11px] text-neutral-600 italic">
+                                        Building Color: <span className="font-medium not-italic text-black">{addr.house_color}</span>
+                                      </div>
+                                    )}
+                                    <div>
+                                      Street: <span className="font-medium text-black">{addr.street}</span>
+                                    </div>
+                                    {addr.landmark && (
+                                      <div className="text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-medium inline-flex items-center gap-1.5 my-0.5">
+                                        <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-700 font-bold">Near / Landmark:</span>
+                                        <span>{addr.landmark}</span>
+                                      </div>
+                                    )}
+                                    <div className="text-neutral-600">
+                                      {addr.city}, {addr.district}
+                                    </div>
+                                    <div className="text-neutral-600">
+                                      {addr.state}, {addr.country} - <span className="font-mono font-semibold text-black">{addr.pincode}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Actions Footer */}
+                                <div className="mt-5 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditAddress(addr)}
+                                      className="text-black font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer text-xs"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                      <span>Edit</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteAddress(addr.id)}
+                                      className="text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <span>Delete</span>
+                                    </button>
+                                  </div>
+
+                                  {!addr.is_default && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetDefaultAddress(addr.id)}
+                                      className="text-[11px] font-mono text-neutral-600 hover:text-black uppercase tracking-wider font-semibold cursor-pointer underline"
+                                    >
+                                      Set as Default
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    )}
 
-                      {/* PIN Code Lookup */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
-                            PIN Code (Auto-fills City and State) *
-                          </label>
-                          {pinSuccess && <span className="text-[10px] text-emerald-600 font-mono font-semibold">✓ Verified PIN</span>}
-                          {pinError && <span className="text-[10px] text-rose-600 font-mono font-semibold">{pinError}</span>}
+                    {/* View 2: Add / Edit Detailed Address Form */}
+                    {addressView === 'form' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between pb-4 border-b border-black/5">
+                          <div>
+                            <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                              {editingAddressId ? 'Edit Delivery Address' : 'New Delivery Address'}
+                            </h2>
+                            <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+                              Detailed delivery coordinates with house color & secondary phone for precise courier dispatch.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddressView('list')
+                              setEditingAddressId(null)
+                              setError(null)
+                            }}
+                            className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-black rounded-full text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Back to Addresses</span>
+                          </button>
                         </div>
-                        <div className="relative">
-                          <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
-                          <input
-                            type="text"
-                            maxLength={6}
-                            value={pincode}
-                            onChange={(e) => handlePinCodeChange(e.target.value)}
-                            placeholder="e.g. 641031"
-                            className="w-full pl-10 pr-10 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black font-mono focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
-                          {isPinLoading && <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-neutral-400 animate-spin" />}
-                        </div>
+
+                        <form onSubmit={handleSaveAddressForm} className="space-y-4">
+                          {/* Label Selector: Home / Office / Other */}
+                          <div>
+                            <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                              Address Label
+                            </label>
+                            <div className="inline-flex p-1 bg-neutral-100 rounded-xl border border-neutral-200">
+                              {(['Home', 'Office', 'Other'] as const).map((type) => (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => setAddrLabel(type)}
+                                  className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                                    addrLabel === type
+                                      ? 'bg-black text-white shadow-xs'
+                                      : 'text-neutral-600 hover:text-black'
+                                  }`}
+                                >
+                                  {type}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Contact Details: Full Name, Main Phone, Secondary Phone */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                Recipient Full Name *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrFullName}
+                                onChange={(e) => setAddrFullName(e.target.value)}
+                                placeholder="Lord / Lady Sterling"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
+                                  Main Phone *
+                                </label>
+                                <span className="text-[9px] font-mono uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+                                  Required (OTP)
+                                </span>
+                              </div>
+                              <input
+                                type="tel"
+                                required
+                                value={addrPhone}
+                                onChange={(e) => setAddrPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                placeholder="9876543210 (10 Digits)"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs font-mono text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
+                                  Secondary Phone
+                                </label>
+                                <span className="text-[9px] font-mono uppercase text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                                  Optional
+                                </span>
+                              </div>
+                              <input
+                                type="tel"
+                                value={addrSecondaryPhone}
+                                onChange={(e) => setAddrSecondaryPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                placeholder="Alternate Mobile Number"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs font-mono text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Detailed Structure: House No & House Color */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                House / Flat / Suite No. *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrHouseNo}
+                                onChange={(e) => setAddrHouseNo(e.target.value)}
+                                placeholder="e.g. Flat 4B, Chembros Residency / Villa No. 12"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                House / Building Color (Visual Landmark)
+                              </label>
+                              <input
+                                type="text"
+                                value={addrHouseColor}
+                                onChange={(e) => setAddrHouseColor(e.target.value)}
+                                placeholder="e.g. White villa with black gate / Grey 4-storey tower"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Street, Near Place / Landmark & Postal PIN Code */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                Street / Road / Area *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrStreet}
+                                onChange={(e) => setAddrStreet(e.target.value)}
+                                placeholder="e.g. 2nd Main Road, Sterling Avenue"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
+                                  Near Place / Landmark
+                                </label>
+                                <span className="text-[9px] font-mono uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+                                  Easy Delivery
+                                </span>
+                              </div>
+                              <input
+                                type="text"
+                                value={addrLandmark}
+                                onChange={(e) => setAddrLandmark(e.target.value)}
+                                placeholder="e.g. Near Water Tank, Opp. City Mall, Behind Apollo"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Postal PIN Code */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
+                                Postal PIN Code * (Auto-fills City & District)
+                              </label>
+                              {addrPinSuccess && <span className="text-[10px] text-emerald-600 font-mono font-semibold">Verified</span>}
+                              {addrPinError && <span className="text-[10px] text-rose-600 font-mono font-semibold">{addrPinError}</span>}
+                            </div>
+                            <div className="relative">
+                              <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                              <input
+                                type="text"
+                                maxLength={6}
+                                required
+                                value={addrPincode}
+                                onChange={(e) => handleAddrPinChange(e.target.value)}
+                                placeholder="600001"
+                                className="w-full pl-10 pr-10 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black font-mono focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                              {addrPinLoading && <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-neutral-400 animate-spin" />}
+                            </div>
+                          </div>
+
+                          {/* City, District, State, Country */}
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                City / Town *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrCity}
+                                onChange={(e) => setAddrCity(e.target.value)}
+                                placeholder="e.g. Chennai"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                District *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrDistrict}
+                                onChange={(e) => setAddrDistrict(e.target.value)}
+                                placeholder="e.g. Chennai District"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                State *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrState}
+                                onChange={(e) => setAddrState(e.target.value)}
+                                placeholder="e.g. Tamil Nadu"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                                Country *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={addrCountry}
+                                onChange={(e) => setAddrCountry(e.target.value)}
+                                placeholder="India"
+                                className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Default Checkbox */}
+                          <div className="pt-2">
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={addrIsDefault}
+                                onChange={(e) => setAddrIsDefault(e.target.checked)}
+                                className="w-4 h-4 rounded text-black border-neutral-300 focus:ring-black"
+                              />
+                              <span className="text-xs text-neutral-700 font-medium">
+                                Set as default delivery address for rapid 1-click orders
+                              </span>
+                            </label>
+                          </div>
+
+                          {/* Form Action Buttons */}
+                          <div className="flex items-center gap-3 pt-3">
+                            <button
+                              type="submit"
+                              disabled={loading}
+                              className="px-8 py-3.5 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.15em] transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-2"
+                            >
+                              {loading ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>Saving Address...</span>
+                                </>
+                              ) : (
+                                <span>{editingAddressId ? 'Update Address' : 'Save New Address'}</span>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddressView('list')
+                                setEditingAddressId(null)
+                                setError(null)
+                              }}
+                              className="px-6 py-3.5 bg-neutral-100 hover:bg-neutral-200 text-black rounded-2xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                            House, Flat, or Building *
-                          </label>
-                          <input
-                            type="text"
-                            value={flatBuilding}
-                            onChange={(e) => setFlatBuilding(e.target.value)}
-                            placeholder="House No, Apartment Name"
-                            className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                            Street and Area
-                          </label>
-                          <input
-                            type="text"
-                            value={streetArea}
-                            onChange={(e) => setStreetArea(e.target.value)}
-                            placeholder="Street, Landmark"
-                            className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                            City *
-                          </label>
-                          <input
-                            type="text"
-                            value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                            placeholder="City"
-                            className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                            State *
-                          </label>
-                          <input
-                            type="text"
-                            value={stateName}
-                            onChange={(e) => setStateName(e.target.value)}
-                            placeholder="State"
-                            className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="mt-4 px-8 py-3.5 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-medium uppercase tracking-[0.2em] transition-all cursor-pointer shadow-md disabled:opacity-50"
-                      >
-                        {loading ? 'Saving Address...' : 'Save Address'}
-                      </button>
-                    </form>
+                    )}
                   </div>
                 )}
 

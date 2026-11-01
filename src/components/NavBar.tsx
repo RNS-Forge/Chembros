@@ -298,16 +298,13 @@ export default function NavBar({
                 </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false)
-                  openAuthModal()
-                }}
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className="text-left font-normal text-black tracking-widest hover:text-black/60 transition-colors py-1 border-b border-black/5 pb-3"
               >
                 LOGIN / REGISTER
-              </button>
+              </Link>
             )}
 
             {/* Direct Shop Link */}
@@ -626,14 +623,13 @@ export default function NavBar({
                     )}
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={openAuthModal}
+                  <Link
+                    to="/login"
                     className="flex items-center gap-1.5 py-1 px-2.5 rounded-full hover:bg-black/5 active:scale-95 text-xs sm:text-[13px] font-medium tracking-wide uppercase font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/75 hover:text-black transition-colors cursor-pointer"
                   >
                     <User className="w-3.5 h-3.5 text-black/60" />
                     <span>Sign In</span>
-                  </button>
+                  </Link>
                 )}
               </div>
 

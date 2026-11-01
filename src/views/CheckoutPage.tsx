@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import bottleImg from '../assets/bottle.png'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import { createOrderApi, verifyOrderPaymentApi, updateProfileApi } from '../services/api'
 import {
   Lock,
@@ -220,21 +221,34 @@ export default function CheckoutPage() {
             mode: orderRes.cf_environment === 'PRODUCTION' ? 'production' : 'sandbox',
           })
           cashfreeLoaded = true
-          await cashfree.checkout({
+          const result = await cashfree.checkout({
             paymentSessionId: orderRes.payment_session_id,
             redirectTarget: '_modal',
           })
 
+          if (result && result.error) {
+            setError(result.error.message || 'Payment window closed or cancelled.')
+            setLoading(false)
+            return
+          }
+
           const verifyRes = await verifyOrderPaymentApi(orderRes.order_number, orderRes.cashfree_order_id)
-          clearCart()
-          navigate(`/order-confirmation?order_number=${verifyRes.order_number}&status=${verifyRes.status}`)
-          return
-        } catch (cfErr) {
+          if (verifyRes.status === 'success' || verifyRes.status === 'PAID') {
+            clearCart()
+            navigate(`/order-confirmation?order_number=${verifyRes.order_number}&status=${verifyRes.status}`)
+            return
+          } else {
+            setError('Payment verification pending. If debited, your order will confirm automatically.')
+          }
+        } catch (cfErr: any) {
           console.warn('Cashfree modal closed:', cfErr)
+          setError(cfErr?.message || 'Payment window was closed.')
+        } finally {
+          setLoading(false)
         }
       }
 
-      if (!cashfreeLoaded || orderRes.cf_environment === 'SANDBOX') {
+      if ((!cashfreeLoaded || orderRes.cf_environment === 'SANDBOX') && orderRes.cf_environment !== 'PRODUCTION') {
         setSimulationModal({
           orderNumber: orderRes.order_number,
           cfOrderId: orderRes.cashfree_order_id,

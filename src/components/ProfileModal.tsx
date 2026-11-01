@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import type { ProfileTab } from '../context/AuthContext'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function ProfileModal() {
   const {
@@ -37,12 +37,20 @@ export default function ProfileModal() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('details')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+    const navigate = useNavigate()
+
   // Details Tab Form
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [shippingAddress, setShippingAddress] = useState('')
+  const [phone, setPhone] = useState('') // Main Phone (Required)
+  const [secondaryPhone, setSecondaryPhone] = useState('') // Secondary Phone (Optional)
+  const [houseNo, setHouseNo] = useState('') // House / Flat No (Required)
+  const [houseColor, setHouseColor] = useState('') // House / Building Color
+  const [shippingAddress, setShippingAddress] = useState('') // Street / Road / Colony (Required)
+  const [landmark, setLandmark] = useState('') // Near Place / Landmark (Easy Delivery Guide)
   const [city, setCity] = useState('')
+  const [district, setDistrict] = useState('')
   const [stateName, setStateName] = useState('Tamil Nadu')
+  const [country, setCountry] = useState('India')
   const [pincode, setPincode] = useState('')
 
   // Avatar Tab
@@ -72,10 +80,38 @@ export default function ProfileModal() {
     if (user && isProfileModalOpen) {
       setName(user.name || '')
       setPhone(user.phone || '')
+      setSecondaryPhone(user.secondary_phone || '')
+      setHouseNo(user.house_no || '')
+      setHouseColor(user.house_color || '')
       setShippingAddress(user.shipping_address || '')
+      setLandmark(user.landmark || '')
       setCity(user.city || '')
+      setDistrict(user.district || user.city || '')
       setStateName(user.state || 'Tamil Nadu')
+      setCountry(user.country || 'India')
       setPincode(user.pincode || '')
+
+      // Try reading default address from saved addresses
+      try {
+        const stored = localStorage.getItem(`chembros_addresses_${user.id || user.email}`)
+        if (stored) {
+          const list = JSON.parse(stored)
+          const def = list.find((a: any) => a.is_default) || list[0]
+          if (def) {
+            if (!user.phone && def.phone) setPhone(def.phone)
+            if (def.secondary_phone) setSecondaryPhone(def.secondary_phone)
+            if (def.house_no) setHouseNo(def.house_no)
+            if (def.house_color) setHouseColor(def.house_color)
+            if (def.street) setShippingAddress(def.street)
+            if (def.landmark) setLandmark(def.landmark)
+            if (def.city) setCity(def.city)
+            if (def.district) setDistrict(def.district)
+            if (def.state) setStateName(def.state)
+            if (def.country) setCountry(def.country)
+            if (def.pincode) setPincode(def.pincode)
+          }
+        }
+      } catch {}
       setAvatarPreview(user.avatar_url || null)
       setError(null)
       setSuccess(null)
@@ -130,20 +166,101 @@ export default function ProfileModal() {
   // 1. Save Profile Details
   const handleSaveDetails = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!name.trim()) {
+      setError('Please provide your name.')
+      return
+    }
+    const cleanPhone = phone.replace(/\D/g, '')
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setError('Main Phone number is required (at least 10 digits for delivery OTP).')
+      return
+    }
+    if (secondaryPhone.trim()) {
+      const cleanSecPhone = secondaryPhone.replace(/\D/g, '')
+      if (cleanSecPhone.length < 10) {
+        setError('Secondary phone number must have at least 10 digits if provided.')
+        return
+      }
+    }
+    if (!houseNo.trim()) {
+      setError('House / Flat No. is required.')
+      return
+    }
+    if (!shippingAddress.trim()) {
+      setError('Street / Area / Landmark is required.')
+      return
+    }
+    const cleanPin = pincode.replace(/\D/g, '')
+    if (!cleanPin || cleanPin.length !== 6) {
+      setError('Please enter a valid 6-digit postal PIN code.')
+      return
+    }
+
     setLoading(true)
     setError(null)
     setSuccess(null)
+
+    const compositeAddress = [
+      `House No: ${houseNo.trim()}`,
+      houseColor.trim() ? `Building Color: ${houseColor.trim()}` : null,
+      shippingAddress.trim(),
+      landmark.trim() ? `Near / Landmark: ${landmark.trim()}` : null,
+      city.trim(),
+      district.trim() || city.trim(),
+      stateName.trim(),
+      country.trim() || 'India',
+      `PIN: ${cleanPin}`,
+    ].filter(Boolean).join(', ')
+
     try {
       await updateProfile({
         name: name.trim(),
-        phone: phone.trim(),
-        shipping_address: shippingAddress.trim(),
+        phone: cleanPhone,
+        secondary_phone: secondaryPhone.trim() ? secondaryPhone.replace(/\D/g, '') : undefined,
+        shipping_address: compositeAddress,
         city: city.trim(),
+        district: district.trim() || city.trim(),
         state: stateName.trim(),
-        pincode: pincode.trim(),
+        country: country.trim() || 'India',
+        pincode: cleanPin,
+        house_no: houseNo.trim(),
+        house_color: houseColor.trim() || undefined,
+        landmark: landmark.trim() || undefined,
         avatar_url: avatarPreview !== null ? avatarPreview : undefined,
       })
-      setSuccess('Profile details and avatar updated successfully.')
+
+      // Sync into localStorage addresses as well
+      const storageKey = `chembros_addresses_${user.id || user.email}`
+      try {
+        const stored = localStorage.getItem(storageKey)
+        let list: any[] = stored ? JSON.parse(stored) : []
+        const updatedAddr = {
+          id: list.find(a => a.is_default)?.id || `addr_${Date.now()}`,
+          label: 'Home',
+          full_name: name.trim(),
+          phone: cleanPhone,
+          secondary_phone: secondaryPhone.trim() ? secondaryPhone.replace(/\D/g, '') : undefined,
+          house_no: houseNo.trim(),
+          house_color: houseColor.trim() || undefined,
+          street: shippingAddress.trim(),
+          landmark: landmark.trim() || undefined,
+          city: city.trim(),
+          district: district.trim() || city.trim(),
+          state: stateName.trim(),
+          country: country.trim() || 'India',
+          pincode: cleanPin,
+          is_default: true,
+          created_at: new Date().toISOString(),
+        }
+        if (list.length === 0) {
+          list = [updatedAddr]
+        } else {
+          list = list.map(a => a.is_default ? updatedAddr : a)
+        }
+        localStorage.setItem(storageKey, JSON.stringify(list))
+      } catch {}
+
+      setSuccess('Profile details and delivery coordinates updated successfully.')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update profile details.')
     } finally {
@@ -486,75 +603,211 @@ export default function ProfileModal() {
                 </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider mb-1.5">
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider mb-1.5">
-                  Saved Delivery Address
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
-                  <textarea
-                    rows={2}
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="House/Apt No., Street, Landmark"
-                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
+              {/* Phone Numbers: Main Phone (Required) & Secondary Phone (Optional) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase mb-1">
-                    City
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider">
+                      Main Phone *
+                    </label>
+                    <span className="text-[9px] font-mono uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+                      Required (OTP)
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="9876543210 (10 Digits)"
+                      className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black font-mono focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider">
+                      Secondary Phone
+                    </label>
+                    <span className="text-[9px] font-mono uppercase text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                      Optional
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="tel"
+                      value={secondaryPhone}
+                      onChange={(e) => setSecondaryPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="Alternate Mobile Number"
+                      className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black font-mono focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Location: House No & House Color */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider mb-1.5">
+                    House / Flat / Suite No. *
                   </label>
                   <input
                     type="text"
+                    required
+                    value={houseNo}
+                    onChange={(e) => setHouseNo(e.target.value)}
+                    placeholder="Flat 4B, Chembros Residency"
+                    className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider mb-1.5">
+                    House / Building Color
+                  </label>
+                  <input
+                    type="text"
+                    value={houseColor}
+                    onChange={(e) => setHouseColor(e.target.value)}
+                    placeholder="White building with grey gate"
+                    className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Street / Road & Near Place / Landmark */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider mb-1.5">
+                    Street / Road / Area *
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="text"
+                      required
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      placeholder="Haute Avenue, Sterling Estate"
+                      className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-neutral-800 uppercase tracking-wider">
+                      Near Place / Landmark
+                    </label>
+                    <span className="text-[9px] font-mono uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+                      Easy Delivery
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="text"
+                      value={landmark}
+                      onChange={(e) => setLandmark(e.target.value)}
+                      placeholder="Near Water Tank, Opp. City Mall"
+                      className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* City, District, State, Country, PIN Code */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase mb-1">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    required
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="Chennai"
-                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white"
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
                   />
                 </div>
+
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-700 uppercase mb-1">
-                    State
+                    District *
                   </label>
                   <input
                     type="text"
+                    required
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    placeholder="Chennai"
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase mb-1">
+                    State *
+                  </label>
+                  <input
+                    type="text"
+                    required
                     value={stateName}
                     onChange={(e) => setStateName(e.target.value)}
                     placeholder="Tamil Nadu"
-                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white"
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
                   />
                 </div>
+
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-700 uppercase mb-1">
-                    PIN Code
+                    Country *
                   </label>
                   <input
                     type="text"
-                    value={pincode}
-                    onChange={(e) => setPincode(e.target.value)}
-                    placeholder="600001"
-                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white"
+                    required
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="India"
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
                   />
                 </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase mb-1">
+                    Postal PIN Code *
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="600001"
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-black font-mono focus:outline-none focus:ring-2 focus:ring-black focus:bg-white text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Shortcut to Full Manage Addresses Dashboard */}
+              <div className="pt-2 flex items-center justify-between text-xs text-neutral-500 border-t border-neutral-100">
+                <span>Need multiple delivery addresses?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeProfileModal()
+                    navigate('/dashboard?tab=addresses')
+                  }}
+                  className="text-black font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer font-mono text-[11px] uppercase tracking-wider"
+                >
+                  <span>Manage All Addresses</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
               </div>
 
               <button

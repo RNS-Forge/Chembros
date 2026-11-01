@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCart } from '../context/CartContext'
-import { getProductsApi } from '../services/api'
+import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
 
 import boyImg from '../assets/tonedboy.png'
@@ -22,6 +22,31 @@ const bottle4Src = (bottle4Raw as any)?.src || bottle4Raw
 const discoverySrc = (DiscoveryRaw as any)?.src || DiscoveryRaw
 
 gsap.registerPlugin(ScrollTrigger)
+
+function processLiveProducts(liveProducts: Product[]) {
+  const molecules = liveProducts.filter((p) => !p.is_archive)
+  const archive = liveProducts.find(
+    (p) =>
+      p.is_archive ||
+      p.slug === 'the-discovery-archive' ||
+      p.name.toLowerCase().includes('discovery')
+  ) || null
+
+  const orderMap: Record<string, number> = {
+    'molecule-j': 0,
+    'molecule-x': 1,
+    'molecule-t': 2,
+    'molecule-k': 3,
+  }
+  const sortedMolecules = [...molecules].sort((a, b) => {
+    const posA = a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99
+    const posB = b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99
+    return posA - posB
+  })
+
+  return { sortedMolecules, archive }
+}
+
 
 export default function HomeProduct() {
   const sectionRef = useRef<HTMLDivElement>(null)

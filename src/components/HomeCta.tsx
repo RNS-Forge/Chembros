@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import type React from 'react'
 import { Link } from 'react-router-dom'
 import ctaBgImg from '../assets/footerbg.png'

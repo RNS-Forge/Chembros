@@ -1,8 +1,11 @@
 'use client'
 import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import FullPageLoader from '../components/FullPageLoader'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
-import type { Product, Order, AdminStats, User, AdminLogItem } from '../types'
+import type { Product, Order, AdminStats, User, AdminLogItem, PlatformSettings } from '../types'
+import { DEFAULT_PLATFORM_SETTINGS } from '../types'
 import {
   getAdminStatsApi,
   getProductsApi,
@@ -17,17 +20,22 @@ import {
   updateAdminUserStatusApi,
   updateAdminUserRoleApi,
   getAdminLogsApi,
+  getCachedAdminLogsSync,
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import {
   ShieldCheck,
+  Truck,
+  Check,
+  Copy,
   TrendingUp,
   Package,
   ShoppingBag,
   AlertTriangle,
   Plus,
   Trash2,
-  Edit,
+  Edit3,
   Save,
   Upload,
   CheckCircle2,
@@ -45,22 +53,92 @@ import {
   RefreshCw,
   KeyRound,
   FileText,
+  FileSpreadsheet,
+  ChevronDown,
+  Calendar,
+  Eye,
+  EyeOff,
+  User as UserIcon,
+  Phone,
+  MapPin,
+  ExternalLink,
+  Settings as SettingsIcon,
+  CreditCard,
+  Banknote,
+  Sliders,
+  DollarSign,
+  ShieldAlert,
+  Sparkles,
+  Info,
+  Clock,
 } from 'lucide-react'
 
 export default function AdminPage() {
-  const { user, isAdmin, setIsAuthModalOpen, loginWithPassword, logout } = useAuth()
-  const [inlineEmail, setInlineEmail] = useState('')
-  const [inlinePassword, setInlinePassword] = useState('')
-  const [inlineLoading, setInlineLoading] = useState(false)
-  const [inlineError, setInlineError] = useState<string | null>(null)
-  const { openProfileModal } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'users' | 'logs'>('overview')
+  const navigate = useNavigate()
+  const { user, isAdmin, isLoading: authLoading, logout, updateProfile, changePassword } = useAuth()
+  const { settings, updateSettings, resetSettings } = usePlatformSettings()
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'users' | 'logs' | 'settings' | 'profile'>('overview')
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [adminUsers, setAdminUsers] = useState<User[]>([])
-  const [adminLogs, setAdminLogs] = useState<AdminLogItem[]>([])
+  const [adminLogs, setAdminLogs] = useState<AdminLogItem[]>(() => getCachedAdminLogsSync() || [])
   const [loading, setLoading] = useState(true)
+
+  // Feedback notifications
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
+
+  // Column Search toggles (matching Image 2)
+  const [productColSearch, setProductColSearch] = useState(false)
+  const [orderColSearch, setOrderColSearch] = useState(false)
+  const [userColSearch, setUserColSearch] = useState(false)
+  const [logColSearch, setLogColSearch] = useState(false)
+
+  // Column filter state for Products
+  const [prodFilters, setProdFilters] = useState({
+    name: '',
+    family: '',
+    price: '',
+    origPrice: '',
+    deliveryFee: '',
+    stock: '',
+    margin: '',
+  })
+
+  // Column filter state for Orders
+  const [orderFilters, setOrderFilters] = useState({
+    orderNumber: '',
+    date: '',
+    customer: '',
+    destination: '',
+    subtotal: '',
+    deliveryFee: '',
+    total: '',
+    payment: '',
+    status: '',
+  })
+
+  // Column filter state for Users
+  const [userFilters, setUserFilters] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    date: '',
+    role: '',
+    status: '',
+  })
+
+  // Column filter state for Logs
+  const [logFilters, setLogFilters] = useState({
+    date: '',
+    category: '',
+    action: '',
+    details: '',
+    email: '',
+    status: '',
+  })
 
   // Users filter & search
   const [userSearch, setUserSearch] = useState('')
@@ -68,6 +146,10 @@ export default function AdminPage() {
 
   // Logs filter
   const [logCategoryFilter, setLogCategoryFilter] = useState<string>('ALL')
+
+  // Orders filter & search
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all')
+  const [orderSearch, setOrderSearch] = useState('')
 
   // Product Editing / Creation state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -77,6 +159,7 @@ export default function AdminPage() {
     subtitle: '',
     price: 4500,
     original_price: 5000,
+    delivery_fee: 0,
     stock: 50,
     category: 'Extrait de Parfum',
     fragrance_family: 'Woody',
@@ -94,11 +177,76 @@ export default function AdminPage() {
   // Quick edits on products table
   const [stockEdits, setStockEdits] = useState<Record<string, number>>({})
   const [priceEdits, setPriceEdits] = useState<Record<string, number>>({})
-  const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
+  const [origPriceEdits, setOrigPriceEdits] = useState<Record<string, number>>({})
+  const [deliveryFeeEdits, setDeliveryFeeEdits] = useState<Record<string, number>>({})
 
-  // Orders filter & search
-  const [orderStatusFilter, setOrderStatusFilter] = useState('all')
-  const [orderSearch, setOrderSearch] = useState('')
+  // Shipping Dispatch Modal state
+  const [dispatchModalOrder, setDispatchModalOrder] = useState<Order | null>(null)
+  const [dispatchForm, setDispatchForm] = useState({
+    courier: 'Blue Dart Express',
+    tracking_number: '',
+    status: 'Shipped' as 'Shipped' | 'Delivered',
+    dispatch_notes: '',
+  })
+  const [dispatchLoading, setDispatchLoading] = useState(false)
+  const [copiedTrackingId, setCopiedTrackingId] = useState<string | null>(null)
+
+  // Full-Page Profile & Master Security form states
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    secondary_phone: user?.secondary_phone || '',
+    avatar_url: user?.avatar_url || '',
+    headquarters: 'Madurai & Chennai Studio Atelier',
+  })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileFeedback, setProfileFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Password change state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [showCurrentPass, setShowCurrentPass] = useState(false)
+  const [showNewPass, setShowNewPass] = useState(false)
+  const [showConfirmPass, setShowConfirmPass] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordFeedback, setPasswordFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Platform Settings & Permissions Form State
+  const [settingsForm, setSettingsForm] = useState<PlatformSettings>(settings || DEFAULT_PLATFORM_SETTINGS)
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsFeedback, setSettingsFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Sync profile form when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileForm((prev) => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        secondary_phone: user.secondary_phone || '',
+        avatar_url: user.avatar_url || '',
+      }))
+    }
+  }, [user])
+
+  // Sync settings form when settings loaded
+  useEffect(() => {
+    if (settings) {
+      setSettingsForm(settings)
+    }
+  }, [settings])
+
+  // Auto-redirect to unified client sign-in if not an authorized administrator
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      navigate('/login?redirect=/admin', { replace: true })
+    }
+  }, [authLoading, isAdmin, navigate])
 
   useEffect(() => {
     if (!isAdmin) {
@@ -106,27 +254,255 @@ export default function AdminPage() {
       return
     }
     loadAllAdminData()
+
+    // Listen to real-time product updates
+    const handleProductsUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<Product[]>
+      if (Array.isArray(customEvent.detail)) {
+        setProducts(customEvent.detail)
+      }
+    }
+    window.addEventListener('chembros:products-updated', handleProductsUpdated)
+    return () => {
+      window.removeEventListener('chembros:products-updated', handleProductsUpdated)
+    }
+  }, [isAdmin])
+
+  // Filter orders without refetching the entire admin dashboard
+  useEffect(() => {
+    if (!isAdmin) return
+    let isCancelled = false
+    getAdminOrdersApi(orderStatusFilter, orderSearch)
+      .then((ordersData) => {
+        if (!isCancelled) setOrders(ordersData)
+      })
+      .catch((err) => console.warn('Failed to filter orders:', err))
+
+    return () => {
+      isCancelled = true
+    }
   }, [isAdmin, orderStatusFilter, orderSearch])
 
   async function loadAllAdminData() {
     setLoading(true)
     try {
-      const [statsData, productsData, ordersData, usersData, logsData] = await Promise.all([
+      // Prioritize essential overview data for instantaneous rendering
+      const [statsData, productsData, ordersData] = await Promise.all([
         getAdminStatsApi(),
         getProductsApi(),
         getAdminOrdersApi(orderStatusFilter, orderSearch),
-        getAdminUsersApi().catch(() => []),
-        getAdminLogsApi().catch(() => []),
       ])
       setStats(statsData)
       setProducts(productsData)
       setOrders(ordersData)
-      setAdminUsers(usersData)
-      setAdminLogs(logsData)
+      // Render overview immediately without waiting on secondary audit logs
+      setLoading(false)
+
+      // Fetch users and audit logs concurrently without blocking viewport
+      Promise.all([
+        getAdminUsersApi().catch(() => []),
+        getAdminLogsApi().catch(() => []),
+      ]).then(([usersData, logsData]) => {
+        setAdminUsers(usersData)
+        setAdminLogs(logsData)
+      })
     } catch (err) {
       console.error('Failed to load admin dashboard data:', err)
-    } finally {
       setLoading(false)
+    }
+  }
+
+  // Export functions (CSV, TSV clipboard, and PDF printable window)
+  const exportToCsv = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row
+          .map((val) => {
+            const str = String(val ?? '').replace(/"/g, '""')
+            return `"${str}"`
+          })
+          .join(',')
+      ),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `${filename}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    setSaveFeedback(`Exported ${rows.length} rows to ${filename}.csv successfully.`)
+  }
+
+  const copyTableDataToClipboard = (headers: string[], rows: (string | number)[][], label: string) => {
+    const tsvContent = [
+      headers.join('\t'),
+      ...rows.map((row) => row.map((val) => String(val ?? '').replace(/\t/g, ' ')).join('\t')),
+    ].join('\n')
+
+    navigator.clipboard
+      .writeText(tsvContent)
+      .then(() => {
+        setSaveFeedback(`${label} table data copied to clipboard. Ready to paste in Excel.`)
+      })
+      .catch(() => {
+        setSaveFeedback('Clipboard copy permission denied.')
+      })
+  }
+
+  const exportToPdfPrintable = (title: string, headers: string[], rows: (string | number)[][]) => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('Please allow popups to export printable PDF.')
+      return
+    }
+    const tableHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title} - Chembros Haute Parfumerie</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 28px; color: #111; margin: 0; }
+            .header { border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 20px; }
+            h1 { font-family: Georgia, serif; font-size: 20px; letter-spacing: 2px; margin: 0 0 4px 0; text-transform: uppercase; }
+            .meta { font-size: 11px; color: #666; margin: 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
+            th { background: #f4effc; color: #3d2757; border: 1px solid #dcd5e8; padding: 8px 10px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; }
+            td { border: 1px solid #e5e5e5; padding: 8px 10px; vertical-align: top; }
+            tr:nth-child(even) { background: #faf9fd; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Chembros Haute Parfumerie</h1>
+            <p class="meta">${title} · Laboratory Master Export · Generated on ${new Date().toLocaleString('en-IN')}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `
+    printWindow.document.write(tableHtml)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+    }, 350)
+  }
+
+  // Profile Save handler
+  const handleSaveAdminProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setProfileSaving(true)
+    setProfileFeedback(null)
+    try {
+      await updateProfile({
+        name: profileForm.name,
+        phone: profileForm.phone,
+        secondary_phone: profileForm.secondary_phone,
+        avatar_url: profileForm.avatar_url,
+      })
+      setProfileFeedback({
+        type: 'success',
+        message: 'Master administrator dossier and contact details saved successfully.',
+      })
+      setSaveFeedback('Administrator profile details updated.')
+    } catch (err: unknown) {
+      setProfileFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to update administrator profile.',
+      })
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  // Password Change handler
+  const handleChangeAdminPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!passwordForm.currentPassword) {
+      setPasswordFeedback({ type: 'error', message: 'Current master password is required.' })
+      return
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordFeedback({ type: 'error', message: 'New password must contain at least 8 characters.' })
+      return
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordFeedback({ type: 'error', message: 'New password confirmation does not match.' })
+      return
+    }
+    setPasswordSaving(true)
+    setPasswordFeedback(null)
+    try {
+      await changePassword(passwordForm.currentPassword, passwordForm.newPassword)
+      setPasswordFeedback({
+        type: 'success',
+        message: 'Master administrator password updated successfully.',
+      })
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setSaveFeedback('Master administrator password changed.')
+    } catch (err: unknown) {
+      setPasswordFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to update master password. Verify current credentials.',
+      })
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
+  // Platform Settings Save Handler
+  const handleSavePlatformSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    setSettingsSaving(true)
+    setSettingsFeedback(null)
+    try {
+      await updateSettings(settingsForm)
+      setSettingsFeedback({
+        type: 'success',
+        message: 'Platform settings, shipping dispatch rules, and payment permissions updated successfully.',
+      })
+      setSaveFeedback('Platform permissions synchronized.')
+    } catch (err: unknown) {
+      setSettingsFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to update platform settings.',
+      })
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
+  // Reset Platform Settings to Defaults
+  const handleResetPlatformSettings = async () => {
+    if (!confirm('Are you sure you want to restore all platform settings and permissions to factory defaults?')) return
+    setSettingsSaving(true)
+    try {
+      const restored = await resetSettings()
+      setSettingsForm(restored)
+      setSettingsFeedback({
+        type: 'success',
+        message: 'Platform settings restored to laboratory defaults.',
+      })
+      setSaveFeedback('Platform settings restored to defaults.')
+    } catch (err: unknown) {
+      setSettingsFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to reset settings.',
+      })
+    } finally {
+      setSettingsSaving(false)
     }
   }
 
@@ -179,10 +555,10 @@ export default function AdminPage() {
     try {
       if (editingProduct) {
         await updateAdminProductApi(editingProduct.id, productForm)
-        setSaveFeedback(`Product "${productForm.name}" updated successfully.`)
+        setSaveFeedback(`Fragrance "${productForm.name}" updated successfully.`)
       } else {
         await createAdminProductApi(productForm)
-        setSaveFeedback(`Product "${productForm.name}" added to catalog.`)
+        setSaveFeedback(`Fragrance "${productForm.name}" decanted to catalog.`)
       }
       setIsAddModalOpen(false)
       setEditingProduct(null)
@@ -217,21 +593,62 @@ export default function AdminPage() {
     }
   }
 
-  // Quick Price Save
+  // Quick Price & MRP Save per product
   const handleQuickPriceSave = async (id: number | string) => {
     const newPrice = priceEdits[String(id)]
-    if (newPrice === undefined) return
+    const newOrigPrice = origPriceEdits[String(id)]
+    const newDeliveryFee = deliveryFeeEdits[String(id)]
+    if (newPrice === undefined && newOrigPrice === undefined && newDeliveryFee === undefined) return
+
+    const targetProduct = products.find((p) => String(p.id) === String(id))
+    const finalPrice = newPrice !== undefined ? newPrice : (targetProduct?.price ?? 0)
+    const finalOrigPrice = newOrigPrice !== undefined ? newOrigPrice : (targetProduct?.original_price ?? finalPrice)
+    const finalDeliveryFee = newDeliveryFee !== undefined ? newDeliveryFee : (targetProduct?.delivery_fee ?? 0)
+
     try {
-      await updateProductPriceApi(id, newPrice)
-      setSaveFeedback(`Price for product #${id} updated to ₹${newPrice}.`)
+      await updateProductPriceApi(id, finalPrice, finalOrigPrice, finalDeliveryFee)
+      setProducts((prev) =>
+        prev.map((item) =>
+          String(item.id) === String(id)
+            ? { ...item, price: finalPrice, original_price: finalOrigPrice, delivery_fee: finalDeliveryFee }
+            : item
+        )
+      )
+      setSaveFeedback(`Pricing & delivery fee for "${targetProduct?.name || `#${id}`}" updated.`)
       loadAllAdminData()
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to update price')
+      alert(err instanceof Error ? err.message : 'Failed to update product pricing')
     }
   }
 
-  // Update Order Status (triggers customer email via Gmail SMTP!)
+  // Quick Delivery Fee Save per product
+  const handleQuickDeliveryFeeSave = async (id: number | string) => {
+    const newFee = deliveryFeeEdits[String(id)]
+    if (newFee === undefined) return
+    const targetProduct = products.find((p) => String(p.id) === String(id))
+    const curPrice = priceEdits[String(id)] ?? targetProduct?.price ?? 0
+    const curOrig = origPriceEdits[String(id)] ?? targetProduct?.original_price ?? curPrice
+    try {
+      await updateProductPriceApi(id, curPrice, curOrig, newFee)
+      setProducts((prev) =>
+        prev.map((item) => (String(item.id) === String(id) ? { ...item, delivery_fee: newFee } : item))
+      )
+      setSaveFeedback(`Delivery fee for "${targetProduct?.name || `#${id}`}" set to ₹${newFee}.`)
+      loadAllAdminData()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to update delivery fee')
+    }
+  }
+
+  // Update Order Status
   const handleOrderStatusChange = async (orderId: number, newStatus: string, trackingNumber?: string) => {
+    if (newStatus === 'Shipped') {
+      const order = orders.find((o) => o.id === orderId)
+      if (order) {
+        openDispatchModal(order)
+        return
+      }
+    }
     try {
       await updateAdminOrderStatusApi(orderId, newStatus, trackingNumber)
       setSaveFeedback(`Order #${orderId} status set to "${newStatus}" & customer notified via email.`)
@@ -241,14 +658,65 @@ export default function AdminPage() {
     }
   }
 
+  // Open Dispatch Shipment Modal
+  const openDispatchModal = (order: Order) => {
+    const existingTracking = order.tracking_number || ''
+    let initialCourier = settings?.default_courier || 'Blue Dart Express'
+    let initialTrackingNumber = existingTracking
+
+    if (existingTracking.includes(' - ')) {
+      const parts = existingTracking.split(' - ')
+      initialCourier = parts[0]
+      initialTrackingNumber = parts.slice(1).join(' - ')
+    }
+
+    setDispatchModalOrder(order)
+    setDispatchForm({
+      courier: initialCourier,
+      tracking_number: initialTrackingNumber,
+      status: (order.order_status === 'Delivered' ? 'Delivered' : 'Shipped') as 'Shipped' | 'Delivered',
+      dispatch_notes: 'Packaged in tamper-evident flacon presentation box.',
+    })
+  }
+
+  // Confirm Dispatch Shipment
+  const handleConfirmDispatch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!dispatchModalOrder) return
+    if (settings.require_dispatch_tracking && !dispatchForm.tracking_number.trim()) {
+      alert('Consignment AWB tracking number is required for dispatch as per platform settings.')
+      return
+    }
+
+    setDispatchLoading(true)
+    const combinedTracking = dispatchForm.tracking_number.trim()
+      ? `${dispatchForm.courier} - ${dispatchForm.tracking_number.trim()}`
+      : dispatchForm.courier
+
+    try {
+      await updateAdminOrderStatusApi(dispatchModalOrder.id, dispatchForm.status, combinedTracking)
+      setSaveFeedback(
+        `Shipment for Order #${dispatchModalOrder.order_number} marked ${dispatchForm.status}. Client has received delivery tracking notification.`
+      )
+      setDispatchModalOrder(null)
+      loadAllAdminData()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to dispatch shipment')
+    } finally {
+      setDispatchLoading(false)
+    }
+  }
+
+  // Open Add Product Modal
   const openAddModal = () => {
     setEditingProduct(null)
     setProductForm({
       name: '',
-      subtitle: 'EXTRAIT DE PARFUM // 50 ML',
-      price: 4800,
-      original_price: 5400,
-      stock: 40,
+      subtitle: '',
+      price: 4500,
+      original_price: 5000,
+      delivery_fee: 0,
+      stock: 50,
       category: 'Extrait de Parfum',
       fragrance_family: 'Woody',
       concentration: '30% Pure Extrait',
@@ -264,514 +732,880 @@ export default function AdminPage() {
     setIsAddModalOpen(true)
   }
 
-  const openEditModal = (p: Product) => {
-    setEditingProduct(p)
+  // Open Edit Product Modal
+  const openEditModal = (product: Product) => {
+    setEditingProduct(product)
     setProductForm({
-      name: p.name,
-      subtitle: p.subtitle || '',
-      price: p.price,
-      original_price: p.original_price || p.price,
-      stock: p.stock,
-      category: p.category,
-      fragrance_family: p.fragrance_family,
-      concentration: p.concentration,
-      volume_ml: p.volume_ml,
-      top_notes: p.top_notes || '',
-      heart_notes: p.heart_notes || '',
-      base_notes: p.base_notes || '',
-      description: p.description || '',
-      image_base64: p.image_base64 || '',
-      is_trending: p.is_trending,
-      is_featured: p.is_featured,
+      name: product.name,
+      subtitle: product.subtitle || '',
+      price: product.price,
+      original_price: product.original_price || product.price,
+      delivery_fee: product.delivery_fee ?? 0,
+      stock: product.stock,
+      category: product.category,
+      fragrance_family: product.fragrance_family,
+      concentration: product.concentration,
+      volume_ml: product.volume_ml,
+      top_notes: product.top_notes || '',
+      heart_notes: product.heart_notes || '',
+      base_notes: product.base_notes || '',
+      description: product.description || '',
+      image_base64: product.image_base64 || '',
+      is_trending: Boolean(product.is_trending),
+      is_featured: Boolean(product.is_featured),
     })
     setIsAddModalOpen(true)
   }
 
-  const handleInlineAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setInlineLoading(true)
-    setInlineError(null)
-    try {
-      await loginWithPassword(inlineEmail.trim(), inlinePassword)
-    } catch (err: unknown) {
-      setInlineError(err instanceof Error ? err.message : 'Invalid administrator credentials.')
-    } finally {
-      setInlineLoading(false)
-    }
+  // Copy tracking number helper
+  const handleCopyTracking = (tracking: string) => {
+    navigator.clipboard.writeText(tracking).then(() => {
+      setCopiedTrackingId(tracking)
+      setTimeout(() => setCopiedTrackingId(null), 2500)
+    })
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="w-full min-h-screen bg-white flex flex-col items-center font-['Inter',sans-serif]">
-        <NavBar />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-md pt-28 sm:pt-36 pb-16">
-          <div className="w-full bg-white border border-neutral-200 rounded-3xl p-8 shadow-2xl text-center space-y-5">
-            <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mx-auto text-black border border-neutral-300">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
+  // Real-time filtered products
+  const filteredProducts = products.filter((p) => {
+    if (!productColSearch) return true
+    const matchName = !prodFilters.name || (p.name + ' ' + (p.subtitle || '')).toLowerCase().includes(prodFilters.name.toLowerCase().trim())
+    const matchFamily = !prodFilters.family || (p.fragrance_family + ' ' + (p.top_notes || '')).toLowerCase().includes(prodFilters.family.toLowerCase().trim())
+    const matchPrice = !prodFilters.price || String(p.price).includes(prodFilters.price.trim())
+    const matchOrigPrice = !prodFilters.origPrice || String(p.original_price || p.price).includes(prodFilters.origPrice.trim())
+    const matchFee = !prodFilters.deliveryFee || String(p.delivery_fee ?? 0).includes(prodFilters.deliveryFee.trim())
+    const matchStock = !prodFilters.stock || String(p.stock).includes(prodFilters.stock.trim())
+    return matchName && matchFamily && matchPrice && matchOrigPrice && matchFee && matchStock
+  })
 
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.25em] font-semibold text-neutral-400">
-                CHEM BROS
-              </p>
-              <h2 className="font-['Cinzel',serif] text-2xl font-bold text-black mt-1">
-                Administrator Portal
-              </h2>
-              <p className="text-xs text-neutral-500 mt-1">
-                Enter your administrative credentials to manage inventory, catalog formulations, and order fulfillment.
-              </p>
-            </div>
+  // Real-time filtered orders
+  const filteredOrders = orders.filter((o) => {
+    const s = orderSearch.toLowerCase().trim()
+    const globalMatch =
+      !s ||
+      o.order_number.toLowerCase().includes(s) ||
+      o.customer_name.toLowerCase().includes(s) ||
+      o.customer_email.toLowerCase().includes(s) ||
+      (o.shipping_address || '').toLowerCase().includes(s)
 
-            {inlineError && (
-              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 text-left">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{inlineError}</span>
-              </div>
-            )}
+    const statusMatch = orderStatusFilter === 'all' || o.order_status === orderStatusFilter
 
-            <form onSubmit={handleInlineAdminLogin} className="space-y-4 text-left">
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                  Admin Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
-                  <input
-                    type="email"
-                    required
-                    value={inlineEmail}
-                    onChange={(e) => setInlineEmail(e.target.value)}
-                    placeholder="Enter admin email"
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-              </div>
+    if (!orderColSearch) return globalMatch && statusMatch
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                  Admin Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
-                  <input
-                    type="password"
-                    required
-                    value={inlinePassword}
-                    onChange={(e) => setInlinePassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-              </div>
+    const matchNum = !orderFilters.orderNumber || o.order_number.toLowerCase().includes(orderFilters.orderNumber.toLowerCase().trim())
+    const matchDate = !orderFilters.date || new Date(o.created_at).toLocaleDateString().includes(orderFilters.date.trim())
+    const matchCustomer = !orderFilters.customer || (o.customer_name + ' ' + o.customer_email + ' ' + o.customer_phone).toLowerCase().includes(orderFilters.customer.toLowerCase().trim())
+    const matchDest = !orderFilters.destination || (o.shipping_address || '').toLowerCase().includes(orderFilters.destination.toLowerCase().trim())
+    const matchSubtotal = !orderFilters.subtotal || String(o.subtotal).includes(orderFilters.subtotal.trim())
+    const matchFee = !orderFilters.deliveryFee || String(o.shipping_fee).includes(orderFilters.deliveryFee.trim())
+    const matchTotal = !orderFilters.total || String(o.total_amount).includes(orderFilters.total.trim())
+    const matchPayment = !orderFilters.payment || o.payment_status.toLowerCase().includes(orderFilters.payment.toLowerCase().trim())
+    const matchStatus = !orderFilters.status || o.order_status.toLowerCase().includes(orderFilters.status.toLowerCase().trim())
 
-              <button
-                type="submit"
-                disabled={inlineLoading}
-                className="w-full py-3.5 px-4 bg-black text-white rounded-xl text-xs font-semibold uppercase tracking-[0.15em] flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all cursor-pointer shadow-lg disabled:opacity-50"
-              >
-                {inlineLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Verifying Credentials...
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    Sign In as Administrator
-                  </>
-                )}
-              </button>
-            </form>
+    return globalMatch && statusMatch && matchNum && matchDate && matchCustomer && matchDest && matchSubtotal && matchFee && matchTotal && matchPayment && matchStatus
+  })
 
-            <div className="pt-4 border-t border-neutral-100 flex items-center justify-center gap-4 text-xs text-neutral-400">
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
-                className="hover:text-black underline underline-offset-4 cursor-pointer"
-              >
-                Sign In with Email OTP instead
-              </button>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    )
-  }
+  // Real-time filtered users
+  const filteredUsers = adminUsers.filter((u) => {
+    const s = userSearch.toLowerCase().trim()
+    const globalMatch =
+      !s ||
+      (u.name || '').toLowerCase().includes(s) ||
+      (u.email || '').toLowerCase().includes(s) ||
+      (u.phone || '').includes(s) ||
+      (u.city || '').toLowerCase().includes(s)
 
-  if (loading && !stats) {
-    return (
-      <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-black mb-3" />
-        <p className="text-xs uppercase tracking-widest font-['Inter',sans-serif]">Loading Chembros Control Console...</p>
-      </div>
-    )
+    const statusMatch =
+      userStatusFilter === 'all'
+        ? true
+        : userStatusFilter === 'active'
+        ? u.is_active !== false
+        : u.is_active === false
+
+    if (!userColSearch) return globalMatch && statusMatch
+
+    const matchName = !userFilters.name || (u.name || '').toLowerCase().includes(userFilters.name.toLowerCase().trim())
+    const matchEmail = !userFilters.email || (u.email || '').toLowerCase().includes(userFilters.email.toLowerCase().trim())
+    const matchPhone = !userFilters.phone || ((u.phone || '') + ' ' + (u.secondary_phone || '')).includes(userFilters.phone.trim())
+    const matchLoc = !userFilters.location || ((u.city || '') + ' ' + (u.state || '')).toLowerCase().includes(userFilters.location.toLowerCase().trim())
+    const matchDate = !userFilters.date || (u.created_at ? new Date(u.created_at).toLocaleDateString().includes(userFilters.date.trim()) : true)
+    const matchRole = !userFilters.role || (u.role || '').toLowerCase().includes(userFilters.role.toLowerCase().trim())
+    const matchStat = !userFilters.status || (u.is_active === false ? 'deactivated' : 'active').includes(userFilters.status.toLowerCase().trim())
+
+    return globalMatch && statusMatch && matchName && matchEmail && matchPhone && matchLoc && matchDate && matchRole && matchStat
+  })
+
+  // Real-time filtered logs
+  const filteredLogs = adminLogs.filter((l) => {
+    const catMatch = logCategoryFilter === 'ALL' || l.category === logCategoryFilter
+    if (!logColSearch) return catMatch
+
+    const matchDate = !logFilters.date || new Date(l.timestamp).toLocaleDateString().includes(logFilters.date.trim())
+    const matchCat = !logFilters.category || l.category.toLowerCase().includes(logFilters.category.toLowerCase().trim())
+    const matchAction = !logFilters.action || l.action.toLowerCase().includes(logFilters.action.toLowerCase().trim())
+    const matchDetails = !logFilters.details || l.details.toLowerCase().includes(logFilters.details.toLowerCase().trim())
+    const matchEmail = !logFilters.email || (l.user_email || '').toLowerCase().includes(logFilters.email.toLowerCase().trim())
+    const matchStat = !logFilters.status || l.status.toLowerCase().includes(logFilters.status.toLowerCase().trim())
+
+    return catMatch && matchDate && matchCat && matchAction && matchDetails && matchEmail && matchStat
+  })
+
+  if (authLoading || (loading && !products.length && !stats)) {
+    return <FullPageLoader message="Loading Chembros Control Center..." />
   }
 
   return (
-    <div className="w-full min-h-screen bg-white flex flex-col items-center font-['Inter',sans-serif]">
-      <NavBar />
-
-      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-28 sm:pt-36 pb-16 flex-1">
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-neutral-200 gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-neutral-500">
-              <ShieldCheck className="w-4 h-4 text-black" />
-              Administrative Operations Console
+    <div className="min-h-screen bg-[#fcfcfd] text-black flex flex-col font-sans">
+      {/* =========================================================================
+          TOP FULL-WIDTH SEGMENTED NAVIGATION BAR (Admin Only, per sketch reference)
+          ========================================================================= */}
+      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200 shadow-xs w-full">
+        <div className="w-full flex flex-col lg:flex-row items-stretch justify-between">
+          
+          {/* Brand Identity Slot */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b lg:border-b-0 lg:border-r border-neutral-200 shrink-0 bg-neutral-50/50">
+            <div className="flex items-center gap-3">
+              <span className="font-['Cinzel',serif] font-bold text-sm tracking-wider text-black">
+                CHEM BROS
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-black text-white text-[9px] font-mono tracking-widest uppercase">
+                ADMIN CONSOLE
+              </span>
             </div>
-            <h1 className="text-3xl font-bold font-['Cinzel',serif] text-black mt-1">
-              Chembros Control Center
-            </h1>
-            <div className="flex items-center gap-3 mt-1.5">
-              <p className="text-xs text-neutral-500">
-                Signed in as: <strong className="text-black">{user?.email}</strong>
-              </p>
+            <div className="lg:hidden flex items-center gap-2">
+              <Link
+                to="/"
+                className="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-[10px] font-mono uppercase tracking-wider"
+              >
+                Storefront
+              </Link>
               <button
                 type="button"
                 onClick={logout}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-full text-[11px] font-semibold transition-all cursor-pointer"
-                title="End Administrative Session"
+                className="px-3 py-1 bg-red-600 text-white rounded text-[10px] font-mono uppercase tracking-wider"
               >
-                <LogOut className="w-3 h-3" />
                 Sign Out
               </button>
             </div>
           </div>
 
-          {/* Navigation Tabs & Logout */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex bg-neutral-100 p-1.5 rounded-full border border-neutral-200 text-xs font-medium">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                  activeTab === 'overview' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('products')}
-                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                  activeTab === 'products' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                Catalog & Stocks ({products.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('orders')}
-                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                  activeTab === 'orders' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                Orders & Shipments ({orders.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('users')}
-                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                  activeTab === 'users' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                Clients & Users ({adminUsers.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('logs')}
-                className={`px-5 py-2 rounded-full transition-all cursor-pointer ${
-                  activeTab === 'logs' ? 'bg-black text-white shadow-sm' : 'text-neutral-600 hover:text-black'
-                }`}
-              >
-                Audit Logs ({adminLogs.length})
-              </button>
-            </div>
+          {/* All Admin Pages Navigation Options (Divided by vertical lines) */}
+          <nav className="flex items-stretch overflow-x-auto divide-x divide-neutral-200 text-xs font-mono uppercase tracking-wider flex-1 scrollbar-none">
             <button
+              type="button"
+              onClick={() => setActiveTab('overview')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'overview'
+                  ? 'bg-black text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Overview</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('products')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'products'
+                  ? 'bg-black text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Catalog ({products.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('orders')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'orders'
+                  ? 'bg-black text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Orders ({orders.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('users')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'users'
+                  ? 'bg-black text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Clients ({adminUsers.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('logs')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'logs'
+                  ? 'bg-black text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Audit Logs</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('settings')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'settings'
+                  ? 'bg-[#4a2e70] text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Settings & Permissions</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('profile')}
+              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                activeTab === 'profile'
+                  ? 'bg-black text-white font-semibold shadow-inner'
+                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
+              }`}
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>Profile</span>
+            </button>
+          </nav>
+
+          {/* Right Utility Navigation Slots (Divided by vertical lines) */}
+          <div className="hidden lg:flex items-stretch divide-x divide-neutral-200 border-l border-neutral-200 shrink-0 text-xs font-mono uppercase tracking-wider">
+            <Link
+              to="/"
+              className="px-5 py-3.5 text-neutral-700 hover:text-black hover:bg-neutral-100 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              title="Return to Chembros Customer Storefront"
+            >
+              <span>&larr;</span> Storefront
+            </Link>
+            <button
+              type="button"
               onClick={logout}
-              className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-              title="Sign Out from Chembros"
+              className="px-5 py-3.5 text-red-600 hover:text-white hover:bg-red-600 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer font-medium"
+              title="Sign Out of Atelier Console"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Sign Out
+              <span>Sign Out</span>
             </button>
+          </div>
+
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        {/* Top Header Information Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-200 mb-8">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-black text-white rounded-full text-[10px] font-mono tracking-widest uppercase">
+                Laboratory Operations
+              </span>
+              <span className="text-xs text-neutral-500 font-mono">
+                Atelier Console · Master Admin Session
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold font-['Cinzel',serif] tracking-tight mt-2 text-black">
+              Chembros Atelier Control Panel
+            </h1>
+          </div>
+          <div className="text-xs font-mono text-neutral-500">
+            Active Workspace: <strong className="text-black uppercase">{activeTab}</strong>
           </div>
         </div>
 
-        {/* Feedback Alert */}
+        {/* Feedback Alert Toast */}
         {saveFeedback && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-800">
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-800 shadow-xs animate-in fade-in">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{saveFeedback}</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="font-medium">{saveFeedback}</span>
             </div>
-            <button onClick={() => setSaveFeedback(null)} className="cursor-pointer text-emerald-600 hover:text-emerald-900">
+            <button
+              type="button"
+              onClick={() => setSaveFeedback(null)}
+              className="cursor-pointer text-emerald-600 hover:text-emerald-900 p-1"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* TAB 1: OVERVIEW & ANALYTICS */}
+        {/* ========================================================
+            TAB 1: OVERVIEW & ANALYTICS
+           ======================================================== */}
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Administrator Profile Card */}
-            <div className="p-6 bg-neutral-900 text-white rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-neutral-800">
-              <div className="flex items-center gap-4">
-                <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 bg-neutral-800 flex items-center justify-center shrink-0">
-                  {user?.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xl font-bold font-['Cinzel',serif] text-white">
-                      {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold font-['Cinzel',serif] uppercase tracking-wide">
-                      {user?.name || 'Chembros Administrator'}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono uppercase bg-white/20 text-white border border-white/30">
-                      Master Admin
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-400 font-mono mt-0.5">{user?.email}</p>
-                  <p className="text-[11px] text-neutral-500 mt-1">
-                    Studio Headquarters: Madurai & Chennai · Verified Session
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => openProfileModal('details')}
-                  className="px-4 py-2 bg-white text-black hover:bg-neutral-100 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                  <span>Edit Profile</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openProfileModal('security')}
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer border border-neutral-700 flex items-center gap-1.5"
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Change Password</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Metric Cards */}
+            {/* Metric Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2">
+              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-neutral-500">
                   <span className="text-[11px] uppercase tracking-wider font-semibold">Total Revenue</span>
-                  <TrendingUp className="w-4 h-4 text-emerald-700" />
+                  <TrendingUp className="w-4 h-4 text-neutral-400" />
                 </div>
-                <p className="text-2xl font-bold font-['Poppins',sans-serif] text-black">
-                  ₹{stats?.total_revenue?.toLocaleString('en-IN') || 0}
-                </p>
-                <p className="text-[11px] text-neutral-500">{stats?.paid_orders || 0} Paid transactions</p>
+                <div className="text-2xl font-bold font-mono text-black">
+                  ₹{stats?.total_revenue ? stats.total_revenue.toLocaleString('en-IN') : '0'}
+                </div>
+                <p className="text-[10px] text-neutral-500 font-mono">Verified Cashfree settlements</p>
               </div>
 
-              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2">
+              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-neutral-500">
-                  <span className="text-[11px] uppercase tracking-wider font-semibold">Customer Orders</span>
-                  <ShoppingBag className="w-4 h-4 text-black" />
+                  <span className="text-[11px] uppercase tracking-wider font-semibold">Total Orders</span>
+                  <ShoppingBag className="w-4 h-4 text-neutral-400" />
                 </div>
-                <p className="text-2xl font-bold font-['Poppins',sans-serif] text-black">
-                  {stats?.total_orders || 0}
+                <div className="text-2xl font-bold font-mono text-black">{stats?.total_orders || 0}</div>
+                <p className="text-[10px] text-emerald-600 font-mono font-medium">
+                  {stats?.paid_orders || 0} Paid & Dispatched
                 </p>
-                <p className="text-[11px] text-neutral-500">Cashfree PG authorized</p>
               </div>
 
-              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2">
+              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-neutral-500">
-                  <span className="text-[11px] uppercase tracking-wider font-semibold">Catalog Extraits</span>
-                  <Package className="w-4 h-4 text-black" />
+                  <span className="text-[11px] uppercase tracking-wider font-semibold">Catalog Formulations</span>
+                  <Package className="w-4 h-4 text-neutral-400" />
                 </div>
-                <p className="text-2xl font-bold font-['Poppins',sans-serif] text-black">
-                  {stats?.total_products || products.length}
-                </p>
-                <p className="text-[11px] text-neutral-500">Stored in Supabase DB</p>
+                <div className="text-2xl font-bold font-mono text-black">{stats?.total_products || products.length}</div>
+                <p className="text-[10px] text-neutral-500 font-mono">Active Extrait Formulations</p>
               </div>
 
-              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2">
+              <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-neutral-500">
                   <span className="text-[11px] uppercase tracking-wider font-semibold">Low Stock Warnings</span>
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
                 </div>
-                <p className="text-2xl font-bold font-['Poppins',sans-serif] text-amber-700">
-                  {stats?.low_stock_count || 0}
-                </p>
-                <p className="text-[11px] text-neutral-500">Stock &le; 10 units</p>
+                <div className="text-2xl font-bold font-mono text-amber-600">
+                  {stats?.low_stock_count || products.filter((p) => p.stock <= 10).length}
+                </div>
+                <p className="text-[10px] text-neutral-500 font-mono">Units below 10 flacons</p>
               </div>
             </div>
 
-            {/* Recent Orders Overview */}
-            <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-4">
+            {/* Quick Overview Navigation Banner */}
+            <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                  Laboratory Quick Actions & Management
+                </h3>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Access catalog price and delivery fee controls, customer order fulfillment, or update master admin credentials.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('settings')}
+                  className="px-4 py-2 bg-[#4a2e70] text-white hover:bg-[#3b245e] rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Platform Permissions</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('products')}
+                  className="px-4 py-2 bg-black text-white hover:bg-neutral-800 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Manage Products
+                </button>
+              </div>
+            </div>
+
+            {/* Recent Orders in Overview */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-['Cinzel',serif] text-lg font-bold text-black">
-                  Recent Dispatches
+                <h3 className="font-['Cinzel',serif] text-lg font-bold text-black uppercase tracking-wider">
+                  Recent Studio Orders
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('orders')}
                   className="text-xs text-neutral-600 hover:text-black font-semibold underline underline-offset-4 cursor-pointer"
                 >
-                  View All Orders
+                  View All Orders ({orders.length})
                 </button>
               </div>
 
-              <div className="divide-y divide-neutral-200 bg-white rounded-2xl border border-neutral-200 overflow-hidden">
-                {orders.slice(0, 5).map((o) => (
-                  <div key={o.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                    <div>
-                      <p className="font-mono font-bold text-black">#{o.order_number}</p>
-                      <p className="text-neutral-500 text-[11px]">{o.customer_name} • {o.customer_email}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-bold text-black">₹{o.total_amount.toLocaleString('en-IN')}</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black text-white">
-                        {o.order_status}
+              {orders.slice(0, 4).map((o) => (
+                <div
+                  key={o.id}
+                  className="p-5 bg-white border border-neutral-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+                >
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-xs text-black">#{o.order_number}</span>
+                      <span className="text-xs text-neutral-500">{o.customer_name}</span>
+                      <span className="text-[10px] font-mono text-neutral-400">
+                        {new Date(o.created_at).toLocaleDateString()}
                       </span>
                     </div>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      {o.items?.length || 0} items · Subtotal ₹{o.subtotal.toLocaleString('en-IN')} · Delivery ₹{o.shipping_fee} · Total ₹{o.total_amount.toLocaleString('en-IN')}
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      {o.payment_status}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-800 border border-neutral-200">
+                      {o.order_status}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* TAB 2: PRODUCTS & STOCK MANAGEMENT */}
+        {/* ========================================================
+            TAB 2: CATALOG & PRODUCTS TABLE (Design per Image 2)
+           ======================================================== */}
         {activeTab === 'products' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Header Toolbar (Image 2 style) */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2">
               <div>
-                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black">
-                  Fragrance Formulations & Stock Controls
+                <h2 className="text-lg font-bold text-[#3d2757] font-sans flex items-center gap-2">
+                  <span>Fragrance Catalog</span>
+                  <span className="text-xs px-2 py-0.5 bg-[#f4effc] text-[#4a2e70] rounded-full border border-[#dcd0ee] font-mono">
+                    {filteredProducts.length}
+                  </span>
                 </h2>
-                <p className="text-xs text-neutral-500">
-                  Update inventory counts, prices in real-time, or decant new flacons into the catalog.
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Manage pricing, client delivery charges, formulation notes, and flacon stock.
                 </p>
               </div>
 
-              <button
-                onClick={openAddModal}
-                className="px-5 py-2.5 bg-black text-white rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-2 hover:bg-neutral-800 transition-all cursor-pointer shadow-md"
-              >
-                <Plus className="w-4 h-4" />
-                Add New Fragrance
-              </button>
+              {/* Right Action Buttons Toolbar */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={loadAllAdminData}
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Refresh Products"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToPdfPrintable(
+                      'Products Catalog',
+                      ['ID', 'Fragrance', 'Family', 'Price (₹)', 'MRP (₹)', 'Delivery Fee (₹)', 'Stock'],
+                      filteredProducts.map((p) => [
+                        p.id,
+                        `${p.name} (${p.volume_ml}ml)`,
+                        p.fragrance_family,
+                        `₹${p.price}`,
+                        `₹${p.original_price || p.price}`,
+                        `₹${p.delivery_fee ?? 0}`,
+                        p.stock,
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to PDF</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToCsv(
+                      'chembros_products',
+                      ['Product ID', 'Name', 'Subtitle', 'Family', 'Price', 'MRP', 'Delivery Fee', 'Stock', 'Volume ML'],
+                      filteredProducts.map((p) => [
+                        p.id,
+                        p.name,
+                        p.subtitle || '',
+                        p.fragrance_family,
+                        p.price,
+                        p.original_price || p.price,
+                        p.delivery_fee ?? 0,
+                        p.stock,
+                        p.volume_ml,
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to Excel</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyTableDataToClipboard(
+                      ['ID', 'Name', 'Family', 'Price', 'MRP', 'Delivery Fee', 'Stock'],
+                      filteredProducts.map((p) => [
+                        p.id,
+                        p.name,
+                        p.fragrance_family,
+                        p.price,
+                        p.original_price || p.price,
+                        p.delivery_fee ?? 0,
+                        p.stock,
+                      ]),
+                      'Products'
+                    )
+                  }
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Copy Table Data to Clipboard"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openAddModal}
+                  className="px-4 py-2 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Fragrance</span>
+                </button>
+
+                <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+                  <span className="text-xs font-semibold text-neutral-700 whitespace-nowrap">Column Search</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={productColSearch}
+                    onClick={() => setProductColSearch(!productColSearch)}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                      productColSearch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        productColSearch ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Products Table */}
-            <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">
+            {/* Table Container */}
+            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-neutral-100/70 border-b border-neutral-200 text-neutral-600 font-semibold uppercase tracking-wider text-[10px]">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>
-                      <th className="py-4 px-6">Flacon</th>
-                      <th className="py-4 px-4">Fragrance</th>
-                      <th className="py-4 px-4">Family / Notes</th>
-                      <th className="py-4 px-4">Price (₹)</th>
-                      <th className="py-4 px-4">Stock Units</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
+                      <th className="py-3 px-4 font-semibold">Flacon</th>
+                      <th className="py-3 px-4 font-semibold">Fragrance</th>
+                      <th className="py-3 px-4 font-semibold">Family / Notes</th>
+                      <th className="py-3 px-4 font-semibold">Selling Price (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Original MRP (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Delivery Fee (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Stock</th>
+                      <th className="py-3 px-4 font-semibold">Margin</th>
+                      <th className="py-3 px-4 font-semibold text-right">Edit</th>
                     </tr>
+
+                    {productColSearch && (
+                      <tr className="bg-[#faf8fd] border-b border-neutral-200 text-neutral-700 font-normal">
+                        <th className="py-2 px-4"></th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={prodFilters.name}
+                              onChange={(e) => setProdFilters({ ...prodFilters, name: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={prodFilters.family}
+                              onChange={(e) => setProdFilters({ ...prodFilters, family: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={prodFilters.price}
+                              onChange={(e) => setProdFilters({ ...prodFilters, price: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={prodFilters.origPrice}
+                              onChange={(e) => setProdFilters({ ...prodFilters, origPrice: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={prodFilters.deliveryFee}
+                              onChange={(e) => setProdFilters({ ...prodFilters, deliveryFee: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={prodFilters.stock}
+                              onChange={(e) => setProdFilters({ ...prodFilters, stock: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4"></th>
+                        <th className="py-2 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProdFilters({
+                                name: '',
+                                family: '',
+                                price: '',
+                                origPrice: '',
+                                deliveryFee: '',
+                                stock: '',
+                                margin: '',
+                              })
+                            }
+                            className="text-[10px] text-neutral-400 hover:text-black font-semibold uppercase"
+                          >
+                            Reset
+                          </button>
+                        </th>
+                      </tr>
+                    )}
                   </thead>
-                  <tbody className="divide-y divide-neutral-200">
-                    {products.map((p) => (
-                      <tr key={p.id} className="hover:bg-neutral-50/50 transition-colors">
-                        <td className="py-3 px-6">
-                          <div className="w-14 h-16 bg-neutral-100 rounded-xl border border-neutral-200 p-1 flex items-center justify-center">
-                            {p.image_base64 ? (
-                              <img src={p.image_base64} alt={p.name} className="h-full object-contain" />
-                            ) : (
-                              <span className="text-[9px] text-neutral-400 font-mono">BOTTLE</span>
-                            )}
-                          </div>
-                        </td>
 
-                        <td className="py-3 px-4">
-                          <p className="font-['Cinzel',serif] font-bold text-sm text-black">{p.name}</p>
-                          <p className="text-[10px] text-neutral-500 uppercase">{p.subtitle || `${p.concentration} // ${p.volume_ml}ml`}</p>
-                        </td>
-
-                        <td className="py-3 px-4 max-w-xs">
-                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-neutral-100 text-neutral-800 mb-1">
-                            {p.fragrance_family}
-                          </span>
-                          <p className="text-[11px] text-neutral-500 truncate">{p.top_notes || p.description}</p>
-                        </td>
-
-                        {/* Price Inline Edit */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-neutral-500">₹</span>
-                            <input
-                              type="number"
-                              defaultValue={p.price}
-                              onChange={(e) =>
-                                setPriceEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
-                              }
-                              className="w-20 px-2 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-black focus:outline-none focus:ring-1 focus:ring-black"
-                            />
-                            {priceEdits[String(p.id)] !== undefined && priceEdits[String(p.id)] !== p.price && (
-                              <button
-                                onClick={() => handleQuickPriceSave(p.id)}
-                                className="p-1 bg-black text-white rounded hover:bg-neutral-800 cursor-pointer"
-                                title="Save Price"
-                              >
-                                <Save className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Stock Inline Edit */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="number"
-                              defaultValue={p.stock}
-                              onChange={(e) =>
-                                setStockEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
-                              }
-                              className={`w-16 px-2 py-1 border rounded text-xs font-semibold focus:outline-none ${
-                                p.stock <= 10
-                                  ? 'bg-amber-50 border-amber-300 text-amber-900'
-                                  : 'bg-neutral-50 border-neutral-300 text-black'
-                              }`}
-                            />
-                            {stockEdits[String(p.id)] !== undefined && stockEdits[String(p.id)] !== p.stock && (
-                              <button
-                                onClick={() => handleQuickStockSave(p.id)}
-                                className="p-1 bg-black text-white rounded hover:bg-neutral-800 cursor-pointer"
-                                title="Save Stock"
-                              >
-                                <Save className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3 px-6 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => openEditModal(p)}
-                              className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Details"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(p.id, p.name)}
-                              className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                              title="Delete Product"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                  <tbody className="divide-y divide-neutral-100">
+                    {filteredProducts.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-12 text-center text-neutral-500">
+                          No fragrances match the specified criteria.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredProducts.map((p) => {
+                        const curPrice = priceEdits[String(p.id)] !== undefined ? priceEdits[String(p.id)] : p.price
+                        const curOrig =
+                          origPriceEdits[String(p.id)] !== undefined
+                            ? origPriceEdits[String(p.id)]
+                            : p.original_price || p.price
+                        const curDeliveryFee =
+                          deliveryFeeEdits[String(p.id)] !== undefined
+                            ? deliveryFeeEdits[String(p.id)]
+                            : p.delivery_fee ?? 0
+
+                        const hasPriceChange =
+                          (priceEdits[String(p.id)] !== undefined && priceEdits[String(p.id)] !== p.price) ||
+                          (origPriceEdits[String(p.id)] !== undefined &&
+                            origPriceEdits[String(p.id)] !== (p.original_price || p.price)) ||
+                          (deliveryFeeEdits[String(p.id)] !== undefined &&
+                            deliveryFeeEdits[String(p.id)] !== (p.delivery_fee ?? 0))
+
+                        const discountPercent =
+                          curOrig > curPrice ? Math.round(((curOrig - curPrice) / curOrig) * 100) : 0
+
+                        return (
+                          <tr key={p.id} className="hover:bg-[#faf8fd] transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="w-12 h-14 bg-neutral-100 rounded-lg border border-neutral-200 p-1 flex items-center justify-center overflow-hidden">
+                                {p.image_base64 ? (
+                                  <img src={p.image_base64} alt={p.name} className="h-full object-contain" />
+                                ) : (
+                                  <span className="text-[9px] text-neutral-400 font-mono">BOTTLE</span>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <p className="font-['Cinzel',serif] font-bold text-xs text-black">{p.name}</p>
+                              <p className="text-[10px] text-neutral-500 uppercase">
+                                {p.subtitle || `${p.concentration} // ${p.volume_ml}ml`}
+                              </p>
+                            </td>
+
+                            <td className="py-3 px-4 max-w-xs">
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-[#f4effc] text-[#4a2e70] border border-[#e2dcee] mb-1">
+                                {p.fragrance_family}
+                              </span>
+                              <p className="text-[10px] text-neutral-500 truncate">{p.top_notes || p.description}</p>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1">
+                                <span className="text-neutral-500 font-mono text-xs">₹</span>
+                                <input
+                                  type="number"
+                                  value={curPrice}
+                                  onChange={(e) =>
+                                    setPriceEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
+                                  }
+                                  className="w-20 px-2 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-black focus:outline-none focus:border-[#4a2e70]"
+                                />
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1">
+                                <span className="text-neutral-500 font-mono text-xs">₹</span>
+                                <input
+                                  type="number"
+                                  value={curOrig}
+                                  onChange={(e) =>
+                                    setOrigPriceEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
+                                  }
+                                  className="w-20 px-2 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-neutral-700 focus:outline-none focus:border-[#4a2e70]"
+                                />
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1">
+                                <span className="text-neutral-500 font-mono text-xs">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={curDeliveryFee}
+                                  onChange={(e) =>
+                                    setDeliveryFeeEdits((prev) => ({
+                                      ...prev,
+                                      [String(p.id)]: Math.max(0, Number(e.target.value)),
+                                    }))
+                                  }
+                                  className="w-16 px-2 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-black focus:outline-none focus:border-[#4a2e70]"
+                                />
+                                {deliveryFeeEdits[String(p.id)] !== undefined &&
+                                  deliveryFeeEdits[String(p.id)] !== (p.delivery_fee ?? 0) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickDeliveryFeeSave(p.id)}
+                                      className="p-1 bg-[#4a2e70] text-white rounded hover:bg-[#3b245e] cursor-pointer shadow-2xs"
+                                      title="Save Delivery Fee"
+                                    >
+                                      <Save className="w-3 h-3" />
+                                    </button>
+                                  )}
+                              </div>
+                              <span className="text-[9px] text-neutral-400 block mt-0.5">
+                                {curDeliveryFee === 0 ? 'Free Shipping' : 'Fixed Shipping'}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  defaultValue={p.stock}
+                                  onChange={(e) =>
+                                    setStockEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
+                                  }
+                                  className={`w-14 px-2 py-1 border rounded text-xs font-semibold focus:outline-none ${
+                                    p.stock <= 10
+                                      ? 'bg-amber-50 border-amber-300 text-amber-900'
+                                      : 'bg-neutral-50 border-neutral-300 text-black'
+                                  }`}
+                                />
+                                {stockEdits[String(p.id)] !== undefined && stockEdits[String(p.id)] !== p.stock && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickStockSave(p.id)}
+                                    className="p-1 bg-black text-white rounded hover:bg-neutral-800 cursor-pointer shadow-2xs"
+                                    title="Save Stock"
+                                  >
+                                    <Save className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              {discountPercent > 0 ? (
+                                <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded text-[10px] font-bold">
+                                  {discountPercent}% OFF
+                                </span>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded text-[10px]">
+                                  Standard
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {hasPriceChange && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickPriceSave(p.id)}
+                                    className="px-2.5 py-1 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer shadow-2xs"
+                                    title="Save Pricing & Delivery Fee Changes"
+                                  >
+                                    <Save className="w-3 h-3" />
+                                    <span>Save</span>
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => openEditModal(p)}
+                                  className="p-1.5 text-neutral-600 hover:text-[#4a2e70] hover:bg-[#f4effc] rounded transition-colors cursor-pointer"
+                                  title="Edit Fragrance Details"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProduct(p.id, p.name)}
+                                  className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                  title="Delete Formulation"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -779,36 +1613,29 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 3: ORDERS & SHIPMENTS */}
+        {/* ========================================================
+            TAB 3: ORDERS & FULFILLMENT TABLE (Design per Image 2)
+           ======================================================== */}
         {activeTab === 'orders' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2">
               <div>
-                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black">
-                  Customer Orders & Fulfillment
+                <h2 className="text-lg font-bold text-[#3d2757] font-sans flex items-center gap-2">
+                  <span>Customer Orders & Shipments</span>
+                  <span className="text-xs px-2 py-0.5 bg-[#f4effc] text-[#4a2e70] rounded-full border border-[#dcd0ee] font-mono">
+                    {filteredOrders.length}
+                  </span>
                 </h2>
-                <p className="text-xs text-neutral-500">
-                  Manage statuses. Updating order status automatically emails customer via Gmail SMTP.
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Inspect client orders, dispatch couriers, and track fulfillment status.
                 </p>
               </div>
 
-              {/* Status and search filters */}
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                    placeholder="Search by order or customer..."
-                    className="pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-300 rounded-full text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
-
+              <div className="flex items-center gap-2 flex-wrap">
                 <select
                   value={orderStatusFilter}
                   onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  className="px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-full text-xs font-medium text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  className="px-3 py-1.5 bg-neutral-50 border border-neutral-300 rounded-lg text-xs font-medium text-black focus:outline-none"
                 >
                   <option value="all">All Statuses</option>
                   <option value="Placed">Placed</option>
@@ -817,283 +1644,378 @@ export default function AdminPage() {
                   <option value="Delivered">Delivered</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
-              </div>
-            </div>
 
-            {/* Orders Table */}
-            <div className="space-y-4">
-              {orders.length === 0 ? (
-                <div className="p-12 text-center bg-neutral-50 rounded-3xl border border-neutral-200 text-neutral-500 text-xs">
-                  No orders match the selected criteria.
-                </div>
-              ) : (
-                orders.map((o) => (
-                  <div key={o.id} className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-4 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-neutral-200 gap-3">
-                      <div>
-                        <span className="font-mono font-bold text-sm text-black">#{o.order_number}</span>
-                        <span className="text-xs text-neutral-500 ml-3">
-                          {new Date(o.created_at).toLocaleString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-
-                      {/* Status Dropdown */}
-                      <div className="flex items-center gap-3">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                          {o.payment_status} (Cashfree)
-                        </span>
-
-                        <select
-                          value={o.order_status}
-                          onChange={(e) => handleOrderStatusChange(o.id, e.target.value, o.tracking_number)}
-                          className="px-3 py-1.5 bg-black text-white rounded-full text-xs font-semibold focus:outline-none cursor-pointer"
-                        >
-                          <option value="Placed">Placed</option>
-                          <option value="Processing">Processing</option>
-                          <option value="Shipped">Shipped</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-                      <div>
-                        <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">Customer</span>
-                        <p className="font-semibold text-black mt-0.5">{o.customer_name}</p>
-                        <p className="text-neutral-500 flex items-center gap-1.5 mt-0.5">
-                          <Mail className="w-3.5 h-3.5" />
-                          {o.customer_email}
-                        </p>
-                        <p className="text-neutral-500">{o.customer_phone}</p>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">Destination Address</span>
-                        <p className="text-neutral-700 mt-0.5 leading-relaxed">{o.shipping_address}</p>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">Items Ordered</span>
-                        <div className="mt-1 space-y-1">
-                          {o.items.map((it, idx) => (
-                            <div key={idx} className="flex justify-between text-neutral-700">
-                              <span>{it.name} x {it.quantity}</span>
-                              <span className="font-semibold text-black">₹{(it.price * it.quantity).toLocaleString('en-IN')}</span>
-                            </div>
-                          ))}
-                          <div className="pt-2 border-t border-neutral-200 flex justify-between font-bold text-black">
-                            <span>Total</span>
-                            <span>₹{o.total_amount.toLocaleString('en-IN')}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: USERS MANAGEMENT & DEACTIVATION */}
-        {activeTab === 'users' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Header & Search */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black">
-                  Specimen Clients & User Accounts
-                </h2>
-                <p className="text-xs text-neutral-500">
-                  Inspect registered clients, update privileges, or deactivate account access.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
-                  <input
-                    type="text"
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Search name, email, phone..."
-                    className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
-
-                <select
-                  value={userStatusFilter}
-                  onChange={(e) => setUserStatusFilter(e.target.value as any)}
-                  className="py-2 px-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-black focus:outline-none"
+                <button
+                  type="button"
+                  onClick={loadAllAdminData}
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Refresh Orders"
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active Only</option>
-                  <option value="deactivated">Deactivated Only</option>
-                </select>
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToPdfPrintable(
+                      'Customer Orders',
+                      ['Order #', 'Date', 'Customer', 'Subtotal (₹)', 'Delivery Fee (₹)', 'Total (₹)', 'Payment', 'Status'],
+                      filteredOrders.map((o) => [
+                        o.order_number,
+                        new Date(o.created_at).toLocaleDateString(),
+                        `${o.customer_name} (${o.customer_phone})`,
+                        `₹${o.subtotal}`,
+                        `₹${o.shipping_fee}`,
+                        `₹${o.total_amount}`,
+                        o.payment_status,
+                        o.order_status,
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to PDF</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToCsv(
+                      'chembros_orders',
+                      ['Order Number', 'Date', 'Customer Name', 'Customer Email', 'Phone', 'Address', 'Subtotal', 'Delivery Fee', 'Total', 'Payment Status', 'Order Status', 'Tracking'],
+                      filteredOrders.map((o) => [
+                        o.order_number,
+                        new Date(o.created_at).toISOString(),
+                        o.customer_name,
+                        o.customer_email,
+                        o.customer_phone,
+                        o.shipping_address,
+                        o.subtotal,
+                        o.shipping_fee,
+                        o.total_amount,
+                        o.payment_status,
+                        o.order_status,
+                        o.tracking_number || '',
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to Excel</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyTableDataToClipboard(
+                      ['Order #', 'Date', 'Customer', 'Total', 'Payment', 'Status'],
+                      filteredOrders.map((o) => [
+                        o.order_number,
+                        new Date(o.created_at).toLocaleDateString(),
+                        o.customer_name,
+                        o.total_amount,
+                        o.payment_status,
+                        o.order_status,
+                      ]),
+                      'Orders'
+                    )
+                  }
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Copy Orders Data to Clipboard"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+                  <span className="text-xs font-semibold text-neutral-700 whitespace-nowrap">Column Search</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={orderColSearch}
+                    onClick={() => setOrderColSearch(!orderColSearch)}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                      orderColSearch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        orderColSearch ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Users Table */}
-            <div className="bg-white border border-neutral-200 rounded-3xl overflow-hidden shadow-sm">
+            {/* Table Container */}
+            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-neutral-200 bg-neutral-50 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
-                      <th className="py-4 px-6">Client / Specimen</th>
-                      <th className="py-4 px-6">Contact & Location</th>
-                      <th className="py-4 px-6">Role</th>
-                      <th className="py-4 px-6 text-center">Orders</th>
-                      <th className="py-4 px-6 text-center">Status</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Order #</th>
+                      <th className="py-3 px-4 font-semibold">Created At</th>
+                      <th className="py-3 px-4 font-semibold">Customer / Contact</th>
+                      <th className="py-3 px-4 font-semibold">Destination Address</th>
+                      <th className="py-3 px-4 font-semibold">Subtotal (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Delivery Fee (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Total Amount (₹)</th>
+                      <th className="py-3 px-4 font-semibold">Payment</th>
+                      <th className="py-3 px-4 font-semibold">Fulfillment Status</th>
+                      <th className="py-3 px-4 font-semibold text-right">Edit</th>
                     </tr>
+
+                    {orderColSearch && (
+                      <tr className="bg-[#faf8fd] border-b border-neutral-200 text-neutral-700 font-normal">
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.orderNumber}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, orderNumber: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.date}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, date: e.target.value })}
+                              placeholder="Search date..."
+                              className="w-full pl-7 pr-7 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute right-2 pointer-events-none" />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.customer}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, customer: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.destination}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, destination: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.subtotal}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, subtotal: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.deliveryFee}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, deliveryFee: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.total}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, total: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.payment}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, payment: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={orderFilters.status}
+                              onChange={(e) => setOrderFilters({ ...orderFilters, status: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOrderFilters({
+                                orderNumber: '',
+                                date: '',
+                                customer: '',
+                                destination: '',
+                                subtotal: '',
+                                deliveryFee: '',
+                                total: '',
+                                payment: '',
+                                status: '',
+                              })
+                            }
+                            className="text-[10px] text-neutral-400 hover:text-black font-semibold uppercase"
+                          >
+                            Reset
+                          </button>
+                        </th>
+                      </tr>
+                    )}
                   </thead>
+
                   <tbody className="divide-y divide-neutral-100">
-                    {adminUsers
-                      .filter((u) => {
-                        const s = userSearch.toLowerCase().trim()
-                        const matchSearch =
-                          !s ||
-                          (u.name || '').toLowerCase().includes(s) ||
-                          (u.email || '').toLowerCase().includes(s) ||
-                          (u.phone || '').includes(s) ||
-                          (u.city || '').toLowerCase().includes(s)
-
-                        const matchStatus =
-                          userStatusFilter === 'all'
-                            ? true
-                            : userStatusFilter === 'active'
-                            ? u.is_active !== false
-                            : u.is_active === false
-
-                        return matchSearch && matchStatus
-                      })
-                      .map((u) => {
-                        const isActive = u.is_active !== false
-                        return (
-                          <tr key={u.id} className="hover:bg-neutral-50/60 transition-colors">
-                            {/* User Avatar & Name */}
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-3">
-                                {u.avatar_url ? (
-                                  <img
-                                    src={u.avatar_url}
-                                    alt=""
-                                    className="w-10 h-10 rounded-full object-cover border border-neutral-200 shadow-xs"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center font-bold text-black uppercase font-['Cinzel',serif]">
-                                    {u.name ? u.name.charAt(0) : 'C'}
-                                  </div>
-                                )}
-                                <div>
-                                  <div className="font-semibold text-neutral-900 uppercase tracking-wide font-['Cinzel',serif]">
-                                    {u.name || 'Anonymous Specimen'}
-                                  </div>
-                                  <div className="text-[11px] text-neutral-400 font-mono">
-                                    ID: #{u.id} · Registered {u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN') : 'N/A'}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Contact & Location */}
-                            <td className="py-4 px-6 font-mono text-[11px] text-neutral-600">
-                              <div>{u.email}</div>
-                              <div className="text-neutral-400">{u.phone || 'No phone recorded'}</div>
-                              <div className="text-[10px] text-neutral-400 mt-0.5">
-                                {[u.city, u.state, u.pincode].filter(Boolean).join(', ') || 'No address set'}
-                              </div>
-                            </td>
-
-                            {/* Role */}
-                            <td className="py-4 px-6">
-                              <span
-                                className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border ${
-                                  u.role === 'admin'
-                                    ? 'bg-neutral-900 text-white border-black font-semibold'
-                                    : 'bg-neutral-100 text-neutral-700 border-neutral-200'
-                                }`}
+                    {filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="py-12 text-center text-neutral-500">
+                          No orders match the specified criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((o) => (
+                        <tr key={o.id} className="hover:bg-[#faf8fd] transition-colors">
+                          <td className="py-3 px-4 font-mono font-bold text-xs text-black whitespace-nowrap">
+                            #{o.order_number}
+                          </td>
+                          <td className="py-3 px-4 text-[11px] text-neutral-600 whitespace-nowrap">
+                            {new Date(o.created_at).toLocaleString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-3 px-4">
+                            <p className="font-semibold text-xs text-black">{o.customer_name}</p>
+                            <p className="text-[10px] text-neutral-500 font-mono">{o.customer_email}</p>
+                            <p className="text-[10px] text-neutral-400 font-mono">{o.customer_phone}</p>
+                          </td>
+                          <td className="py-3 px-4 max-w-xs text-[11px] text-neutral-600 truncate" title={o.shipping_address}>
+                            {o.shipping_address}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-xs text-neutral-700">
+                            ₹{o.subtotal?.toLocaleString('en-IN') ?? 0}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-xs text-[#4a2e70] font-semibold">
+                            {o.shipping_fee === 0 ? 'Complimentary' : `₹${o.shipping_fee}`}
+                          </td>
+                          <td className="py-3 px-4 font-mono font-bold text-xs text-black">
+                            ₹{o.total_amount?.toLocaleString('en-IN') ?? 0}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                o.payment_status === 'PAID'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {o.payment_status}
+                            </span>
+                            <span className="block text-[9px] text-neutral-400 font-mono mt-0.5">
+                              {(o as any).payment_method || 'Cashfree'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={o.order_status}
+                                onChange={(e) => handleOrderStatusChange(o.id, e.target.value, o.tracking_number)}
+                                className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-black border border-neutral-300 rounded-lg text-xs font-semibold focus:outline-none cursor-pointer transition-colors"
                               >
-                                {u.role === 'admin' ? 'Master Admin' : 'Member'}
-                              </span>
-                            </td>
+                                <option value="Placed">Placed</option>
+                                <option value="Processing">Processing</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
 
-                            {/* Orders Count & Spend */}
-                            <td className="py-4 px-6 text-center font-mono">
-                              <div className="font-semibold text-black">{u.orders_count || 0}</div>
-                              <div className="text-[10px] text-neutral-400">
-                                ₹{(u.total_spent || 0).toLocaleString('en-IN')}
-                              </div>
-                            </td>
-
-                            {/* Status */}
-                            <td className="py-4 px-6 text-center">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
-                                  isActive
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : 'bg-red-50 text-red-700 border-red-200'
+                              <button
+                                type="button"
+                                onClick={() => openDispatchModal(o)}
+                                className={`p-1.5 rounded-lg text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                                  o.order_status === 'Shipped' || o.tracking_number
+                                    ? 'bg-[#4a2e70] text-white hover:bg-[#3b245e]'
+                                    : 'bg-black text-white hover:bg-neutral-800'
                                 }`}
+                                title={o.order_status === 'Shipped' ? 'Update Tracking Details' : 'Dispatch Courier'}
                               >
-                                {isActive ? (
-                                  <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Active
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                    Deactivated
-                                  </>
-                                )}
-                              </span>
-                            </td>
+                                <Truck className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
 
-                            {/* Actions */}
-                            <td className="py-4 px-6 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            {o.tracking_number && (
+                              <div className="mt-1 flex items-center gap-1 text-[10px] text-neutral-500 font-mono">
+                                <span className="truncate max-w-[130px]">{o.tracking_number}</span>
                                 <button
                                   type="button"
-                                  onClick={() => handleToggleUserStatus(u)}
-                                  className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-1 ${
-                                    isActive
-                                      ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'
-                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                                  }`}
-                                  title={isActive ? 'Deactivate user' : 'Reactivate user'}
+                                  onClick={() => handleCopyTracking(o.tracking_number!)}
+                                  className="text-neutral-400 hover:text-black cursor-pointer"
+                                  title="Copy Tracking ID"
                                 >
-                                  {isActive ? (
-                                    <>
-                                      <UserX className="w-3.5 h-3.5" />
-                                      <span>Deactivate</span>
-                                    </>
+                                  {copiedTrackingId === o.tracking_number ? (
+                                    <Check className="w-2.5 h-2.5 text-emerald-600" />
                                   ) : (
-                                    <>
-                                      <UserCheck className="w-3.5 h-3.5" />
-                                      <span>Activate</span>
-                                    </>
+                                    <Copy className="w-2.5 h-2.5" />
                                   )}
                                 </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleUserRole(u)}
-                                  className="px-2.5 py-1.5 rounded-xl text-[10px] font-mono uppercase bg-neutral-100 hover:bg-neutral-200 text-neutral-700 border border-neutral-200 transition-all cursor-pointer"
-                                  title="Toggle admin/user role"
-                                >
-                                  {u.role === 'admin' ? 'Demote' : 'Promote'}
-                                </button>
                               </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => openDispatchModal(o)}
+                              className="p-1.5 text-neutral-600 hover:text-[#4a2e70] hover:bg-[#f4effc] rounded transition-colors cursor-pointer"
+                              title="Edit Shipment & Tracking"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1101,128 +2023,1981 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 5: LABORATORY AUDIT LOGS */}
-        {activeTab === 'logs' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Header & Filter */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* ========================================================
+            TAB 4: CLIENTS & USERS TABLE (Design per Image 2)
+           ======================================================== */}
+        {activeTab === 'users' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2">
               <div>
-                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black">
-                  Laboratory Activity & Audit Logs
+                <h2 className="text-lg font-bold text-[#3d2757] font-sans flex items-center gap-2">
+                  <span>Specimen Clients & User Accounts</span>
+                  <span className="text-xs px-2 py-0.5 bg-[#f4effc] text-[#4a2e70] rounded-full border border-[#dcd0ee] font-mono">
+                    {filteredUsers.length}
+                  </span>
                 </h2>
-                <p className="text-xs text-neutral-500">
-                  Comprehensive audit trail of orders, user security events, and dispatch operations.
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Registered clients, contact addresses, permission levels, and access controls.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                {['ALL', 'ORDER', 'USER', 'SYSTEM'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setLogCategoryFilter(cat)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-mono uppercase transition-all cursor-pointer border ${
-                      logCategoryFilter === cat
-                        ? 'bg-black text-white border-black font-semibold shadow-xs'
-                        : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:text-black'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={userStatusFilter}
+                  onChange={(e) => setUserStatusFilter(e.target.value as any)}
+                  className="px-3 py-1.5 bg-neutral-50 border border-neutral-300 rounded-lg text-xs font-medium text-black focus:outline-none"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active Only</option>
+                  <option value="deactivated">Deactivated Only</option>
+                </select>
+
                 <button
                   type="button"
                   onClick={loadAllAdminData}
-                  className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-black border border-neutral-200 cursor-pointer"
-                  title="Refresh logs"
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Refresh Users"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="w-4 h-4" />
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToPdfPrintable(
+                      'Specimen Clients',
+                      ['ID', 'Name', 'Email', 'Main Phone', 'Secondary Phone', 'City', 'Role', 'Status'],
+                      filteredUsers.map((u) => [
+                        u.id,
+                        u.name || 'Anonymous Specimen',
+                        u.email,
+                        u.phone || '-',
+                        u.secondary_phone || '-',
+                        u.city || '-',
+                        u.role,
+                        u.is_active !== false ? 'Active' : 'Deactivated',
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to PDF</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToCsv(
+                      'chembros_clients',
+                      ['User ID', 'Name', 'Email', 'Phone', 'Secondary Phone', 'City', 'State', 'Pincode', 'Role', 'Status', 'Registered Date'],
+                      filteredUsers.map((u) => [
+                        u.id,
+                        u.name || '',
+                        u.email,
+                        u.phone || '',
+                        u.secondary_phone || '',
+                        u.city || '',
+                        u.state || '',
+                        u.pincode || '',
+                        u.role,
+                        u.is_active !== false ? 'Active' : 'Deactivated',
+                        u.created_at || '',
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to Excel</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyTableDataToClipboard(
+                      ['ID', 'Name', 'Email', 'Phone', 'City', 'Role', 'Status'],
+                      filteredUsers.map((u) => [
+                        u.id,
+                        u.name || 'Client',
+                        u.email,
+                        u.phone || '-',
+                        u.city || '-',
+                        u.role,
+                        u.is_active !== false ? 'Active' : 'Deactivated',
+                      ]),
+                      'Clients'
+                    )
+                  }
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Copy Client Data to Clipboard"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+                  <span className="text-xs font-semibold text-neutral-700 whitespace-nowrap">Column Search</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={userColSearch}
+                    onClick={() => setUserColSearch(!userColSearch)}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                      userColSearch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        userColSearch ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Logs List Card */}
-            <div className="bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm space-y-3 font-mono text-xs">
-              {adminLogs
-                .filter((log) => logCategoryFilter === 'ALL' || log.category === logCategoryFilter)
-                .map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-neutral-100/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 mt-0.5 ${
-                          log.category === 'ORDER'
-                            ? 'bg-blue-100 text-blue-800'
-                            : log.category === 'USER'
-                            ? 'bg-purple-100 text-purple-800'
-                            : log.category === 'SYSTEM'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-neutral-200 text-neutral-800'
-                        }`}
-                      >
-                        {log.category}
-                      </span>
-                      <div>
-                        <div className="font-semibold text-neutral-900">{log.action}</div>
-                        <div className="text-[11px] text-neutral-600 mt-0.5">{log.details}</div>
-                        {log.user_email && (
-                          <div className="text-[10px] text-neutral-400 mt-0.5">
-                            Entity: {log.user_email}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+            {/* Table Container */}
+            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Client / Specimen</th>
+                      <th className="py-3 px-4 font-semibold">Email Address</th>
+                      <th className="py-3 px-4 font-semibold">Phone (Main & Alternate)</th>
+                      <th className="py-3 px-4 font-semibold">Location / Delivery City</th>
+                      <th className="py-3 px-4 font-semibold">Registered At</th>
+                      <th className="py-3 px-4 font-semibold">Role</th>
+                      <th className="py-3 px-4 font-semibold">Status</th>
+                      <th className="py-3 px-4 font-semibold text-right">Edit</th>
+                    </tr>
 
-                    <div className="text-right shrink-0 sm:self-center">
-                      <div className="text-[10px] text-neutral-400">
-                        {new Date(log.timestamp).toLocaleString('en-IN', {
-                          month: 'short',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </div>
-                      <span
-                        className={`inline-block mt-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                          log.status === 'SUCCESS'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : log.status === 'WARNING'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-neutral-200 text-neutral-700'
-                        }`}
-                      >
-                        {log.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    {userColSearch && (
+                      <tr className="bg-[#faf8fd] border-b border-neutral-200 text-neutral-700 font-normal">
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.name}
+                              onChange={(e) => setUserFilters({ ...userFilters, name: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.email}
+                              onChange={(e) => setUserFilters({ ...userFilters, email: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.phone}
+                              onChange={(e) => setUserFilters({ ...userFilters, phone: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.location}
+                              onChange={(e) => setUserFilters({ ...userFilters, location: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.date}
+                              onChange={(e) => setUserFilters({ ...userFilters, date: e.target.value })}
+                              placeholder="Search date..."
+                              className="w-full pl-7 pr-7 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute right-2 pointer-events-none" />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.role}
+                              onChange={(e) => setUserFilters({ ...userFilters, role: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={userFilters.status}
+                              onChange={(e) => setUserFilters({ ...userFilters, status: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUserFilters({
+                                name: '',
+                                email: '',
+                                phone: '',
+                                location: '',
+                                date: '',
+                                role: '',
+                                status: '',
+                              })
+                            }
+                            className="text-[10px] text-neutral-400 hover:text-black font-semibold uppercase"
+                          >
+                            Reset
+                          </button>
+                        </th>
+                      </tr>
+                    )}
+                  </thead>
+
+                  <tbody className="divide-y divide-neutral-100">
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-neutral-500">
+                          No registered clients match the specified criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((u) => {
+                        const isActive = u.is_active !== false
+                        return (
+                          <tr key={u.id} className="hover:bg-[#faf8fd] transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {u.avatar_url ? (
+                                  <img
+                                    src={u.avatar_url}
+                                    alt=""
+                                    className="w-8 h-8 rounded-full object-cover border border-neutral-200 shadow-2xs shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center font-bold text-[#4a2e70] uppercase font-['Cinzel',serif] text-xs shrink-0">
+                                    {u.name ? u.name.charAt(0) : 'C'}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-semibold text-black text-xs font-['Cinzel',serif]">
+                                    {u.name || 'Anonymous Specimen'}
+                                  </p>
+                                  <span className="text-[10px] text-neutral-400 font-mono">ID #{u.id}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-xs text-neutral-700">{u.email}</td>
+                            <td className="py-3 px-4">
+                              <p className="font-mono text-xs text-black">{u.phone || '-'}</p>
+                              {u.secondary_phone && (
+                                <p className="font-mono text-[10px] text-neutral-400">Alt: {u.secondary_phone}</p>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-neutral-600">
+                              {u.city ? `${u.city}, ${u.state || 'India'}` : '-'}
+                            </td>
+                            <td className="py-3 px-4 text-[11px] text-neutral-500 font-mono whitespace-nowrap">
+                              {u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleUserRole(u)}
+                                className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                                  u.role === 'admin'
+                                    ? 'bg-[#4a2e70] text-white'
+                                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                                }`}
+                                title="Click to change privilege role"
+                              >
+                                {u.role === 'admin' ? 'Master Admin' : 'Member'}
+                              </button>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span
+                                className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  isActive
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                    : 'bg-red-50 text-red-800 border border-red-200'
+                                }`}
+                              >
+                                {isActive ? 'Active' : 'Deactivated'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserStatus(u)}
+                                  className={`p-1.5 rounded transition-colors cursor-pointer ${
+                                    isActive
+                                      ? 'text-neutral-400 hover:text-red-600 hover:bg-red-50'
+                                      : 'text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50'
+                                  }`}
+                                  title={isActive ? 'Deactivate account access' : 'Reactivate account access'}
+                                >
+                                  {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserRole(u)}
+                                  className="p-1.5 text-neutral-600 hover:text-[#4a2e70] hover:bg-[#f4effc] rounded transition-colors cursor-pointer"
+                                  title="Edit privileges"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
-        {/* MODAL: ADD / EDIT FRAGRANCE WITH BASE64 IMAGE UPLOAD */}
-        {isAddModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl p-8 max-w-2xl w-full border border-neutral-200 shadow-2xl max-h-[90vh] overflow-y-auto">
+        {/* ========================================================
+            TAB 5: LABORATORY AUDIT LOGS (Design per Image 2)
+           ======================================================== */}
+        {activeTab === 'logs' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2">
+              <div>
+                <h2 className="text-lg font-bold text-[#3d2757] font-sans flex items-center gap-2">
+                  <span>Laboratory Activity & Security Logs</span>
+                  <span className="text-xs px-2 py-0.5 bg-[#f4effc] text-[#4a2e70] rounded-full border border-[#dcd0ee] font-mono">
+                    {filteredLogs.length}
+                  </span>
+                </h2>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Chronological trail of administrative actions, catalog updates, and authentication events.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={logCategoryFilter}
+                  onChange={(e) => setLogCategoryFilter(e.target.value)}
+                  className="px-3 py-1.5 bg-neutral-50 border border-neutral-300 rounded-lg text-xs font-medium text-black focus:outline-none"
+                >
+                  <option value="ALL">All Categories</option>
+                  <option value="ORDER">Orders</option>
+                  <option value="CATALOG">Catalog</option>
+                  <option value="AUTH">Authentication</option>
+                  <option value="USER">User Controls</option>
+                  <option value="SYSTEM">System</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={loadAllAdminData}
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Refresh Audit Logs"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToPdfPrintable(
+                      'Laboratory Audit Logs',
+                      ['Timestamp', 'Category', 'Action', 'Details', 'Initiator', 'Status'],
+                      filteredLogs.map((l) => [
+                        new Date(l.timestamp).toLocaleString(),
+                        l.category,
+                        l.action,
+                        l.details,
+                        l.user_email || 'System',
+                        l.status,
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to PDF</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportToCsv(
+                      'chembros_audit_logs',
+                      ['Log ID', 'Timestamp', 'Category', 'Action', 'Details', 'Initiator Email', 'Status'],
+                      filteredLogs.map((l) => [
+                        l.id,
+                        l.timestamp,
+                        l.category,
+                        l.action,
+                        l.details,
+                        l.user_email || '',
+                        l.status,
+                      ])
+                    )
+                  }
+                  className="px-3.5 py-1.5 border border-[#6b4c9a] text-[#4a2e70] hover:bg-[#f8f5fc] rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#6b4c9a]" />
+                  <span>Export to Excel</span>
+                  <ChevronDown className="w-3 h-3 text-[#6b4c9a]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyTableDataToClipboard(
+                      ['Timestamp', 'Category', 'Action', 'Details', 'Initiator', 'Status'],
+                      filteredLogs.map((l) => [
+                        new Date(l.timestamp).toLocaleString(),
+                        l.category,
+                        l.action,
+                        l.details,
+                        l.user_email || 'System',
+                        l.status,
+                      ]),
+                      'Audit Logs'
+                    )
+                  }
+                  className="p-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  title="Copy Audit Logs to Clipboard"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+                  <span className="text-xs font-semibold text-neutral-700 whitespace-nowrap">Column Search</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={logColSearch}
+                    onClick={() => setLogColSearch(!logColSearch)}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
+                      logColSearch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        logColSearch ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Table Container */}
+            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Timestamp</th>
+                      <th className="py-3 px-4 font-semibold">Category</th>
+                      <th className="py-3 px-4 font-semibold">Action</th>
+                      <th className="py-3 px-4 font-semibold">Details Narrative</th>
+                      <th className="py-3 px-4 font-semibold">Initiator / Email</th>
+                      <th className="py-3 px-4 font-semibold">Status</th>
+                    </tr>
+
+                    {logColSearch && (
+                      <tr className="bg-[#faf8fd] border-b border-neutral-200 text-neutral-700 font-normal">
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={logFilters.date}
+                              onChange={(e) => setLogFilters({ ...logFilters, date: e.target.value })}
+                              placeholder="Search date..."
+                              className="w-full pl-7 pr-7 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute right-2 pointer-events-none" />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={logFilters.category}
+                              onChange={(e) => setLogFilters({ ...logFilters, category: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={logFilters.action}
+                              onChange={(e) => setLogFilters({ ...logFilters, action: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={logFilters.details}
+                              onChange={(e) => setLogFilters({ ...logFilters, details: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={logFilters.email}
+                              onChange={(e) => setLogFilters({ ...logFilters, email: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                        <th className="py-2 px-4">
+                          <div className="relative flex items-center">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={logFilters.status}
+                              onChange={(e) => setLogFilters({ ...logFilters, status: e.target.value })}
+                              placeholder="Search..."
+                              className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                            />
+                          </div>
+                        </th>
+                      </tr>
+                    )}
+                  </thead>
+
+                  <tbody className="divide-y divide-neutral-100">
+                    {filteredLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-neutral-500">
+                          No laboratory logs match the specified filter criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLogs.map((l) => (
+                        <tr key={l.id} className="hover:bg-[#faf8fd] transition-colors">
+                          <td className="py-3 px-4 font-mono text-[11px] text-neutral-500 whitespace-nowrap">
+                            {new Date(l.timestamp).toLocaleString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#f4effc] text-[#4a2e70] border border-[#e2dcee]">
+                              {l.category}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-black text-xs font-mono">{l.action}</td>
+                          <td className="py-3 px-4 max-w-md text-xs text-neutral-700">{l.details}</td>
+                          <td className="py-3 px-4 font-mono text-[11px] text-neutral-500">
+                            {l.user_email || 'System Dispatcher'}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                l.status === 'SUCCESS'
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                  : l.status === 'WARNING'
+                                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                  : l.status === 'ERROR'
+                                  ? 'bg-red-50 text-red-800 border border-red-200'
+                                  : 'bg-neutral-100 text-neutral-700'
+                              }`}
+                            >
+                              {l.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB 6: SETTINGS & PERMISSIONS (NEW TAB - Full Feature Controls)
+           ======================================================== */}
+        {activeTab === 'settings' && (
+          <div className="space-y-8 animate-in fade-in duration-200">
+            {/* Header with Title and Save Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
+              <div>
+                <h2 className="text-xl font-bold font-['Cinzel',serif] text-black uppercase tracking-wide flex items-center gap-2">
+                  <span>Platform Feature Permissions & Shipping Controls</span>
+                </h2>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Manage Cash on Delivery vs Online Payment permissions, fixed shipping dispatch rules, and storefront feature gates.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleResetPlatformSettings}
+                  disabled={settingsSaving}
+                  className="px-4 py-2 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Reset to factory laboratory defaults"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Restore Defaults</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSavePlatformSettings()}
+                  disabled={settingsSaving}
+                  className="px-5 py-2 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  {settingsSaving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Save Settings</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Feedback Alert Toast */}
+            {settingsFeedback && (
+              <div
+                className={`p-4 rounded-2xl flex items-center justify-between text-xs border ${
+                  settingsFeedback.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {settingsFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
+                  <span>{settingsFeedback.message}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSettingsFeedback(null)}
+                  className="cursor-pointer text-neutral-500 hover:text-black"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleSavePlatformSettings} className="space-y-8">
+              {/* SECTION 1: PAYMENT GATEWAYS & CASH ON DELIVERY (COD) CONTROLS */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
+                    <Banknote className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      1. Payment Gateways & Cash on Delivery (COD) Permissions
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Enable or disable doorstep payment collection vs enforcing strictly 100% online pre-payment.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  {/* Toggle 1: Enable Online Payment */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-black uppercase tracking-wider text-[11px]">
+                          Online Pre-Payment (Cashfree PG)
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
+                          UPI · Cards
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Accept instant client payments via UPI (GPay, PhonePe, Paytm), Credit & Debit cards, and NetBanking.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_online_payment}
+                      onClick={() =>
+                        setSettingsForm({ ...settingsForm, enable_online_payment: !settingsForm.enable_online_payment })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_online_payment ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_online_payment ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Toggle 2: Enable COD */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-black uppercase tracking-wider text-[11px]">
+                          Cash on Delivery (Doorstep Collection)
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase">
+                          COD
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Allow customers to place orders with zero upfront charge and pay cash or UPI directly to courier upon arrival.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_cod}
+                      onClick={() => setSettingsForm({ ...settingsForm, enable_cod: !settingsForm.enable_cod })}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_cod ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_cod ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Toggle 3: Enforce Online Payment Only */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4 md:col-span-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-black uppercase tracking-wider text-[11px]">
+                          Enforce Online Payment Only (Strict Atelier Policy)
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-red-100 text-red-800 uppercase">
+                          Blocks COD
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        When enabled, Cash on Delivery is strictly hidden and disabled across the store. All orders must be 100% pre-paid before studio decanting.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enforce_online_only}
+                      onClick={() =>
+                        setSettingsForm({ ...settingsForm, enforce_online_only: !settingsForm.enforce_online_only })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enforce_online_only ? 'bg-red-700' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enforce_online_only ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Input 1: COD Handling Fee */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      COD Handling Surcharge (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={settingsForm.cod_handling_fee}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, cod_handling_fee: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">
+                      Optional extra fee added to COD orders (set to 0 for complimentary COD).
+                    </p>
+                  </div>
+
+                  {/* Input 2: COD Maximum Cap */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Maximum Cart Value for COD (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="1000"
+                      step="500"
+                      value={settingsForm.cod_max_order_limit}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, cod_max_order_limit: Math.max(1000, Number(e.target.value)) })
+                      }
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">
+                      Orders exceeding this total are blocked from COD and require online payment (default ₹15,000).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: SHIPPING DISPATCH & LOGISTICS CONTROLS (FIXED BY ADMIN) */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      2. Shipping Dispatch & Logistics Controls (Fixed by Admin)
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Configure standard delivery fees, free shipping thresholds, primary courier partners, and transit windows.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                  {/* Toggle: Enable Free Shipping */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4 md:col-span-2 lg:col-span-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-black uppercase tracking-wider text-[11px]">
+                          Enable Complimentary Shipping Threshold
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
+                          Free Over ₹{settingsForm.free_shipping_threshold.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        When enabled, all domestic orders that meet or exceed the free shipping threshold receive complimentary shipping.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_free_shipping}
+                      onClick={() =>
+                        setSettingsForm({ ...settingsForm, enable_free_shipping: !settingsForm.enable_free_shipping })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_free_shipping ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_free_shipping ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Free Shipping Threshold */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Free Shipping Order Minimum (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={settingsForm.free_shipping_threshold}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, free_shipping_threshold: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Orders reaching this subtotal receive free delivery.</p>
+                  </div>
+
+                  {/* Default Delivery Fee */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Default Delivery Charge (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={settingsForm.default_delivery_fee}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, default_delivery_fee: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Applied when cart is below the free shipping threshold.</p>
+                  </div>
+
+                  {/* Primary Courier Partner */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Primary Dispatch Courier Partner *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsForm.default_courier}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, default_courier: e.target.value })}
+                      placeholder="e.g. Blue Dart Express"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Default carrier shown on checkout and order receipts.</p>
+                  </div>
+
+                  {/* Delivery Timeline Window */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Estimated Transit Timeline *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsForm.estimated_delivery_days}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, estimated_delivery_days: e.target.value })}
+                      placeholder="e.g. 2-4 Business Days"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Shown to clients on checkout and confirmation receipt.</p>
+                  </div>
+
+                  {/* Same-Day Cutoff */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Same-Day Packaging Cutoff Time
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.same_day_dispatch_cutoff}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, same_day_dispatch_cutoff: e.target.value })}
+                      placeholder="e.g. 02:00 PM IST"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Orders placed before this hour leave the laboratory today.</p>
+                  </div>
+
+                  {/* Express Dispatch Toggle & Fee */}
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-black uppercase text-[10px] block">Express Air Priority Upgrade</span>
+                      <span className="text-[10px] text-neutral-500">Offer priority air dispatch at checkout</span>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_express_dispatch}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          enable_express_dispatch: !settingsForm.enable_express_dispatch,
+                        })
+                      }
+                      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_express_dispatch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_express_dispatch ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Mandatory Tracking */}
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-black uppercase text-[10px] block">Require AWB Tracking ID</span>
+                      <span className="text-[10px] text-neutral-500">Require tracking code before marking Shipped</span>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.require_dispatch_tracking}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          require_dispatch_tracking: !settingsForm.require_dispatch_tracking,
+                        })
+                      }
+                      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.require_dispatch_tracking ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.require_dispatch_tracking ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Auto Dispatch Notification Email */}
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-black uppercase text-[10px] block">Auto-Email Dispatch Tracking</span>
+                      <span className="text-[10px] text-neutral-500">Email client tracking link via Gmail SMTP</span>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.auto_email_dispatch}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          auto_email_dispatch: !settingsForm.auto_email_dispatch,
+                        })
+                      }
+                      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.auto_email_dispatch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.auto_email_dispatch ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: CHECKOUT FLOW & CLIENT PRIVILEGES */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      3. Checkout Flow & Client Permissions
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Configure guest checkout, voucher permissions, and client order cancellation privileges.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  {/* Allow Guest Checkout */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Allow Guest Checkout
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        When disabled, clients must sign in or register before checking out.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.allow_guest_checkout}
+                      onClick={() =>
+                        setSettingsForm({ ...settingsForm, allow_guest_checkout: !settingsForm.allow_guest_checkout })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.allow_guest_checkout ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.allow_guest_checkout ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Enable Coupons */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Promotional Coupons & Vouchers
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Allow clients to apply promotional voucher codes during checkout.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_coupons}
+                      onClick={() => setSettingsForm({ ...settingsForm, enable_coupons: !settingsForm.enable_coupons })}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_coupons ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_coupons ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Allow Client Cancellation */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Client Self-Cancellation (1 Hour)
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Allow clients to cancel placed orders directly before atelier packing begins.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.allow_client_cancellation}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          allow_client_cancellation: !settingsForm.allow_client_cancellation,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.allow_client_cancellation ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.allow_client_cancellation ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: STOREFRONT & CATALOG EXPERIENCE PERMISSIONS */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      4. Storefront & Catalog Experience Permissions
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Enable or disable customer reviews, scarcity stock badges, and atelier narrative video stories.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                  {/* Enable Reviews */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Customer Olfactory Reviews
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Display star ratings and community wear experiences on fragrance pages.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_customer_reviews}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          enable_customer_reviews: !settingsForm.enable_customer_reviews,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_customer_reviews ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_customer_reviews ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Allow Guest Reviews */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Allow Guest Reviews
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Allow any visitor to submit reviews without verified purchase history.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.allow_guest_reviews}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          allow_guest_reviews: !settingsForm.allow_guest_reviews,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.allow_guest_reviews ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.allow_guest_reviews ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Stock Scarcity */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Low Stock Scarcity Warnings
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Displays 'Only X flacons remaining' badge when stock drops to 10 or below.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.show_stock_scarcity}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          show_stock_scarcity: !settingsForm.show_stock_scarcity,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.show_stock_scarcity ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.show_stock_scarcity ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Trending Badges */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Trending Formulation Badges
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Displays Trending and Featured curation tags on formulations.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.show_trending_badges}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          show_trending_badges: !settingsForm.show_trending_badges,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.show_trending_badges ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.show_trending_badges ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Video Stories */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Artisanal Video Area on Homepage
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Renders the haute parfumerie film area and narrative video on the homepage.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_video_stories}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          enable_video_stories: !settingsForm.enable_video_stories,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_video_stories ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_video_stories ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Maintenance Mode */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Private Atelier Tasting Mode
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Activates private studio tasting banner across the storefront.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.maintenance_mode}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          maintenance_mode: !settingsForm.maintenance_mode,
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.maintenance_mode ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.maintenance_mode ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Primary Save Bar */}
+              <div className="flex items-center justify-between p-6 bg-neutral-50 border border-neutral-200 rounded-3xl">
+                <div>
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-black">
+                    Commit Platform Permissions & Logistics
+                  </h4>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    Changes take effect across customer checkout, shipping calculations, and catalog controls immediately.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={settingsSaving}
+                  className="px-6 py-3 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                >
+                  {settingsSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Permissions...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Platform Permissions</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB 7: FULL-PAGE PROFILE & MASTER SECURITY
+           ======================================================== */}
+        {activeTab === 'profile' && (
+          <div className="space-y-8 animate-in fade-in duration-200">
+            <div>
+              <h2 className="text-xl font-bold font-['Cinzel',serif] text-black uppercase tracking-wide">
+                Administrator Profile & Master Security Dossier
+              </h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Manage your master profile credentials, emergency studio contact lines, and authentication password on this dedicated page.
+              </p>
+            </div>
+
+            {profileFeedback && (
+              <div
+                className={`p-4 rounded-2xl flex items-center justify-between text-xs border ${
+                  profileFeedback.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {profileFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
+                  <span>{profileFeedback.message}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProfileFeedback(null)}
+                  className="cursor-pointer text-neutral-500 hover:text-black"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {passwordFeedback && (
+              <div
+                className={`p-4 rounded-2xl flex items-center justify-between text-xs border ${
+                  passwordFeedback.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {passwordFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
+                  <span>{passwordFeedback.message}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPasswordFeedback(null)}
+                  className="cursor-pointer text-neutral-500 hover:text-black"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Form 1: Master Profile Dossier */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
+                    <UserIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      Personal & Studio Information
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">Public atelier presence and contact details</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveAdminProfile} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
+                      Administrator Avatar Portrait
+                    </label>
+                    <div className="flex items-center gap-4 p-3 bg-neutral-50 border border-neutral-200 rounded-2xl">
+                      <div className="w-14 h-14 rounded-full overflow-hidden bg-neutral-800 border-2 border-[#4a2e70] flex items-center justify-center text-white shrink-0">
+                        {profileForm.avatar_url ? (
+                          <img src={profileForm.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold font-['Cinzel',serif]">
+                            {profileForm.name ? profileForm.name.charAt(0).toUpperCase() : 'A'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="url"
+                          value={profileForm.avatar_url}
+                          onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
+                          placeholder="https://example.com/admin-avatar.jpg"
+                          className="w-full px-3 py-2 bg-white border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                        />
+                        <p className="text-[10px] text-neutral-400 mt-1">Paste HTTPS direct image URL for profile portrait</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Full Legal / Administrator Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      placeholder="Chembros Administrator"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Master Administrator Email
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        disabled
+                        value={profileForm.email}
+                        className="w-full px-4 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-xs text-neutral-600 font-mono cursor-not-allowed"
+                      />
+                      <span className="absolute right-3 top-2.5 px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-emerald-100 text-emerald-800">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-neutral-400 mt-1">Master email linked to Supabase authentication</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                        Main Contact Phone *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        placeholder="9876543210"
+                        className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                      />
+                      <p className="text-[10px] text-neutral-400 mt-1">Used for courier dispatch OTP</p>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                        Secondary Phone (Optional)
+                      </label>
+                      <input
+                        type="tel"
+                        value={profileForm.secondary_phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, secondary_phone: e.target.value })}
+                        placeholder="9876500000"
+                        className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                      />
+                      <p className="text-[10px] text-neutral-400 mt-1">Alternate atelier contact</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Studio Headquarters Location
+                    </label>
+                    <input
+                      type="text"
+                      value={profileForm.headquarters}
+                      onChange={(e) => setProfileForm({ ...profileForm, headquarters: e.target.value })}
+                      placeholder="Madurai & Chennai Studio Laboratory"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-[#f4effc] border border-[#e2dcee] rounded-2xl flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-semibold text-[#4a2e70]">Master Administrator Clearance</p>
+                      <p className="text-[10px] text-neutral-600">Full write permission to catalog, pricing, dispatch, and users</p>
+                    </div>
+                    <ShieldCheck className="w-5 h-5 text-[#4a2e70] shrink-0" />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="w-full py-3 px-4 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    {profileSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving Dossier...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save Profile Changes</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* Form 2: Master Password & Security Controls */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-neutral-100 border border-neutral-200 flex items-center justify-center text-black">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      Master Password & Security
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">Update master admin authentication credentials</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleChangeAdminPassword} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Current Master Password *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPass ? 'text' : 'password'}
+                        required
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        placeholder="Enter existing password"
+                        className="w-full pl-4 pr-10 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                        className="absolute right-3 top-3 text-neutral-400 hover:text-black cursor-pointer"
+                      >
+                        {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      New Master Password *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPass ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        placeholder="At least 8 characters"
+                        className="w-full pl-4 pr-10 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                        className="absolute right-3 top-3 text-neutral-400 hover:text-black cursor-pointer"
+                      >
+                        {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Confirm New Master Password *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPass ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        placeholder="Re-type new password"
+                        className="w-full pl-4 pr-10 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-3 top-3 text-neutral-400 hover:text-black cursor-pointer"
+                      >
+                        {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-2 text-[11px] text-neutral-600">
+                    <p className="font-semibold text-black uppercase tracking-wider text-[10px]">Master Security Policy:</p>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Minimum 8 characters length</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Synchronized across Supabase and session store</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Immediately invalidates compromised older tokens</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={passwordSaving}
+                    className="w-full py-3 px-4 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    {passwordSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="w-4 h-4" />
+                        <span>Update Master Password</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            MODAL 1: SHIPPING DISPATCH & TRACKING
+           ======================================================== */}
+        {dispatchModalOrder && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-neutral-200 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
               <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
-                <h3 className="font-['Cinzel',serif] text-xl font-bold text-black">
-                  {editingProduct ? 'Edit Fragrance Formulation' : 'Decant New Fragrance'}
-                </h3>
-                <button onClick={() => setIsAddModalOpen(false)} className="cursor-pointer text-neutral-400 hover:text-black">
+                <div>
+                  <h3 className="font-['Cinzel',serif] text-lg font-bold text-black uppercase">
+                    Dispatch Shipment & Delivery Tracking
+                  </h3>
+                  <p className="text-xs text-neutral-500 font-mono">
+                    Order #{dispatchModalOrder.order_number} · Subtotal ₹{dispatchModalOrder.subtotal} · Delivery Fee ₹{dispatchModalOrder.shipping_fee}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDispatchModalOrder(null)}
+                  className="p-2 text-neutral-400 hover:text-black rounded-full hover:bg-neutral-100 transition-colors"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveProduct} className="mt-6 space-y-5 text-xs">
-                {/* Image Upload Area */}
+              <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-2 text-xs">
+                <div className="flex justify-between items-center text-neutral-500">
+                  <span>Client:</span>
+                  <span className="font-semibold text-black">{dispatchModalOrder.customer_name}</span>
+                </div>
+                <div className="flex justify-between items-center text-neutral-500">
+                  <span>Contact:</span>
+                  <span className="font-mono text-black">{dispatchModalOrder.customer_phone}</span>
+                </div>
+                <div className="flex justify-between items-start text-neutral-500 pt-1 border-t border-neutral-200">
+                  <span className="shrink-0 mr-2">Destination:</span>
+                  <span className="text-right text-neutral-800 leading-snug">{dispatchModalOrder.shipping_address}</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleConfirmDispatch} className="space-y-4 text-xs">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-                    Flacon Artwork (Stored as Base64 in Database) *
+                    Courier / Delivery Partner *
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+                    {[
+                      'Blue Dart Express',
+                      'Delhivery',
+                      'DTDC Express',
+                      'India Post Speed',
+                      'FedEx Priority',
+                      'White-Glove Courier',
+                    ].map((courierName) => (
+                      <button
+                        key={courierName}
+                        type="button"
+                        onClick={() => setDispatchForm((prev) => ({ ...prev, courier: courierName }))}
+                        className={`px-3 py-2 rounded-xl text-[11px] font-medium border text-center transition-all cursor-pointer ${
+                          dispatchForm.courier === courierName
+                            ? 'bg-[#4a2e70] text-white border-[#4a2e70] font-semibold shadow-2xs'
+                            : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-700 border-neutral-200'
+                        }`}
+                      >
+                        {courierName}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    required
+                    value={dispatchForm.courier}
+                    onChange={(e) => setDispatchForm((prev) => ({ ...prev, courier: e.target.value }))}
+                    placeholder="Enter custom carrier"
+                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                    Consignment AWB / Tracking Number {settings.require_dispatch_tracking ? '*' : '(Optional)'}
+                  </label>
+                  <input
+                    type="text"
+                    required={settings.require_dispatch_tracking}
+                    value={dispatchForm.tracking_number}
+                    onChange={(e) => setDispatchForm((prev) => ({ ...prev, tracking_number: e.target.value }))}
+                    placeholder="e.g. BD-8921094821 / DEL-7892104"
+                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                  />
+                  <p className="text-[10px] text-neutral-400 mt-1">
+                    {settings.auto_email_dispatch
+                      ? 'This tracking code is automatically dispatched to the client via order notification email.'
+                      : 'Tracking code recorded in database.'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                    Fulfillment Status *
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setDispatchForm((prev) => ({ ...prev, status: 'Shipped' }))}
+                      className={`py-2.5 px-4 rounded-xl text-xs font-semibold border flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        dispatchForm.status === 'Shipped'
+                          ? 'bg-[#4a2e70] text-white border-[#4a2e70]'
+                          : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-700 border-neutral-200'
+                      }`}
+                    >
+                      <Truck className="w-4 h-4" />
+                      Shipped (In Transit)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDispatchForm((prev) => ({ ...prev, status: 'Delivered' }))}
+                      className={`py-2.5 px-4 rounded-xl text-xs font-semibold border flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        dispatchForm.status === 'Delivered'
+                          ? 'bg-emerald-700 text-white border-emerald-700'
+                          : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-700 border-neutral-200'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Delivered to Client
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-3 border-t border-neutral-200">
+                  <button
+                    type="button"
+                    onClick={() => setDispatchModalOrder(null)}
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-100 font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={dispatchLoading}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-[#4a2e70] hover:bg-[#3b245e] text-white font-semibold uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    {dispatchLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending Notification...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Truck className="w-4 h-4" />
+                        <span>Confirm Dispatch</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            MODAL 2: ADD / EDIT FRAGRANCE (With Delivery Fee Input)
+           ======================================================== */}
+        {isAddModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-neutral-200 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
+                <h3 className="font-['Cinzel',serif] text-xl font-bold text-black">
+                  {editingProduct ? 'Edit Fragrance Formulation' : 'Decant New Fragrance'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="cursor-pointer text-neutral-400 hover:text-black p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveProduct} className="mt-6 space-y-4 text-xs">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
+                    Flacon Artwork *
                   </label>
                   <div className="flex items-center gap-6 p-4 bg-neutral-50 rounded-2xl border border-neutral-300">
-                    <div className="w-24 h-28 bg-white rounded-xl border border-neutral-200 flex items-center justify-center p-2 shrink-0 overflow-hidden">
+                    <div className="w-20 h-24 bg-white rounded-xl border border-neutral-200 flex items-center justify-center p-2 shrink-0 overflow-hidden">
                       {productForm.image_base64 ? (
                         <img src={productForm.image_base64} alt="Preview" className="max-h-full object-contain" />
                       ) : (
@@ -1231,9 +4006,9 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2 flex-1">
-                      <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-black text-white rounded-full text-xs font-medium uppercase tracking-wider hover:bg-neutral-800 transition-colors cursor-pointer">
+                      <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full text-xs font-medium uppercase tracking-wider hover:bg-neutral-800 transition-colors cursor-pointer">
                         <Upload className="w-4 h-4" />
-                        Upload Image File
+                        <span>Upload Image File</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1242,7 +4017,7 @@ export default function AdminPage() {
                         />
                       </label>
                       <p className="text-[11px] text-neutral-500">
-                        Select any PNG, JPG, or SVG image. It will be encoded to Base64 and stored directly in Supabase DB.
+                        Select any PNG, JPG, or SVG image. Encoded to Base64 and stored directly in database.
                       </p>
                     </div>
                   </div>
@@ -1277,7 +4052,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
                       Selling Price (₹) *
@@ -1287,32 +4062,48 @@ export default function AdminPage() {
                       required
                       value={productForm.price}
                       onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     />
                   </div>
 
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Original Price (₹)
+                      Original MRP (₹)
                     </label>
                     <input
                       type="number"
                       value={productForm.original_price}
                       onChange={(e) => setProductForm({ ...productForm, original_price: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     />
                   </div>
 
                   <div>
+                    <label className="block font-semibold text-[#4a2e70] uppercase tracking-wider mb-1">
+                      Delivery Fee (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={productForm.delivery_fee}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, delivery_fee: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full px-3 py-2 bg-[#faf8fd] border border-[#dcd0ee] rounded-xl font-semibold text-[#4a2e70]"
+                    />
+                    <span className="text-[9px] text-neutral-400 block mt-0.5">0 = Complimentary</span>
+                  </div>
+
+                  <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Stock Quantity *
+                      Stock Units *
                     </label>
                     <input
                       type="number"
                       required
                       value={productForm.stock}
                       onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     />
                   </div>
                 </div>
@@ -1325,7 +4116,7 @@ export default function AdminPage() {
                     <select
                       value={productForm.fragrance_family}
                       onChange={(e) => setProductForm({ ...productForm, fragrance_family: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     >
                       <option value="Woody">Woody</option>
                       <option value="Amber / Oriental">Amber / Oriental</option>
@@ -1343,7 +4134,7 @@ export default function AdminPage() {
                       value={productForm.concentration}
                       onChange={(e) => setProductForm({ ...productForm, concentration: e.target.value })}
                       placeholder="30% Pure Extrait"
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     />
                   </div>
 
@@ -1355,7 +4146,7 @@ export default function AdminPage() {
                       type="number"
                       value={productForm.volume_ml}
                       onChange={(e) => setProductForm({ ...productForm, volume_ml: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     />
                   </div>
                 </div>
@@ -1369,7 +4160,7 @@ export default function AdminPage() {
                     value={productForm.top_notes}
                     onChange={(e) => setProductForm({ ...productForm, top_notes: e.target.value })}
                     placeholder="Bergamot, Pink Pepper, Saffron"
-                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                   />
                 </div>
 
@@ -1382,7 +4173,7 @@ export default function AdminPage() {
                     value={productForm.heart_notes}
                     onChange={(e) => setProductForm({ ...productForm, heart_notes: e.target.value })}
                     placeholder="Madurai Sambac Jasmine, Cashmeran, Rose Absolute"
-                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                   />
                 </div>
 
@@ -1395,7 +4186,7 @@ export default function AdminPage() {
                     value={productForm.base_notes}
                     onChange={(e) => setProductForm({ ...productForm, base_notes: e.target.value })}
                     placeholder="Virginian Cedarwood, Grey Ambergris, Cetalox"
-                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                   />
                 </div>
 
@@ -1404,25 +4195,25 @@ export default function AdminPage() {
                     Description & Chemistry Narrative
                   </label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={productForm.description}
                     onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                     placeholder="Artisanal olfactory breakdown..."
-                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl"
+                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                   />
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-neutral-200">
+                <div className="flex gap-4 pt-3 border-t border-neutral-200">
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="flex-1 py-3 px-4 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-100 font-semibold cursor-pointer"
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-100 font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 px-4 rounded-xl bg-black text-white font-semibold uppercase tracking-wider hover:bg-neutral-800 cursor-pointer"
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-[#4a2e70] hover:bg-[#3b245e] text-white font-semibold uppercase tracking-wider cursor-pointer shadow-xs"
                   >
                     {editingProduct ? 'Save Changes' : 'Decant Product'}
                   </button>
@@ -1433,7 +4224,6 @@ export default function AdminPage() {
         )}
       </main>
 
-      <Footer />
     </div>
   )
 }

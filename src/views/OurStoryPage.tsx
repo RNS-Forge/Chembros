@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import NavBar from '../components/NavBar'
 import OurStoryHero from '../components/OurStoryHero'
 import Footer from '../components/Footer'

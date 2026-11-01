@@ -1,4 +1,4 @@
-﻿import OurStoryPage from '@/views/OurStoryPage'
+import OurStoryPage from '@/views/OurStoryPage'
 
 export default OurStoryPage
 

@@ -6,6 +6,7 @@ export interface Product {
   subtitle?: string
   price: number
   original_price?: number
+  delivery_fee?: number
   stock: number
   category: string
   fragrance_family: string
@@ -32,21 +33,47 @@ export interface CartItem {
   quantity: number
 }
 
+export interface UserAddress {
+  id: string
+  label?: string // e.g. "Home", "Office", "Other"
+  full_name: string
+  house_no: string // House / Flat No. (Required)
+  house_color?: string // House / Building Color (Visual Landmark)
+  street: string // Street / Area / Colony (Required)
+  landmark?: string // Near Place / Famous Landmark (For easy courier delivery)
+  city: string // City / Town (Required)
+  district: string // District (Required)
+  state: string // State (Required)
+  country: string // Country (Required, default "India")
+  pincode: string // Postal PIN Code (Required, 6 digits)
+  phone: string // Main Phone Number (Required, 10 digits - For delivery OTP & courier)
+  secondary_phone?: string // Secondary Phone Number (Optional alternate contact)
+  is_default?: boolean
+  created_at?: string
+}
+
 export interface User {
   id: number
   email: string
   name?: string
   role: 'user' | 'admin'
-  phone?: string
+  phone?: string // Main phone
+  secondary_phone?: string // Secondary phone (optional)
   shipping_address?: string
+  house_no?: string
+  house_color?: string
+  landmark?: string
   city?: string
+  district?: string
   state?: string
+  country?: string
   pincode?: string
   avatar_url?: string
   is_active?: boolean
   created_at?: string
   orders_count?: number
   total_spent?: number
+  saved_addresses?: UserAddress[]
 }
 
 export interface AdminLogItem {
@@ -127,4 +154,72 @@ export interface CreateReviewInput {
   comment: string
   longevity?: string
   sillage?: string
+}
+
+export interface PlatformSettings {
+  // 1. Payment Methods & Cash on Delivery Permissions
+  enable_online_payment: boolean
+  enable_cod: boolean
+  enforce_online_only: boolean
+  cod_handling_fee: number
+  cod_max_order_limit: number
+
+  // 2. Shipping Dispatch & Logistics Controls (Fixed by Admin)
+  default_delivery_fee: number
+  enable_free_shipping: boolean
+  free_shipping_threshold: number
+  default_courier: string
+  estimated_delivery_days: string
+  same_day_dispatch_cutoff: string
+  enable_express_dispatch: boolean
+  express_dispatch_fee: number
+  require_dispatch_tracking: boolean
+  auto_email_dispatch: boolean
+
+  // 3. Checkout Flow & Client Permissions
+  allow_guest_checkout: boolean
+  enable_coupons: boolean
+  allow_client_cancellation: boolean
+
+  // 4. Storefront & Catalog Permissions
+  enable_customer_reviews: boolean
+  allow_guest_reviews: boolean
+  show_stock_scarcity: boolean
+  show_trending_badges: boolean
+  enable_video_stories: boolean
+  maintenance_mode: boolean
+}
+
+export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  // Payment
+  enable_online_payment: true,
+  enable_cod: true,
+  enforce_online_only: false,
+  cod_handling_fee: 0,
+  cod_max_order_limit: 15000,
+
+  // Shipping Dispatch
+  default_delivery_fee: 150,
+  enable_free_shipping: true,
+  free_shipping_threshold: 1500,
+  default_courier: 'Blue Dart Express',
+  estimated_delivery_days: '2-4 Business Days',
+  same_day_dispatch_cutoff: '02:00 PM IST',
+  enable_express_dispatch: false,
+  express_dispatch_fee: 100,
+  require_dispatch_tracking: true,
+  auto_email_dispatch: true,
+
+  // Checkout & Accounts
+  allow_guest_checkout: true,
+  enable_coupons: true,
+  allow_client_cancellation: true,
+
+  // Storefront & Catalog
+  enable_customer_reviews: true,
+  allow_guest_reviews: false,
+  show_stock_scarcity: true,
+  show_trending_badges: true,
+  enable_video_stories: true,
+  maintenance_mode: false,
 }

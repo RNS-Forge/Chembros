@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { Link } from 'react-router-dom';
 import footerBgImg from '../assets/footerbg.png';
 import modelHandImg from '../assets/footerguy.png';

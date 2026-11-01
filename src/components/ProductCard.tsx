@@ -1,8 +1,9 @@
-﻿'use client'
+'use client'
 import React from 'react'
 import { Link } from 'react-router-dom'
 import type { Product } from '../types'
 import { useCart } from '../context/CartContext'
+import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import { Plus, Check, Star } from 'lucide-react'
 
 interface ProductCardProps {
@@ -11,6 +12,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart()
+  const { settings } = usePlatformSettings()
   const [added, setAdded] = React.useState(false)
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -70,6 +72,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         </p>
 
         {/* Pricing and Action */}
+        {settings.show_stock_scarcity && product.stock > 0 && product.stock <= 5 && (
+          <div className="mt-2 text-[10px] font-mono text-amber-700 bg-amber-50 px-2 py-0.5 rounded inline-block">
+            Only {product.stock} units left
+          </div>
+        )}
         <div className="mt-5 pt-3 border-t border-neutral-100 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-base font-bold text-black font-['Poppins',sans-serif]">

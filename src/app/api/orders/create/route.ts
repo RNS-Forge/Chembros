@@ -79,9 +79,9 @@ export async function POST(req: Request) {
       return_url: returnUrl,
     })
 
-    if (!cfResult.success) {
+    if (!cfResult.success || !cfResult.data) {
       return NextResponse.json(
-        { detail: 'Unable to initialize Cashfree payment gateway session. Please try again.' },
+        { detail: cfResult.error || 'Unable to initialize Cashfree payment gateway session. Please try again.' },
         { status: 500 }
       )
     }

@@ -2,6 +2,7 @@
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react'
 import bottleImg from '../assets/bottle.png'
 
@@ -9,6 +10,7 @@ const defaultBottleImg = (bottleImg as any)?.src || bottleImg
 
 export default function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, subtotal, shippingFee, total } = useCart()
+  const { settings } = usePlatformSettings()
   const { isAuthModalOpen } = useAuth()
   const navigate = useNavigate()
 
@@ -42,13 +44,19 @@ export default function CartDrawer() {
 
           {/* Complimentary Shipping Progress */}
           <div className="px-6 py-3 bg-neutral-50 border-b border-neutral-100 text-xs text-neutral-600">
-            {subtotal >= 1500 ? (
-              <span className="text-emerald-700 font-medium">
-                Complimentary white-glove shipping unlocked!
-              </span>
+            {settings.enable_free_shipping ? (
+              subtotal >= settings.free_shipping_threshold ? (
+                <span className="text-emerald-700 font-medium">
+                  Complimentary white-glove shipping unlocked!
+                </span>
+              ) : (
+                <span>
+                  Add <strong className="text-black font-semibold">₹{(settings.free_shipping_threshold - subtotal).toLocaleString('en-IN')}</strong> more for complimentary delivery.
+                </span>
+              )
             ) : (
               <span>
-                Add <strong className="text-black font-semibold">₹{(1500 - subtotal).toLocaleString('en-IN')}</strong> more for complimentary delivery.
+                Standard White-Glove Dispatch: <strong className="text-black font-semibold">₹{settings.default_delivery_fee}</strong>
               </span>
             )}
           </div>

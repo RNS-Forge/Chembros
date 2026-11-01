@@ -407,7 +407,7 @@ export default function AuthModal() {
                   : 'text-black/50 hover:text-black'
               }`}
             >
-              Create Account
+              Sign Up
             </button>
           </div>
         )}
@@ -1037,7 +1037,7 @@ export default function AuthModal() {
                       </>
                     ) : (
                       <>
-                        <span>Create Account</span>
+                        <span>Sign Up</span>
                         <ArrowRight className="w-4 h-4 stroke-[2]" />
                       </>
                     )}

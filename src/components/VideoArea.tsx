@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import { Star } from 'lucide-react'
 const Vid = '/assets/video/introvideo.mp4'
 
 interface BrandStoryProtocolProps {
@@ -247,7 +248,7 @@ export default function BrandStoryProtocol({
                   {/* Footer: Star Rating */}
                   <div className="pt-4 border-t border-current/10 flex items-center justify-between font-mono text-[11px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-amber-400">★★★★★</span>
+                      <div className="flex items-center text-amber-400 gap-0.5">{[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />)}</div>
                       <span className="opacity-70 text-[10px]">{item.rating}</span>
                     </div>
                     <span className="opacity-40 uppercase tracking-widest text-[9px]">

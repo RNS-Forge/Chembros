@@ -1,4 +1,4 @@
-﻿import { Suspense } from 'react'
+import { Suspense } from 'react'
 import OrderConfirmationPage from '@/views/OrderConfirmationPage'
 
 export default function Page() {

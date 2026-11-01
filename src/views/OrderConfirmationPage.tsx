@@ -10,7 +10,7 @@ import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Navigation, CreditCa
 export default function OrderConfirmationPage() {
   const [searchParams] = useSearchParams()
   const { orderNumber: paramOrderNumber } = useParams<{ orderNumber?: string }>()
-  const orderNumber = paramOrderNumber || searchParams.get('order_id') || searchParams.get('orderNumber')
+  const orderNumber = paramOrderNumber || searchParams.get('order_id') || searchParams.get('orderNumber') || searchParams.get('order_number')
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [copiedTrack, setCopiedTrack] = useState(false)
@@ -81,7 +81,7 @@ export default function OrderConfirmationPage() {
 
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                  {order.payment_status} (Cashfree)
+                  {order.payment_status} ({(order as any).payment_method || 'Cashfree'})
                 </span>
                 <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-black text-white">
                   {order.order_status}

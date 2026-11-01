@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  serverExternalPackages: ['bcryptjs', 'jsonwebtoken', 'nodemailer'],
   outputFileTracingRoot: path.resolve(__dirname),
   images: {
     unoptimized: true,

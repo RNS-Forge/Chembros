@@ -152,19 +152,19 @@ NEXT_PUBLIC_API_BASE_URL=
 
 # Server-Side Supabase Privileged Key
 SUPABASE_URL=https://sbbqxtqiuafjceayaigp.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_jxKT2
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Gmail SMTP 2FA & Multi-Stage Tracking Emails
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=sanjay.n.ihub@snsgroups.com
-SMTP_PASS=myiytyplpoyypnnj
-SMTP_FROM=sanjay.n.ihub@snsgroups.com
+SMTP_USER=your_email@domain.com
+SMTP_PASS=your_gmail_app_password
+SMTP_FROM=your_email@domain.com
 
 # Cashfree Payment Gateway (PG v3)
-CASHFREE_APP_ID=TEST_APP_ID_CHEMBROS
-CASHFREE_SECRET_KEY=TEST_SECRET_KEY_CHEMBROS
-CASHFREE_ENV=SANDBOX
+CASHFREE_APP_ID=your_cashfree_app_id
+CASHFREE_SECRET_KEY=your_cashfree_secret_key
+CASHFREE_ENV=PRODUCTION
 CASHFREE_API_VERSION=2023-08-01
 
 # JWT Secret & Token Lifespan
