@@ -47,6 +47,11 @@ export default function CheckoutPage() {
   const { user, isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
+  // 18% GST (9% CGST + 9% SGST) breakdown included in the displayed prices
+  const totalGst = subtotal > 0 ? subtotal - subtotal / 1.18 : 0
+  const cgst = Math.ceil(totalGst / 2)
+  const sgst = Math.floor(totalGst / 2)
+
   const hasSavedAddress = Boolean(user?.shipping_address && user.shipping_address.trim().length > 0)
   const [useNewAddress, setUseNewAddress] = useState(!hasSavedAddress)
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false)
@@ -343,11 +348,26 @@ export default function CheckoutPage() {
                   <span className="font-mono text-black font-semibold">₹{(product.price * quantity).toLocaleString('en-IN')}</span>
                 </div>
               ))}
-              <div className="pt-2 text-xs text-neutral-500 space-y-1">
+              <div className="pt-2 text-xs text-neutral-500 space-y-1.5">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-mono text-black">₹{subtotal.toLocaleString('en-IN')}</span>
+                </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span className="text-emerald-700 font-medium">{shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span>CGST @ 9%</span>
+                  <span className="font-mono text-black">₹{cgst.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>SGST @ 9%</span>
+                  <span className="font-mono text-black">₹{sgst.toLocaleString('en-IN')}</span>
+                </div>
+                <p className="text-[10px] text-neutral-400 pt-0.5">
+                  GST is included in the prices shown.
+                </p>
               </div>
             </div>
           )}
@@ -763,11 +783,22 @@ export default function CheckoutPage() {
                 <span className="font-mono text-black">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping Dispatch</span>
+                <span>Shipping</span>
                 <span className="font-medium text-emerald-700">
                   {shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}
                 </span>
               </div>
+              <div className="flex justify-between">
+                <span>CGST @ 9%</span>
+                <span className="font-mono text-black">₹{cgst.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>SGST @ 9%</span>
+                <span className="font-mono text-black">₹{sgst.toLocaleString('en-IN')}</span>
+              </div>
+              <p className="text-[11px] text-neutral-400 pt-0.5">
+                GST is included in the prices shown.
+              </p>
               <div className="flex justify-between text-base font-bold text-black pt-3 border-t border-black/5">
                 <span>Total Due</span>
                 <span className="font-mono text-lg">₹{total.toLocaleString('en-IN')}</span>

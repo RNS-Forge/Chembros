@@ -1,7 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import FullPageLoader from '../components/FullPageLoader'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import type { Product, Order, AdminStats, User, AdminLogItem, PlatformSettings } from '../types'
@@ -850,7 +849,20 @@ export default function AdminPage() {
   })
 
   if (authLoading || (loading && !products.length && !stats)) {
-    return <FullPageLoader message="Loading Chembros Control Center..." />
+    return (
+      <div className="min-h-screen bg-[#fcfcfd] flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-4xl space-y-6 animate-pulse">
+          <div className="h-14 bg-neutral-200/60 rounded-2xl w-full" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="h-28 bg-neutral-200/60 rounded-2xl" />
+            <div className="h-28 bg-neutral-200/60 rounded-2xl" />
+            <div className="h-28 bg-neutral-200/60 rounded-2xl" />
+            <div className="h-28 bg-neutral-200/60 rounded-2xl" />
+          </div>
+          <div className="h-64 bg-neutral-200/60 rounded-2xl w-full" />
+        </div>
+      </div>
+    )
   }
 
   return (

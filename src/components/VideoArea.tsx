@@ -1,7 +1,38 @@
 'use client'
 import { useState, useRef } from 'react'
 import { Star } from 'lucide-react'
-const Vid = '/assets/video/introvideo.mp4'
+
+const DEFAULT_CLOUDINARY_EMBED = 'https://player.cloudinary.com/embed/?cloud_name=o2iumbkf&public_id=WhatsApp_Video_2026-10-28_at_12.32.21_PM'
+const DEFAULT_CLOUDINARY_STREAM = 'https://res.cloudinary.com/o2iumbkf/video/upload/WhatsApp_Video_2026-10-28_at_12.32.21_PM.mp4'
+
+const Vid = DEFAULT_CLOUDINARY_STREAM
+
+function resolveMediaSource(src: string): { streamUrl: string; embedUrl: string } {
+  if (src.includes('player.cloudinary.com/embed')) {
+    try {
+      const url = new URL(src)
+      const cloudName = url.searchParams.get('cloud_name')
+      const publicId = url.searchParams.get('public_id')
+      if (cloudName && publicId) {
+        return {
+          streamUrl: `https://res.cloudinary.com/${cloudName}/video/upload/${publicId}.mp4`,
+          embedUrl: src,
+        }
+      }
+    } catch {}
+  } else if (src.includes('res.cloudinary.com') && src.includes('/video/upload/')) {
+    try {
+      const match = src.match(/res\.cloudinary\.com\/([^/]+)\/video\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/)
+      if (match) {
+        return {
+          streamUrl: src,
+          embedUrl: `https://player.cloudinary.com/embed/?cloud_name=${match[1]}&public_id=${match[2]}`,
+        }
+      }
+    } catch {}
+  }
+  return { streamUrl: src, embedUrl: src }
+}
 
 interface BrandStoryProtocolProps {
   videoSrc?: string
@@ -82,7 +113,10 @@ export default function BrandStoryProtocol({
 }: BrandStoryProtocolProps) {
   const [activeCard, setActiveCard] = useState<number>(0)
   const [isMuted, setIsMuted] = useState<boolean>(true)
+  const [useIframeFallback, setUseIframeFallback] = useState<boolean>(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+
+  const media = resolveMediaSource(videoSrc)
 
   const toggleSound = () => {
     if (videoRef.current) {
@@ -100,16 +134,25 @@ export default function BrandStoryProtocol({
             PART 1: CINEMATIC 16:9 VIDEO FRAME
             ======================================================== */}
         <div className="w-full aspect-video max-h-[760px] relative bg-neutral-900 rounded-[28px] sm:rounded-[36px] lg:rounded-[48px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] group">
-          {videoSrc ? (
+          {useIframeFallback ? (
+            <iframe
+              src={`${media.embedUrl}${media.embedUrl.includes('?') ? '&' : '?'}autoplay=true&loop=true&muted=true`}
+              className="w-full h-full border-0 select-none"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowFullScreen
+              title="Chembros Craftsmanship"
+            />
+          ) : media.streamUrl ? (
             <video
               ref={videoRef}
               className="w-full h-full object-cover select-none pointer-events-none"
-              src={videoSrc}
+              src={media.streamUrl}
               poster={videoPoster}
               autoPlay
               loop
               muted
               playsInline
+              onError={() => setUseIframeFallback(true)}
             />
           ) : (
             <img
@@ -120,13 +163,14 @@ export default function BrandStoryProtocol({
             />
           )}
 
-          {/* Floating Sound Control Pill */}
-          <button
-            type="button"
-            onClick={toggleSound}
-            aria-label={isMuted ? 'Unmute video' : 'Mute video'}
-            className="right-4 bottom-4 sm:right-6 sm:bottom-6 lg:right-8 lg:bottom-8 absolute z-20 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-black/50 hover:bg-black/75 backdrop-blur-xl border border-white/20 text-white font-mono text-[11px] sm:text-xs tracking-wider uppercase transition-all duration-300 flex items-center gap-2 active:scale-95 cursor-pointer shadow-lg"
-          >
+          {/* Floating Sound Control Pill (for native HTML5 stream) */}
+          {!useIframeFallback && media.streamUrl && (
+            <button
+              type="button"
+              onClick={toggleSound}
+              aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+              className="right-4 bottom-4 sm:right-6 sm:bottom-6 lg:right-8 lg:bottom-8 absolute z-20 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-black/50 hover:bg-black/75 backdrop-blur-xl border border-white/20 text-white font-mono text-[11px] sm:text-xs tracking-wider uppercase transition-all duration-300 flex items-center gap-2 active:scale-95 cursor-pointer shadow-lg"
+            >
             {isMuted ? (
               <>
                 <svg
@@ -163,6 +207,7 @@ export default function BrandStoryProtocol({
               </>
             )}
           </button>
+          )}
         </div>
 
         {/* ========================================================

@@ -2,6 +2,7 @@
 import NavBar from '../components/NavBar'
 import OurStoryHero from '../components/OurStoryHero'
 import Footer from '../components/Footer'
+import HomeCta from '../components/HomeCta'
 
 export default function OurStoryPage() {
   return (
@@ -10,6 +11,7 @@ export default function OurStoryPage() {
       <main className="w-full flex-1">
         <OurStoryHero />
       </main>
+      <div className='bg-white'><HomeCta/></div>
       <Footer />
     </div>
   )

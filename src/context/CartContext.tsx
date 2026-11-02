@@ -1,12 +1,13 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { Check, X } from 'lucide-react'
 import type { Product, CartItem } from '../types'
 import { useAuth } from './AuthContext'
 import { usePlatformSettings } from './PlatformSettingsContext'
 
 export interface CartContextType {
   items: CartItem[]
-  addToCart: (product: Product, quantity?: number, openDrawer?: boolean) => void
+  addToCart: (product: Product, quantity?: number, openDrawer?: boolean, showToast?: boolean) => void
   removeFromCart: (productId: number | string) => void
   updateQuantity: (productId: number | string, quantity: number) => void
   clearCart: () => void
@@ -101,6 +102,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   })
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false)
+  const [cartToast, setCartToast] = useState<{
+    id: number
+    productName: string
+    productImage?: string
+    quantity: number
+  } | null>(null)
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [])
 
   // Automatic Cart Merging & Syncing when user signs in
   useEffect(() => {
@@ -195,7 +209,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   }, [items, isAuthenticated, user?.id])
 
-  const addToCart = (productInput: Product, quantity = 1, openDrawer = false) => {
+  const addToCart = (productInput: Product, quantity = 1, openDrawer = false, showToast = true) => {
     const product = normalizeProduct(productInput)
     setItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id)
@@ -210,9 +224,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [...prev, { product, quantity: Math.min(product.stock, quantity) }]
       }
     })
+
+    if (showToast) {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      setCartToast({
+        id: Date.now(),
+        productName: product.name,
+        productImage: product.image_base64 || (product as any).image,
+        quantity,
+      })
+      toastTimerRef.current = setTimeout(() => {
+        setCartToast(null)
+      }, 3500)
+    }
+
     if (openDrawer) {
       setIsCartOpen(true)
     }
+  }
+
+  const dismissToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setCartToast(null)
   }
 
   const removeFromCart = (productId: number | string) => {
@@ -291,6 +324,63 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
+
+      {/* Floating "Item added to cart" feedback notification */}
+      {cartToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-4 sm:right-6 z-[999] max-w-sm w-[calc(100vw-2rem)] sm:w-auto bg-black text-white p-3 sm:p-3.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.35)] border border-white/15 flex items-center justify-between gap-3 animate-in slide-in-from-bottom-4 fade-in duration-300 pointer-events-auto select-none"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            {cartToast.productImage ? (
+              <div className="w-10 h-10 rounded-xl bg-white/10 p-1 flex items-center justify-center shrink-0 border border-white/10 overflow-hidden">
+                <img
+                  src={cartToast.productImage}
+                  alt={cartToast.productName}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <Check className="w-4 h-4 stroke-[2.5]" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <div className="text-[8px] text-white tracking-wide font-['Conquera',sans-serif]">
+                  Added to cart
+                </div>
+              </div>
+              <p className="text-[11px] text-neutral-300 truncate max-w-[180px] sm:max-w-[210px] font-medium">
+                {cartToast.productName} {cartToast.quantity > 1 ? `(×${cartToast.quantity})` : ''}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0 pl-1">
+            <button
+              type="button"
+              onClick={() => {
+                dismissToast()
+                setIsCartOpen(true)
+              }}
+              className="px-3 py-1.5 rounded-lg bg-white text-black hover:bg-neutral-200 text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap active:scale-95"
+            >
+              View Bag
+            </button>
+            <button
+              type="button"
+              onClick={dismissToast}
+              className="p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              aria-label="Dismiss notification"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </CartContext.Provider>
   )
 }

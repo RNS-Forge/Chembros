@@ -1,15 +1,109 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { getProductDetailApi, getProductsApi, getProductReviewsApi, createProductReviewApi, getCachedProductsSync } from '../services/api'
+import {
+  getProductDetailApi,
+  getProductsApi,
+  getProductReviewsApi,
+  createProductReviewApi,
+  getCachedProductsSync,
+} from '../services/api'
 import type { Product, CustomerReview, CreateReviewInput } from '../types'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
+
+// Assets - Imported with defensive fallback handling
 import bottleImg from '../assets/bottle.png'
-import { Loader2, Plus, X, CheckCircle2, AlertCircle, Star, Truck } from 'lucide-react'
+import heroBg from '../assets/hero.png'
+
+// Dynamic / safe import helpers to avoid crash if asset is missing or bundled as { default: string }
+let landscapeX: any = null
+let landscapeT: any = null
+let landscapeJ: any = null
+let landscapeDiscovery: any = null
+
+try {
+  landscapeX = require('../assets/product/landscape-x.jpg')
+} catch {}
+try {
+  landscapeT = require('../assets/product/landscape-t.jpg')
+} catch {}
+try {
+  landscapeJ = require('../assets/product/landscape-j.jpg')
+} catch {}
+try {
+  landscapeDiscovery = require('../assets/product/landscape-discovery.jpg')
+} catch {}
+
+// Helper to safely resolve URL string from any bundler format
+const resolveAssetSrc = (asset: any, fallback: string = ''): string => {
+  if (!asset) return fallback
+  if (typeof asset === 'string') return asset
+  if (typeof asset === 'object') {
+    if (asset.src) return asset.src
+    if (asset.default) {
+      if (typeof asset.default === 'string') return asset.default
+      if (asset.default.src) return asset.default.src
+    }
+  }
+  return fallback
+}
+
+const defaultBottle = resolveAssetSrc(bottleImg, '')
+const defaultHeroBg = resolveAssetSrc(
+  heroBg,
+  'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85'
+)
+
+const landscapeXSrc = resolveAssetSrc(
+  landscapeX,
+  'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85'
+)
+const landscapeTSrc = resolveAssetSrc(
+  landscapeT,
+  'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1920&q=85'
+)
+const landscapeJSrc = resolveAssetSrc(
+  landscapeJ,
+  'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=1920&q=85'
+)
+const landscapeDiscoverySrc = resolveAssetSrc(
+  landscapeDiscovery,
+  'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85'
+)
+
+// Map of static landscape imagery for each product
+const PRODUCT_LANDSCAPE_ASSETS: Record<string, string> = {
+  'molecule-x': landscapeXSrc,
+  'molecule-r': landscapeXSrc,
+  '1': landscapeXSrc,
+  'molecule-t': landscapeTSrc,
+  '2': landscapeTSrc,
+  'molecule-j': landscapeJSrc,
+  '3': landscapeJSrc,
+  'molecule-k': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
+  '4': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
+  'the-discovery-archive': landscapeDiscoverySrc,
+  'the-discovery-set': landscapeDiscoverySrc,
+  'discovery': landscapeDiscoverySrc,
+  'discovery-set': landscapeDiscoverySrc,
+  '5': landscapeDiscoverySrc,
+}
+
+// Lucide Icons
+import {
+  Loader2,
+  Plus,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Star,
+  Truck,
+  Sparkles,
+} from 'lucide-react'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
@@ -45,8 +139,8 @@ export default function ProductDetail() {
   const [reviewComment, setReviewComment] = useState('')
   const [reviewAuthor, setReviewAuthor] = useState('')
   const [reviewLocation, setReviewLocation] = useState('')
-  const [reviewLongevity, setReviewLongevity] = useState('11+ Hours')
-  const [reviewSillage, setReviewSillage] = useState('Subtle & Radiant')
+  const [reviewLongevity, setReviewLongevity] = useState('10+ Hours')
+  const [reviewSillage, setReviewSillage] = useState('Moderate and Clean')
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const [reviewFeedback, setReviewFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -72,7 +166,7 @@ export default function ProductDetail() {
           setRelatedProducts(others.slice(0, 4))
         }
       } catch (err) {
-        console.error('Failed to load product details from database:', err)
+        console.error('Failed to load product details:', err)
       } finally {
         setLoading(false)
       }
@@ -90,7 +184,7 @@ export default function ProductDetail() {
 
   const handleBuyNow = () => {
     if (!product) return
-    addToCart(product)
+    addToCart(product, 1, false, false)
     navigate('/checkout')
   }
 
@@ -100,8 +194,8 @@ export default function ProductDetail() {
     setReviewRating(5)
     setReviewTitle('')
     setReviewComment('')
-    setReviewLongevity('11+ Hours')
-    setReviewSillage('Subtle & Radiant')
+    setReviewLongevity('10+ Hours')
+    setReviewSillage('Moderate and Clean')
     setReviewFeedback(null)
     setIsReviewModalOpen(true)
   }
@@ -113,7 +207,7 @@ export default function ProductDetail() {
     if (!reviewTitle.trim() || !reviewComment.trim() || !reviewAuthor.trim()) {
       setReviewFeedback({
         type: 'error',
-        message: 'Please complete your name, review headline, and wear experience.'
+        message: 'Please complete your name, headline, and comments.'
       })
       return
     }
@@ -133,23 +227,18 @@ export default function ProductDetail() {
       }
 
       const newReview = await createProductReviewApi(product.id, payload)
-
-      // Add to dynamic reviews list
       setReviews((prev) => [newReview, ...prev])
-
-      // Update product counters dynamically
       setProduct((prev) => {
         if (!prev) return prev
-        const updatedCount = (prev.reviews_count || 0) + 1
         return {
           ...prev,
-          reviews_count: updatedCount,
+          reviews_count: (prev.reviews_count || 0) + 1,
         }
       })
 
       setReviewFeedback({
         type: 'success',
-        message: 'Your wear experience has been added to the customer reviews archive.'
+        message: 'Your review has been published.'
       })
 
       setTimeout(() => {
@@ -157,7 +246,7 @@ export default function ProductDetail() {
         setReviewFeedback(null)
       }, 1500)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to publish review. Please try again.'
+      const msg = err instanceof Error ? err.message : 'Failed to publish review.'
       setReviewFeedback({ type: 'error', message: msg })
     } finally {
       setIsSubmittingReview(false)
@@ -168,8 +257,8 @@ export default function ProductDetail() {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-black mb-3" />
-        <p className="text-xs uppercase tracking-widest font-['Inter',sans-serif]">
-          Loading Olfactory Formulation...
+        <p className="text-xs uppercase tracking-widest font-mono">
+          Loading...
         </p>
       </div>
     )
@@ -178,130 +267,141 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-2xl font-bold font-['Cinzel',serif] mb-2">Formulation Not Found</h2>
-        <p className="text-sm text-neutral-500 mb-6">
-          The requested fragrance does not exist in our olfactory database.
+        <h2 className="text-2xl font-normal font-['Conquera',sans-serif] uppercase mb-2">Formulation Not Found</h2>
+        <p className="text-sm text-neutral-500 mb-6 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+          The fragrance you are searching for is unavailable.
         </p>
         <Link
           to="/fragrances"
-          className="px-6 py-2.5 bg-black text-white text-xs uppercase tracking-widest font-semibold rounded-full"
+          className="px-8 py-3 bg-black text-white text-xs uppercase tracking-widest font-semibold rounded-full hover:bg-neutral-800 transition-all"
         >
-          Return to Fragrances
+          Return to Collection
         </Link>
       </div>
     )
   }
 
-  return (
-    <div className="w-full min-h-screen bg-white flex flex-col items-center selection:bg-black selection:text-white">
-      {/* Top Floating Navigation */}
-      <div className="w-full flex justify-center pt-8 pb-6 sticky top-0 z-40 bg-white/80 backdrop-blur-md">
-        <NavBar />
-      </div>
+  const lookupSlug = (product.slug || '').toLowerCase()
+  const lookupId = String(product.id || '').toLowerCase()
+  const lookupName = (product.name || '').toLowerCase()
 
-      <main className="w-full max-w-[1583px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex-1 flex flex-col items-center">
+  const landscapeBanner =
+    PRODUCT_LANDSCAPE_ASSETS[lookupSlug] ||
+    PRODUCT_LANDSCAPE_ASSETS[lookupId] ||
+    (lookupName.includes('molecule t') ? landscapeTSrc : null) ||
+    (lookupName.includes('molecule j') ? landscapeJSrc : null) ||
+    (lookupName.includes('molecule x') || lookupName.includes('molecule r') ? landscapeXSrc : null) ||
+    (lookupName.includes('discovery') ? landscapeDiscoverySrc : null) ||
+    product.image_base64 ||
+    defaultHeroBg
+
+  return (
+    <div className="w-full min-h-screen bg-white flex flex-col items-center select-none font-['Inter',sans-serif]">
+      {/* Top Floating Navigation */}
+      <NavBar />
+
+      {/* Main Container */}
+      <main className="w-full px-4 sm:px-6 md:px-8 lg:px-[clamp(32px,8.95vw,172px)] pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
 
         {/* =========================================================================
-            PART 1: MAIN HERO CARD (Split 50/50 Canvas)
+            PART 1: MAIN HERO CARD (16:9 Landscape Left & Product Details Right)
             ========================================================================= */}
-        <div className="w-full h-auto min-h-[600px] lg:h-[750px] xl:h-[790px] rounded-[32px] sm:rounded-[40px] lg:rounded-[48px] bg-[#F7F9FA] border border-black/5 flex flex-col lg:flex-row overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-
-          {/* LEFT COLUMN: Clean White Sanctuary for Flacon (50%) */}
-          <div className="w-full lg:w-1/2 h-[380px] sm:h-[480px] lg:h-full relative flex items-center justify-center p-6 sm:p-10 lg:p-12 overflow-hidden bg-white/60">
-
-            {/* Subtle radial ambient glow behind the bottle */}
-            <div className="absolute w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] rounded-full bg-gradient-to-tr from-black/[0.04] to-transparent blur-3xl pointer-events-none" />
-
-            {/* Hero Fragrance Flacon */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center">
+        <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[32px] sm:rounded-[40px] lg:rounded-[48px] p-5 sm:p-7 lg:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col gap-8 sm:gap-10">
+          
+          {/* Top Section: Split Grid */}
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12 items-center">
+            
+            {/* Left: 16:9 Landscape Frame (7 Cols) */}
+            <div className="lg:col-span-7 w-full aspect-video rounded-[24px] sm:rounded-[32px] overflow-hidden relative border border-black/5 bg-white shadow-xs group">
               <img
-                src={product.image_base64 || (bottleImg as any)?.src || bottleImg}
-                alt={product.name}
+                src={landscapeBanner}
+                alt={`${product.name} Landscape Artwork`}
+                className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-1000 group-hover:scale-[1.03]"
                 draggable={false}
-                className="w-auto h-auto max-h-[300px] sm:max-h-[380px] lg:max-h-[480px] xl:max-h-[520px] object-contain drop-shadow-[0_24px_48px_rgba(0,0,0,0.14)] transition-transform duration-700 hover:scale-[1.03] select-none pointer-events-none"
               />
-            </div>
 
-            {/* Editorial Badge (Bottom Left of Canvas) */}
-            <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 flex flex-col gap-0.5 pointer-events-none z-10">
-              <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.25em] text-black/50 uppercase">
-                FORMULATION REF
-              </span>
-              <span className="text-xs sm:text-sm font-['Cinzel',serif] tracking-wider text-black font-semibold">
-                {product.code || `CB-${String(product.id).padStart(3, '0')}`}
-              </span>
-            </div>
+              {/* Gradient Veil */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
 
-            {/* Concentration Tag (Top Left) */}
-            <div className="absolute top-6 left-6 sm:top-8 sm:left-8 pointer-events-none z-10">
-              <span className="px-3 py-1 rounded-full bg-black/5 backdrop-blur-sm text-[10px] font-mono uppercase tracking-widest text-black/70">
-                {product.concentration || '30% Pure Extrait'}
-              </span>
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: Editorial Data & Bespoke Acquisition Panel (50%) */}
-          <div className="w-full lg:w-1/2 h-full flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-[#F7F9FA]">
-
-            {/* Top Meta & Title */}
-            <div>
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] sm:text-xs font-mono tracking-[0.3em] uppercase text-black/40">
-                    {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
-                  </span>
-                  {settings.show_trending_badges && product.is_trending && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-black text-white text-[9px] font-mono uppercase tracking-widest font-semibold">
-                      Trending
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-black/60">
-                  <Star className="w-3.5 h-3.5 fill-black text-black" />
-                  <span>{product.rating ? `${product.rating} / 5.0` : '4.9 / 5.0'}</span>
-                </div>
+              {/* Concentration Tag */}
+              <div className="absolute top-4 left-4 sm:top-5 sm:left-5">
+                <span className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-black text-[10px] sm:text-xs font-mono uppercase tracking-widest shadow-xs">
+                  {product.concentration || '32% Organic Oil Concentration'}
+                </span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black leading-[1.08]">
-                {product.name}
-              </h1>
-
-              {product.subtitle && (
-                <p className="mt-2 text-xs sm:text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black/60 tracking-wide">
-                  {product.subtitle}
-                </p>
-              )}
-
-              {/* Price Row */}
-              <div className="mt-6 flex items-baseline gap-3">
-                <span className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] text-black tracking-tight">
-                  ₹{product.price.toLocaleString('en-IN')}
+              {/* Origin Tag */}
+              <div className="absolute bottom-4 left-4 sm:bottom-5 sm:left-5">
+                <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-white/90 uppercase drop-shadow-sm">
+                  MADURAI · INDIA
                 </span>
-                {product.original_price && product.original_price > product.price && (
-                  <span className="text-sm sm:text-base font-normal font-['Conquera',sans-serif] text-black/40 line-through">
-                    ₹{product.original_price.toLocaleString('en-IN')}
-                  </span>
+              </div>
+
+              {/* Rating Tag */}
+              <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5">
+                <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] sm:text-xs font-mono flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{product.rating ? `${product.rating} / 5.0` : '5.0 / 5.0'}</span>
+                  <span className="text-white/60">({reviews.length || product.reviews_count || 3})</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Commercial Details & Purchase Panel (5 Cols) */}
+            <div className="lg:col-span-5 flex flex-col justify-center space-y-6">
+              <div>
+                <span className="text-xs font-mono tracking-[0.25em] uppercase text-black/50 block mb-2">
+                  {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
+                </span>
+
+                <h1 className="text-2xl sm:text-3xl xl:text-4xl font-normal font-['Conquera',sans-serif] tracking-wide text-black leading-tight">
+                  {product.name}
+                </h1>
+
+                {product.subtitle && (
+                  <p className="mt-2 text-xs sm:text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed">
+                    {product.subtitle}
+                  </p>
                 )}
-                <span className="text-[11px] font-mono text-black/50 ml-1">
-                  · Inclusive of all luxury duties & taxes
+              </div>
+
+              {/* Price Details */}
+              <div className="p-4 rounded-2xl bg-white border border-black/5 flex items-baseline justify-between shadow-xs">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 block mb-0.5">
+                    Price
+                  </span>
+                  <div className="flex items-baseline gap-2.5">
+                    <span className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] text-black tracking-tight">
+                      ₹{product.price.toLocaleString('en-IN')}
+                    </span>
+                    {product.original_price && product.original_price > product.price && (
+                      <span className="text-sm font-normal font-['Conquera',sans-serif] text-black/40 line-through">
+                        ₹{product.original_price.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-neutral-500 uppercase">
+                  Inclusive of all taxes
                 </span>
               </div>
 
-              {/* Size / Flacon Selection */}
-              <div className="mt-8">
-                <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-black/50 block mb-2.5">
-                  FLACON APERTURE
+              {/* Size Selector */}
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 block mb-2">
+                  Select Bottle Size
                 </span>
-                <div className="flex flex-wrap gap-2.5">
-                  {['30ml Extrait', '50ml Signature', '100ml Flacon Prive'].map((size) => (
+                <div className="flex flex-wrap gap-2">
+                  {['30ml Extrait', '50ml Signature', '100ml Luxury Flacon'].map((size) => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => setSelectedSize(size)}
                       className={`px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${
                         selectedSize === size
-                          ? 'bg-black text-white shadow-sm'
-                          : 'bg-white text-black/70 border border-black/10 hover:border-black/30'
+                          ? 'bg-black text-white shadow-xs font-semibold'
+                          : 'bg-white text-black/70 border border-neutral-200 hover:border-black'
                       }`}
                     >
                       {size}
@@ -310,138 +410,156 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              {/* Olfactory Formulation Pyramid */}
-              <div className="mt-8 pt-6 border-t border-black/10 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 block mb-1">
-                    TOP APERTURE
-                  </span>
-                  <p className="text-xs font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
-                    {product.top_notes || 'Italian Bergamot, Pink Peppercorn'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 block mb-1">
-                    HEART CHORD
-                  </span>
-                  <p className="text-xs font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
-                    {product.heart_notes || 'Iris Pallida, Smoked Cardamom'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 block mb-1">
-                    BASE RESIDUE
-                  </span>
-                  <p className="text-xs font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
-                    {product.base_notes || 'Virginian Cedarwood, Clean Ambergris'}
-                  </p>
-                </div>
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-white border border-black text-black text-xs font-mono uppercase tracking-[0.2em] font-semibold hover:bg-neutral-50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-xs"
+                >
+                  {isAdded ? 'Added to Bag [Confirmed]' : 'Add to Bag'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-black text-white text-xs font-mono uppercase tracking-[0.2em] font-semibold hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-md"
+                >
+                  Buy Now
+                </button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500 uppercase pt-2">
+                <span className="flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> 10+ Hours Wear Time
+                </span>
               </div>
             </div>
 
-            {/* Bottom Actions: Acquisition Buttons */}
-            <div className="mt-10 pt-6 border-t border-black/10 flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="w-full sm:flex-1 py-4 px-6 rounded-full bg-white border border-black text-black text-xs font-mono uppercase tracking-[0.2em] font-semibold hover:bg-black/5 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center"
-              >
-                {isAdded ? 'Added to Bag [Confirmed]' : 'Add to Bag'}
-              </button>
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                className="w-full sm:flex-1 py-4 px-6 rounded-full bg-black text-white text-xs font-mono uppercase tracking-[0.2em] font-semibold hover:bg-black/85 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-md"
-              >
-                Acquire Now
-              </button>
+          </div>
+
+          {/* Bottom Section: Notes & Crafting Details */}
+          <div className="w-full pt-8 border-t border-black/5 grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="p-5 rounded-2xl bg-white border border-black/5 space-y-1.5 shadow-xs">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
+                TOP NOTES (FIRST 15 MINS)
+              </span>
+              <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
+                {product.top_notes || 'Green Cardamom, Crisp Pink Peppercorn, Cedrat'}
+              </p>
             </div>
 
+            <div className="p-5 rounded-2xl bg-white border border-black/5 space-y-1.5 shadow-xs">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
+                HEART NOTES (2 TO 6 HOURS)
+              </span>
+              <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
+                {product.heart_notes || 'Fractional Orris, Cashmeran, Paper Birch'}
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-black/5 space-y-1.5 shadow-xs">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
+                BASE NOTES (ALL-DAY DRYDOWN)
+              </span>
+              <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
+                {product.base_notes || 'Pure Australian Sandalwood, Iso E Super, Clean Musk'}
+              </p>
+            </div>
           </div>
 
         </div>
 
         {/* =========================================================================
-            PART 2: VERIFIED REVIEWS & WEAR EXPERIENCES (Dynamic Database)
+            PART 2: CUSTOMER REVIEWS
             ========================================================================= */}
-        <section className="w-full max-w-[1583px] mt-20 sm:mt-24 lg:mt-32 pt-12 border-t border-black/10">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+        <section className="w-full mt-16 sm:mt-20 lg:mt-24 pt-10 border-t border-black/10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
             <div>
-              <span className="text-[10px] sm:text-xs font-mono tracking-[0.25em] text-black/50 uppercase block mb-1">
-                VERIFIED COMMUNITY
+              <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
+                COMMUNITY FEEDBACK
               </span>
               <h2 className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
-                CUSTOMER REVIEWS
+                Customer Reviews
               </h2>
             </div>
+
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2 text-xs font-mono text-black/70 uppercase">
+              <div className="flex items-center gap-2 text-xs font-mono text-black/70">
                 <div className="flex items-center text-amber-500">
-                {[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
-              </div>
-                <span className="font-sans font-semibold">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <span className="font-semibold text-black">
                   {product.rating ? `${product.rating} / 5.0` : '4.9 / 5.0'}
                 </span>
-                <span className="text-black/40">
-                  · Based on {reviews.length || product.reviews_count || 0} reviews
+                <span className="text-neutral-400">
+                  · Based on {reviews.length || product.reviews_count || 12} reviews
                 </span>
               </div>
+
               <button
                 type="button"
                 onClick={handleOpenReviewModal}
-                className="px-4 py-2 bg-black hover:bg-neutral-800 text-white rounded-full text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ml-auto sm:ml-0"
+                className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-full text-xs font-mono tracking-wider uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ml-auto sm:ml-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Review
+                <span>Write a Review</span>
               </button>
             </div>
           </div>
 
           {reviews.length === 0 ? (
-            <div className="w-full p-12 text-center bg-[#F7F9FA] rounded-[32px] border border-black/5">
-              <p className="text-xs font-mono tracking-widest text-black/50 uppercase">
-                No customer experiences recorded yet for this bespoke formulation.
+            <div className="w-full p-12 text-center bg-[#FAF9F6] rounded-3xl border border-black/5">
+              <p className="text-xs font-mono tracking-widest text-neutral-500 uppercase">
+                No customer reviews published yet for this formulation.
               </p>
               <button
                 type="button"
                 onClick={handleOpenReviewModal}
                 className="mt-4 px-6 py-2.5 bg-black text-white text-xs font-mono tracking-wider uppercase rounded-full hover:bg-neutral-800 transition-all cursor-pointer"
               >
-                Be the first to review
+                Be the first to write a review
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {reviews.map((rev) => {
-                const authorDisplay = rev.author_name || rev.author || 'Verified Collector'
-                const locationDisplay = rev.location || 'Verified Buyer'
-                const dateDisplay = rev.date || (rev.created_at ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Verified Buyer')
+                const authorDisplay = rev.author_name || rev.author || 'Verified Buyer'
+                const locationDisplay = rev.location || 'India'
+                const dateDisplay = rev.date || (rev.created_at ? new Date(rev.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'Recent Purchase')
                 const starCount = Math.max(1, Math.min(5, rev.rating))
 
                 return (
                   <div
                     key={rev.id}
-                    className="rounded-[24px] sm:rounded-[32px] p-6 sm:p-7 bg-[#F7F9FA] border border-black/5 flex flex-col justify-between"
+                    className="rounded-3xl p-6 sm:p-7 bg-[#FAF9F6] border border-black/5 flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-center justify-between pb-3 border-b border-black/5 font-mono text-[10px] sm:text-[11px]">
-                        <span className="text-black font-bold uppercase">{authorDisplay} · {locationDisplay}</span>
-                        <span className="text-black/50">{dateDisplay}</span>
+                      <div className="flex items-center justify-between pb-3 border-b border-black/5 font-mono text-[11px]">
+                        <span className="text-black font-semibold uppercase">{authorDisplay} · {locationDisplay}</span>
+                        <span className="text-neutral-400">{dateDisplay}</span>
                       </div>
 
                       <div className="mt-4">
                         <div className="flex items-center gap-0.5 text-amber-400 mb-2">
-                        {Array.from({ length: 5 }).map((_, idx) => (
-                          <Star
-                            key={idx}
-                            className={`w-3 h-3 ${idx < starCount ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}`}
-                          />
-                        ))}
-                      </div>
+                          {Array.from({ length: 5 }).map((_, idx) => (
+                            <Star
+                              key={idx}
+                              className={`w-3.5 h-3.5 ${idx < starCount ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}`}
+                            />
+                          ))}
+                        </div>
+
                         <h3 className="text-sm sm:text-base font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black leading-snug">
                           "{rev.title}"
                         </h3>
-                        <p className="mt-2.5 text-xs sm:text-[13px] text-black/70 leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+                        <p className="mt-2 text-xs sm:text-[13px] text-neutral-600 leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
                           {rev.comment}
                         </p>
                       </div>
@@ -449,12 +567,12 @@ export default function ProductDetail() {
 
                     <div className="grid grid-cols-2 gap-2 mt-6 pt-3 border-t border-black/5 font-mono text-[10px]">
                       <div>
-                        <span className="text-black/40 uppercase block text-[9px]">LONGEVITY</span>
+                        <span className="text-neutral-400 uppercase block text-[9px]">WEAR TIME</span>
                         <span className="font-semibold text-black mt-0.5 block">{rev.longevity || '10+ Hours'}</span>
                       </div>
                       <div>
-                        <span className="text-black/40 uppercase block text-[9px]">SILLAGE</span>
-                        <span className="font-semibold text-black mt-0.5 block">{rev.sillage || 'Subtle & Radiant'}</span>
+                        <span className="text-neutral-400 uppercase block text-[9px]">SCENT TRAIL</span>
+                        <span className="font-semibold text-black mt-0.5 block">{rev.sillage || 'Clean and Radiant'}</span>
                       </div>
                     </div>
                   </div>
@@ -465,236 +583,52 @@ export default function ProductDetail() {
         </section>
 
         {/* =========================================================================
-            ADD REVIEW LUXURY MODAL
-            ========================================================================= */}
-        {isReviewModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="relative w-full max-w-lg bg-white rounded-[32px] p-6 sm:p-8 border border-neutral-200 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => setIsReviewModalOpen(false)}
-                className="absolute top-6 right-6 p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-black transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div>
-                <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
-                  CHEMBROS ATELIER
-                </span>
-                <h3 className="text-xl sm:text-2xl font-['Cinzel',serif] font-bold text-black uppercase">
-                  Add Formulation Review
-                </h3>
-                <p className="text-xs text-neutral-500 mt-1 font-['Inter',sans-serif]">
-                  Sharing verified wear impressions for: <strong className="text-black">{product.name}</strong>
-                </p>
-              </div>
-
-              {reviewFeedback && (
-                <div
-                  className={`mt-4 p-3.5 rounded-xl flex items-start gap-2.5 text-xs ${
-                    reviewFeedback.type === 'success'
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}
-                >
-                  {reviewFeedback.type === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  )}
-                  <span>{reviewFeedback.message}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitReview} className="mt-6 space-y-4 text-left">
-                {/* Rating Stars Selector */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                    Rating Evaluation
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        className="text-2xl transition-transform hover:scale-110 cursor-pointer focus:outline-none"
-                      >
-                        <Star className={`w-5 h-5 ${star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}`} />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-xs font-mono text-neutral-500">
-                      ({reviewRating} / 5 Stars)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Review Headline */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                    Review Headline
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={reviewTitle}
-                    onChange={(e) => setReviewTitle(e.target.value)}
-                    placeholder="e.g. Unrivaled second-skin evolution"
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-
-                {/* Wear Impressions Comment */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                    Wear Experience &amp; Notes
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder="Describe how the formulation projects, longevity, and your olfactory experience throughout the day..."
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black leading-relaxed"
-                  />
-                </div>
-
-                {/* Longevity & Sillage Selection */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Observed Longevity
-                    </label>
-                    <select
-                      value={reviewLongevity}
-                      onChange={(e) => setReviewLongevity(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="6-8 Hours">6-8 Hours</option>
-                      <option value="8-10 Hours">8-10 Hours</option>
-                      <option value="11+ Hours">11+ Hours</option>
-                      <option value="14+ Hours (All-Day)">14+ Hours (All-Day)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Projection / Sillage
-                    </label>
-                    <select
-                      value={reviewSillage}
-                      onChange={(e) => setReviewSillage(e.target.value)}
-                      className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="Intimate">Intimate (Skin Scent)</option>
-                      <option value="Subtle & Radiant">Subtle &amp; Radiant</option>
-                      <option value="Moderate">Moderate Aura</option>
-                      <option value="Enveloping">Enveloping &amp; Magnetic</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Author Name & Location */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Your Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={reviewAuthor}
-                      onChange={(e) => setReviewAuthor(e.target.value)}
-                      placeholder="e.g. Aarav M."
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      value={reviewLocation}
-                      onChange={(e) => setReviewLocation(e.target.value)}
-                      placeholder="e.g. Mumbai or Bengaluru"
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Action */}
-                <div className="pt-3">
-                  <button
-                    type="submit"
-                    disabled={isSubmittingReview}
-                    className="w-full py-3.5 px-6 bg-black text-white rounded-xl text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all cursor-pointer shadow-md disabled:opacity-50"
-                  >
-                    {isSubmittingReview ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Publishing to Archive...
-                      </>
-                    ) : (
-                      'Publish Verified Review'
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            PART 3: MORE FROM THE COLLECTION (Related Product Grid)
+            PART 3: MORE FROM THE COLLECTION
             ========================================================================= */}
         {relatedProducts.length > 0 && (
-          <section className="w-full max-w-[1583px] mt-20 sm:mt-24 lg:mt-32 pt-12 border-t border-black/10">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+          <section className="w-full mt-16 sm:mt-20 lg:mt-24 pt-10 border-t border-black/10">
+            <div className="flex items-center justify-between gap-4 mb-8">
               <div>
-                <span className="text-[10px] sm:text-xs font-mono tracking-[0.25em] text-black/50 uppercase block mb-1">
-                  DISCOVER FURTHER
+                <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
+                  EXPLORE OTHER SCENTS
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
-                  MORE FROM THE COLLECTION
+                  More From the Collection
                 </h2>
               </div>
               <Link
                 to="/fragrances"
-                className="text-xs font-mono tracking-widest text-black/60 hover:text-black uppercase underline transition-colors"
+                className="text-xs font-mono tracking-widest text-neutral-600 hover:text-black uppercase underline transition-colors"
               >
-                View All Formulations &rarr;
+                View All Scents &rarr;
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-4 xl:gap-6 justify-items-center">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6 justify-items-center">
               {relatedProducts.map((other) => (
                 <Link
                   key={other.id}
                   to={`/fragrances/${other.slug || other.id}`}
-                  className="w-full max-w-[340px] sm:max-w-none h-[440px] sm:h-[460px] lg:h-[470px] xl:h-[500px] relative rounded-[28px] sm:rounded-[36px] bg-black text-white overflow-hidden flex flex-col justify-between p-5 sm:p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] group"
+                  className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[280px] sm:h-[380px] md:h-[440px] lg:h-[470px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-black text-white overflow-hidden flex flex-col justify-between p-3 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] group"
                 >
-                  <div className="w-full text-center text-white text-xs sm:text-sm lg:text-[13px] xl:text-base font-normal font-['Conquera',sans-serif] tracking-widest uppercase pt-1">
+                  <div className="w-full text-center text-white text-[10px] sm:text-xs md:text-sm font-normal font-['Conquera',sans-serif] tracking-wider uppercase pt-0.5 truncate">
                     {other.name}
                   </div>
 
-                  <div className="my-auto flex items-center justify-center relative w-full h-[180px] sm:h-[200px] lg:h-[210px]">
+                  <div className="my-auto flex items-center justify-center relative w-full h-[120px] sm:h-[180px] lg:h-[210px]">
                     <img
-                      src={other.image_base64 || (bottleImg as any)?.src || bottleImg}
+                      src={other.image_base64 || defaultBottle}
                       alt={other.name}
                       draggable={false}
-                      className="w-auto h-full max-h-[170px] sm:max-h-[190px] lg:max-h-[200px] object-contain drop-shadow-[0_12px_24px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                      className="w-auto h-full max-h-[110px] sm:max-h-[170px] lg:max-h-[195px] object-contain drop-shadow-[0_8px_18px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
                     />
                   </div>
 
-                  <div className="w-full flex items-center justify-between border-t border-white/10 pt-3">
-                    <div className="text-white text-base sm:text-lg font-normal font-['Conquera',sans-serif] tracking-wider">
+                  <div className="w-full flex items-center justify-between border-t border-white/10 pt-2 pb-0.5">
+                    <div className="text-white text-xs sm:text-base font-normal font-['Conquera',sans-serif] tracking-wider">
                       ₹{other.price.toLocaleString('en-IN')}
                     </div>
-                    <span className="text-[10px] font-mono uppercase text-white/60 tracking-wider">
+                    <span className="text-[9px] sm:text-[10px] font-mono uppercase text-white/60 tracking-wider">
                       Explore &rarr;
                     </span>
                   </div>
@@ -705,6 +639,181 @@ export default function ProductDetail() {
         )}
 
       </main>
+
+      {/* Review Modal */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 border border-neutral-200 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setIsReviewModalOpen(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-black transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
+                CHEMBROS FRAGRANCE REVIEW
+              </span>
+              <h3 className="text-xl sm:text-2xl font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black">
+                Review Fragrance
+              </h3>
+              <p className="text-xs text-neutral-500 mt-1">
+                Share your experience wearing <strong className="text-black">{product.name}</strong>.
+              </p>
+            </div>
+
+            {reviewFeedback && (
+              <div
+                className={`mt-4 p-3.5 rounded-xl flex items-start gap-2.5 text-xs ${
+                  reviewFeedback.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {reviewFeedback.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                )}
+                <span>{reviewFeedback.message}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitReview} className="mt-6 space-y-4 text-left">
+              <div>
+                <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                  Rating
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      className="transition-transform hover:scale-110 cursor-pointer focus:outline-none"
+                    >
+                      <Star className={`w-6 h-6 ${star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}`} />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-xs font-mono text-neutral-500">
+                    ({reviewRating} / 5 Stars)
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                  Review Headline *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={reviewTitle}
+                  onChange={(e) => setReviewTitle(e.target.value)}
+                  placeholder="e.g. Clean, long-lasting scent that turns heads"
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                  Your Wear Experience *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="How does it smell on your skin? How long does it last?"
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black leading-relaxed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                    Observed Wear Time
+                  </label>
+                  <select
+                    value={reviewLongevity}
+                    onChange={(e) => setReviewLongevity(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  >
+                    <option value="6-8 Hours">6 to 8 Hours</option>
+                    <option value="8-10 Hours">8 to 10 Hours</option>
+                    <option value="10+ Hours">10+ Hours</option>
+                    <option value="All Day Long">All Day Long</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                    Scent Trail / Sillage
+                  </label>
+                  <select
+                    value={reviewSillage}
+                    onChange={(e) => setReviewSillage(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  >
+                    <option value="Subtle (Close to Skin)">Subtle (Close to Skin)</option>
+                    <option value="Moderate and Clean">Moderate and Clean</option>
+                    <option value="Noticeable Aura">Noticeable Aura</option>
+                    <option value="Strong Projection">Strong Projection</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                    Your Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={reviewAuthor}
+                    onChange={(e) => setReviewAuthor(e.target.value)}
+                    placeholder="e.g. Rahul S."
+                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={reviewLocation}
+                    onChange={(e) => setReviewLocation(e.target.value)}
+                    placeholder="e.g. Coimbatore or Chennai"
+                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3">
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="w-full py-3.5 px-6 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-medium uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Submitting Review...</span>
+                    </>
+                  ) : (
+                    'Submit Review'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
