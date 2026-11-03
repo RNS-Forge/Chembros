@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getProductsApi, getCachedProductsSync } from '../services/api'
+import { getProductsApi } from '../services/api'
 import type { Product } from '../types'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
@@ -39,7 +39,7 @@ export default function Fragrances() {
       <main className="w-full flex flex-col items-center pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 lg:pb-24 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         
         {/* =========================================================================
-            HEADER & FILTER SECTION (Aligned with max-w-[1583px])
+            HEADER & FILTER SECTION
             ========================================================================= */}
         <div className="w-full max-w-[1583px] flex flex-col md:flex-row md:items-end justify-between border-b border-black/10 pb-6 sm:pb-8 mb-8 sm:mb-12 gap-6">
           <div>
@@ -48,7 +48,7 @@ export default function Fragrances() {
             </h1>
           </div>
 
-          {/* Responsive Filter Pills (Numbers wrapped in font-sans to eliminate demo watermark marks) */}
+          {/* Responsive Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full md:w-auto font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-[11px] sm:text-xs uppercase tracking-wider">
             {(['all', 'bottles', 'sets'] as const).map((tab) => {
               const count =
@@ -87,7 +87,7 @@ export default function Fragrances() {
         </div>
 
         {/* =========================================================================
-            PRODUCT GRID (Matches HomeProduct Proportions & Responsive Breakpoints)
+            PRODUCT GRID (Unclipped Product Titles & Optimized Proportions)
             ========================================================================= */}
         {loading ? (
           <div className="w-full max-w-[1583px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
@@ -116,20 +116,22 @@ export default function Fragrances() {
                   {/* Subtle Ambient Glow */}
                   <div className="w-40 h-40 rounded-full bg-white/5 blur-3xl absolute -z-10 group-hover:scale-125 transition-transform duration-700 pointer-events-none" />
 
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 pr-2">
-                      <span className="text-[9px] sm:text-[10px] font-mono tracking-widest text-white/50 uppercase block mb-1">
+                  {/* Card Header (Full-width title with meta tags positioned above) */}
+                  <div className="w-full space-y-1.5">
+                    <div className="flex items-center justify-between text-white/50">
+                      <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">
                         SPECIMEN {prod.code || `0${prod.id}`}
                       </span>
-                      <h3 className="text-sm sm:text-base lg:text-[14px] xl:text-lg 2xl:text-xl font-normal font-['Conquera',sans-serif] tracking-widest uppercase text-white truncate">
-                        {prod.name}
-                      </h3>
+
+                      <span className="text-[9px] sm:text-[10px] font-mono text-white/70 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+                        {prod.volume_ml ? `${prod.volume_ml}ml` : '30ml'}
+                      </span>
                     </div>
 
-                    <span className="text-[10px] sm:text-[11px] font-mono text-white/70 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 whitespace-nowrap shrink-0">
-                      {prod.volume_ml ? `${prod.volume_ml}ml` : '30ml'}
-                    </span>
+                    {/* Unclipped Full Title with Proper Tracking & Wrapping */}
+                    <h3 className="text-xs sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Conquera',sans-serif] tracking-wider uppercase text-white leading-snug">
+                      {prod.name}
+                    </h3>
                   </div>
 
                   {/* Bottle Showcase Plinth */}

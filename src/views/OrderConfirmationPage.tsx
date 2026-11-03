@@ -5,12 +5,36 @@ import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import type { Order } from '../types'
 import { getOrderByNumberApi } from '../services/api'
-import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Navigation, CreditCard, Copy, Check, FileText } from 'lucide-react'
+import {
+  CheckCircle2,
+  Package,
+  Truck,
+  ArrowRight,
+  Loader2,
+  CreditCard,
+  Copy,
+  Check,
+} from 'lucide-react'
+
+// Cleans corrupted characters (like ±) and normalizes hyphens/digits
+function cleanText(text?: string): string {
+  if (!text) return ''
+  return text
+    .replace(/[±]/g, '-')
+    .replace(/\u00B1/g, '-')
+    .replace(/Â±/g, '-')
+    .replace(/\s*-\s*([0-9]{6})/g, ' - $1')
+}
 
 export default function OrderConfirmationPage() {
   const [searchParams] = useSearchParams()
   const { orderNumber: paramOrderNumber } = useParams<{ orderNumber?: string }>()
-  const orderNumber = paramOrderNumber || searchParams.get('order_id') || searchParams.get('orderNumber') || searchParams.get('order_number')
+  const orderNumber =
+    paramOrderNumber ||
+    searchParams.get('order_id') ||
+    searchParams.get('orderNumber') ||
+    searchParams.get('order_number')
+
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [copiedTrack, setCopiedTrack] = useState(false)
@@ -25,137 +49,145 @@ export default function OrderConfirmationPage() {
         const data = await getOrderByNumberApi(orderNumber)
         setOrder(data)
       } catch (err) {
-        console.error('Failed to load confirmed order:', err)
+        console.error('Failed to load order receipt:', err)
       } finally {
         setLoading(false)
       }
     }
     loadOrder()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [orderNumber])
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center">
+      <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center font-sans">
         <Loader2 className="w-8 h-8 animate-spin text-black mb-3" />
-        <p className="text-xs uppercase tracking-widest">Generating Bespoke Order Receipt...</p>
+        <p className="text-xs uppercase tracking-widest font-mono">
+          Loading Order Confirmation...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="w-full min-h-screen bg-white flex flex-col items-center">
+    <div className="w-full min-h-screen bg-white text-black flex flex-col items-center select-none font-sans">
       {/* Top Floating Navigation */}
-      <div className="w-full flex justify-center pt-8 pb-6 sticky top-0 z-40 bg-white/80 backdrop-blur-md">
-        <NavBar />
-      </div>
+      <NavBar />
 
-      <main className="w-full max-w-3xl px-6 py-12 flex-1">
-        {/* Success Header */}
-        <div className="text-center space-y-4 mb-12">
+      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-[clamp(32px,8.95vw,172px)] pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
+        
+        {/* Success Announcement Header */}
+        <div className="text-center space-y-3 mb-10 max-w-xl">
           <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
             <CheckCircle2 className="w-8 h-8 stroke-[1.75]" />
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.3em] uppercase text-neutral-500 font-['Inter',sans-serif]">
-              ACQUISITION CONFIRMED
-            </p>
-            <h1 className="text-3xl md:text-4xl font-bold font-['Cinzel',serif] text-black mt-1">
-              Your Flacon is Being Decanted
+            <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-neutral-400 block mb-1">
+              PAYMENT VERIFIED
+            </span>
+            <h1 className="text-2xl sm:text-4xl font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black">
+              Order Confirmed
             </h1>
-            <p className="text-xs text-neutral-600 mt-2 font-['Inter',sans-serif] max-w-md mx-auto leading-relaxed">
-              An official order receipt and tracking updates have been dispatched to{' '}
-              <strong className="text-black font-semibold">{order?.customer_email || 'your email'}</strong> via Gmail SMTP.
+            <p className="text-xs sm:text-sm text-neutral-600 mt-2 font-sans leading-relaxed">
+              Thank you for your purchase. We have sent your order confirmation receipt to{' '}
+              <strong className="text-black font-semibold font-mono">
+                {cleanText(order?.customer_email) || 'your email'}
+              </strong>.
             </p>
           </div>
         </div>
 
         {order ? (
-          <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-8 space-y-8 shadow-sm">
-            {/* Order Ref & Payment Status */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-neutral-200 gap-4">
+          <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[32px] sm:rounded-[40px] p-6 sm:p-9 lg:p-12 space-y-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            
+            {/* Order Number and Status Pills */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-black/5 gap-4">
               <div>
-                <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold">Order Identifier</span>
-                <p className="text-lg font-bold font-mono text-black mt-0.5">#{order.order_number}</p>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">
+                  Order Number
+                </span>
+                <p className="text-xl sm:text-2xl font-bold font-mono text-black mt-0.5">
+                  #{cleanText(order.order_number)}
+                </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                  {order.payment_status} ({(order as any).payment_method || 'Cashfree'})
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider bg-emerald-100 text-emerald-800 font-semibold">
+                  Payment: {cleanText(order.payment_status)}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-black text-white">
-                  {order.order_status}
+                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider bg-black text-white">
+                  Status: {cleanText(order.order_status)}
                 </span>
               </div>
             </div>
 
-            {/* 5-Stage Live Fulfillment Timeline */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xs font-bold text-black uppercase tracking-widest">
-                  Live Fulfillment Timeline
+            {/* 4-Stage Live Delivery Tracker */}
+            <div className="bg-white rounded-3xl border border-black/5 p-6 sm:p-8 space-y-6 shadow-xs">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-black">
+                  Delivery Timeline
                 </h3>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-                  Real-time Status
+                <span className="text-[11px] font-mono text-neutral-400 uppercase">
+                  Estimated 3 to 5 Days
                 </span>
               </div>
 
-              <div className="grid grid-cols-5 gap-2 text-center text-xs">
+              <div className="grid grid-cols-4 gap-2 text-center text-xs">
                 {[
                   {
-                    title: 'Placed',
+                    title: 'Order Placed',
                     icon: CheckCircle2,
-                    active: true
+                    active: true,
                   },
                   {
-                    title: 'Payment',
+                    title: 'Processing',
                     icon: CreditCard,
-                    active: order.payment_status === 'PAID'
+                    active: order.payment_status === 'PAID',
                   },
                   {
                     title: 'Shipped',
                     icon: Truck,
-                    active: ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.order_status)
-                  },
-                  {
-                    title: 'Out Today',
-                    icon: Navigation,
-                    active: ['Out for Delivery', 'Delivered'].includes(order.order_status)
+                    active: ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.order_status),
                   },
                   {
                     title: 'Delivered',
                     icon: Package,
-                    active: order.order_status === 'Delivered'
+                    active: order.order_status === 'Delivered',
                   },
                 ].map((st, idx) => (
                   <div key={idx} className="flex flex-col items-center">
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 transition-all ${
-                        st.active ? 'bg-black text-white shadow-md' : 'bg-neutral-200 text-neutral-400'
+                      className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
+                        st.active ? 'bg-black text-white shadow-xs' : 'bg-neutral-100 text-neutral-400'
                       }`}
                     >
                       <st.icon className="w-4 h-4 stroke-[2]" />
                     </div>
-                    <span className={`text-[10px] uppercase tracking-wider font-semibold ${st.active ? 'text-black' : 'text-neutral-400'}`}>
+                    <span
+                      className={`text-[10px] sm:text-xs font-mono uppercase tracking-wider ${
+                        st.active ? 'text-black font-semibold' : 'text-neutral-400'
+                      }`}
+                    >
                       {st.title}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Waybill Tracking Pill if dispatched */}
-              {order.tracking_number && (
-                <div className="mt-6 p-4 bg-white border border-black/10 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+              {/* Waybill / Courier Tracking details */}
+              {(order.tracking_number || (order as any).tracking_id) && (
+                <div className="pt-4 border-t border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-black">
+                    <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-black">
                       <Truck className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">
-                        Consignment Waybill
+                        Courier Tracking Number
                       </div>
                       <div className="text-sm font-mono font-bold text-black tracking-wider">
-                        {order.tracking_number}
+                        {cleanText(order.tracking_number || (order as any).tracking_id)}
                       </div>
                     </div>
                   </div>
@@ -163,7 +195,7 @@ export default function OrderConfirmationPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(order.tracking_number || '')
+                      navigator.clipboard.writeText(cleanText(order.tracking_number || (order as any).tracking_id || ''))
                       setCopiedTrack(true)
                       setTimeout(() => setCopiedTrack(false), 2000)
                     }}
@@ -177,7 +209,7 @@ export default function OrderConfirmationPage() {
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Waybill</span>
+                        <span>Copy ID</span>
                       </>
                     )}
                   </button>
@@ -185,19 +217,23 @@ export default function OrderConfirmationPage() {
               )}
             </div>
 
-            {/* Items Ordered */}
-            <div>
-              <h3 className="text-xs font-bold text-black uppercase tracking-widest mb-4">
-                Selected Extraits
+            {/* Items Ordered List */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-mono font-semibold text-black uppercase tracking-wider">
+                Items in This Order
               </h3>
-              <div className="divide-y divide-neutral-200 bg-white rounded-2xl border border-neutral-200 px-5 py-2">
+              <div className="divide-y divide-neutral-100 bg-white rounded-3xl border border-black/5 px-6 py-2 shadow-xs">
                 {order.items.map((item, idx) => (
-                  <div key={idx} className="py-3.5 flex justify-between items-center text-xs">
+                  <div key={idx} className="py-4 flex justify-between items-center text-xs">
                     <div>
-                      <p className="font-['Cinzel',serif] font-bold text-black text-sm">{item.name}</p>
-                      <p className="text-neutral-500 text-[11px]">Quantity: {item.quantity} • {item.volume_ml || 50}ml</p>
+                      <p className="font-['Conquera',sans-serif] text-sm uppercase text-black tracking-wide">
+                        {cleanText(item.name)}
+                      </p>
+                      <p className="text-neutral-500 font-mono text-[11px] mt-0.5">
+                        Quantity: {item.quantity} · {item.volume_ml ? `${item.volume_ml}ml` : 'Extrait'}
+                      </p>
                     </div>
-                    <span className="font-semibold text-black">
+                    <span className="font-mono font-bold text-black text-sm">
                       ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -205,51 +241,79 @@ export default function OrderConfirmationPage() {
               </div>
             </div>
 
-            {/* Shipping & Financial Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-neutral-200 text-xs">
-              <div>
-                <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold">White-Glove Destination</span>
-                <p className="text-black font-medium mt-1 leading-relaxed">{order.shipping_address}</p>
-                <p className="text-neutral-500 mt-1">Recipient: {order.customer_name} ({order.customer_phone})</p>
+            {/* Delivery Address and Total Payment Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-black/5 text-xs">
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest block">
+                  Delivery Address
+                </span>
+                <p className="text-black font-semibold text-sm font-sans">
+                  {cleanText(order.customer_name)}
+                </p>
+                <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed font-sans">
+                  {cleanText(order.shipping_address)}
+                </p>
+                {order.customer_phone && (
+                  <p className="text-neutral-500 font-mono pt-1">
+                    Phone: {cleanText(order.customer_phone)}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-1.5 md:text-right">
-                <div className="flex justify-between md:justify-end md:gap-8 text-neutral-600">
-                  <span>Subtotal:</span>
-                  <span>₹{order.subtotal.toLocaleString('en-IN')}</span>
+              <div className="space-y-2.5 bg-white p-6 rounded-3xl border border-black/5 shadow-xs">
+                <div className="flex justify-between text-neutral-600 font-sans">
+                  <span>Subtotal</span>
+                  <span className="font-mono text-black font-medium">
+                    ₹{order.subtotal.toLocaleString('en-IN')}
+                  </span>
                 </div>
-                <div className="flex justify-between md:justify-end md:gap-8 text-neutral-600">
-                  <span>White-Glove Shipping:</span>
-                  <span>{order.shipping_fee === 0 ? 'Complimentary' : `₹${order.shipping_fee}`}</span>
+                <div className="flex justify-between text-neutral-600 font-sans">
+                  <span>Shipping</span>
+                  <span className="font-mono text-emerald-700 font-medium">
+                    {order.shipping_fee === 0 ? 'Complimentary' : `₹${order.shipping_fee}`}
+                  </span>
                 </div>
-                <div className="flex justify-between md:justify-end md:gap-8 font-bold text-black text-base pt-2 border-t border-neutral-200">
-                  <span>Total Paid:</span>
-                  <span>₹{order.total_amount.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between font-bold text-black text-base pt-3 border-t border-neutral-100 font-sans">
+                  <span>Total Paid</span>
+                  <span className="font-mono text-lg">
+                    ₹{order.total_amount.toLocaleString('en-IN')}
+                  </span>
                 </div>
               </div>
             </div>
+
           </div>
         ) : (
-          <div className="text-center py-12 text-neutral-500 text-xs">
-            Order identifier is missing or invalid.
+          <div className="text-center py-16 bg-[#FAF9F6] border border-black/5 rounded-3xl p-8 max-w-md w-full font-sans">
+            <p className="text-xs font-mono text-neutral-500 uppercase">
+              No matching order record was found.
+            </p>
+            <Link
+              to="/fragrances"
+              className="inline-block mt-4 px-6 py-2.5 bg-black text-white text-xs font-mono uppercase tracking-wider rounded-full hover:bg-neutral-800 transition-all"
+            >
+              Return to Store
+            </Link>
           </div>
         )}
 
-        <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4">
+        {/* Action Buttons */}
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-md">
           <Link
-            to="/dashboard?tab=orders"
-            className="px-8 py-3.5 bg-black text-white rounded-full text-xs font-semibold uppercase tracking-widest text-center hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
+            to="/dashboard"
+            className="w-full sm:flex-1 py-4 px-6 bg-black hover:bg-neutral-800 active:scale-[0.99] text-white rounded-2xl text-xs font-medium uppercase tracking-[0.2em] text-center transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer font-sans"
           >
-            Track in My Orders
-            <ArrowRight className="w-4 h-4" />
+            <span>View in My Orders</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
             to="/fragrances"
-            className="px-8 py-3.5 bg-neutral-100 text-black rounded-full text-xs font-semibold uppercase tracking-widest text-center hover:bg-neutral-200 transition-all"
+            className="w-full sm:flex-1 py-4 px-6 bg-white border border-neutral-300 hover:border-black active:scale-[0.99] text-black rounded-2xl text-xs font-medium uppercase tracking-[0.2em] text-center transition-all cursor-pointer shadow-xs font-sans"
           >
-            Explore More Formulations
+            <span>Continue Shopping</span>
           </Link>
         </div>
+
       </main>
 
       <Footer />
