@@ -935,8 +935,8 @@ export function attachDeliveryFees(products: Product[]): Product[] {
 }
 
 // ----------------- Products SWR Caching Architecture -----------------
-const PRODUCTS_CACHE_KEY = 'chembros_products_cache_v2'
-const PRODUCTS_CACHE_TS_KEY = 'chembros_products_cache_ts_v2'
+const PRODUCTS_CACHE_KEY = 'chembros_products_cache_v3'
+const PRODUCTS_CACHE_TS_KEY = 'chembros_products_cache_ts_v3'
 const CACHE_TTL_MS = 60 * 1000 // 60 seconds fresh TTL before silent background revalidation
 
 let _cachedProducts: Product[] | null = null
@@ -1381,6 +1381,7 @@ export interface CreateOrderPayload {
   customer_email: string
   customer_phone: string
   shipping_address: string
+  shipping_fee?: number
   items: {
     product_id: number | string
     name: string
@@ -1467,39 +1468,31 @@ export async function getOrderByNumberApi(orderNumber: string): Promise<Order> {
   return request<Order>(`/api/orders/${orderNumber}`)
 }
 
+export async function requestOrderCancelOtpApi(orderId: number | string): Promise<{ status: string; message: string }> {
+  return await request<{ status: string; message: string }>('/api/orders/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ order_id: orderId, action: 'request_otp' }),
+  })
+}
+
 export async function cancelOrderApi(
   orderId: number | string,
-  reason?: string
+  reason?: string,
+  otpCode?: string
 ): Promise<{ success: boolean; message: string; order?: Order }> {
-  try {
-    const res = await request<{ success: boolean; message: string; order?: any }>('/api/orders/cancel', {
-      method: 'POST',
-      body: JSON.stringify({ order_id: orderId, reason }),
-    })
-    return {
-      success: res.success,
-      message: res.message,
-      order: res.order ? formatOrder(res.order) : undefined,
-    }
-  } catch (err: any) {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ order_status: 'Cancelled', updated_at: new Date().toISOString() })
-        .eq('id', Number(orderId) || 0)
-        .select()
-        .single()
-      if (!error && data) {
-        return {
-          success: true,
-          message: 'Order cancelled successfully.',
-          order: formatOrder(data),
-        }
-      }
-    } catch (dbErr) {
-      console.warn('Fallback cancel error:', dbErr)
-    }
-    throw err
+  const res = await request<{ success: boolean; message: string; order?: any }>('/api/orders/cancel', {
+    method: 'POST',
+    body: JSON.stringify({
+      order_id: orderId,
+      reason,
+      otp_code: otpCode,
+      action: otpCode ? 'verify_and_cancel' : undefined,
+    }),
+  })
+  return {
+    success: res.success,
+    message: res.message,
+    order: res.order ? formatOrder(res.order) : undefined,
   }
 }
 

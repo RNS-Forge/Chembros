@@ -54,9 +54,49 @@ export default function AuthModal() {
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [shippingAddress, setShippingAddress] = useState('')
+  const [flatBuilding, setFlatBuilding] = useState('')
+  const [streetArea, setStreetArea] = useState('')
+  const [landmark, setLandmark] = useState('')
   const [city, setCity] = useState('')
   const [stateName, setStateName] = useState('Tamil Nadu')
   const [pincode, setPincode] = useState('')
+
+  // PIN lookup status
+  const [isPinLoading, setIsPinLoading] = useState(false)
+  const [pinSuccess, setPinSuccess] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
+
+  // Instant Postal PIN Code Lookup (India Post API)
+  const handlePinCodeChange = async (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 6)
+    setPincode(cleaned)
+    setPinError(null)
+
+    if (cleaned.length === 6) {
+      setIsPinLoading(true)
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`)
+        const data = await res.json()
+
+        if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0]
+          setCity(po.District || po.Division || '')
+          setStateName(po.State || '')
+          setPinSuccess(true)
+          setPinError(null)
+        } else {
+          setPinError('Invalid PIN code. Please verify.')
+          setPinSuccess(false)
+        }
+      } catch (err) {
+        console.warn('PIN API lookup failed, falling back to manual entry:', err)
+      } finally {
+        setIsPinLoading(false)
+      }
+    } else {
+      setPinSuccess(false)
+    }
+  }
   const [otpCode, setOtpCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showExtraDetails, setShowExtraDetails] = useState(false)
@@ -277,12 +317,13 @@ export default function AuthModal() {
     setError(null)
     setSuccessMsg(null)
     try {
+      const fullAddress = [flatBuilding.trim(), streetArea.trim(), landmark.trim() ? `Near ${landmark.trim()}` : ''].filter(Boolean).join(', ') || shippingAddress.trim()
       const res = await registerRequest({
         email: email.trim().toLowerCase(),
         name: name.trim() || undefined,
         password: password || undefined,
         phone: phone.trim() || undefined,
-        shipping_address: shippingAddress.trim() || undefined,
+        shipping_address: fullAddress || undefined,
         city: city.trim() || undefined,
         state: stateName.trim() || undefined,
         pincode: pincode.trim() || undefined,
@@ -308,13 +349,14 @@ export default function AuthModal() {
     setLoading(true)
     setError(null)
     try {
+      const fullAddress = [flatBuilding.trim(), streetArea.trim(), landmark.trim() ? `Near ${landmark.trim()}` : ''].filter(Boolean).join(', ') || shippingAddress.trim()
       const newUser = await verifyRegisterOtp({
         email: email.trim().toLowerCase(),
         otp_code: otpCode.trim(),
         name: name.trim() || undefined,
         password: password || undefined,
         phone: phone.trim() || undefined,
-        shipping_address: shippingAddress.trim() || undefined,
+        shipping_address: fullAddress || undefined,
         city: city.trim() || undefined,
         state: stateName.trim() || undefined,
         pincode: pincode.trim() || undefined,
@@ -937,52 +979,110 @@ export default function AuthModal() {
                   )}
                 </div>
 
-                {/* 4. Optional Extra Details Collapsible */}
+                {/* 4. Optional Delivery Address & Phone Add-On */}
                 <div className="pt-1">
                   <button
                     type="button"
                     onClick={() => setShowExtraDetails(!showExtraDetails)}
                     className="text-[11px] font-mono uppercase tracking-wider text-black/60 hover:text-black flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <span>{showExtraDetails ? 'âˆ’ Hide Delivery & Phone Details' : '+ Add Delivery Address & Phone (Optional)'}</span>
+                    <span>{showExtraDetails ? '- Hide Delivery Address & Phone' : '+ Add Delivery Address & Phone (Optional)'}</span>
                   </button>
                 </div>
 
                 {showExtraDetails && (
-                  <div className="space-y-3 pt-1 border-t border-black/5 animate-in fade-in duration-200">
+                  <div className="space-y-3 pt-2 border-t border-black/5 animate-in fade-in duration-200">
                     <div>
                       <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                        Phone Number (Optional)
+                        Phone Number (For Delivery OTP)
                       </label>
                       <div className="relative">
                         <Phone className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
                         <input
                           type="tel"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+91 98765 43210"
-                          className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          placeholder="9876543210"
+                          className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-mono"
                         />
                       </div>
                     </div>
 
+                    {/* Postal PIN Code */}
                     <div>
-                      <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                        Delivery Address (Optional)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block">
+                          Postal PIN Code (Auto-fills City & State)
+                        </label>
+                        {pinSuccess && (
+                          <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
+                            <Check className="w-3 h-3" /> Valid Indian PIN
+                          </span>
+                        )}
+                        {pinError && (
+                          <span className="text-[10px] text-red-500 font-mono">
+                            {pinError}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
                         <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-black/40 stroke-[1.5]" />
                         <input
                           type="text"
-                          value={shippingAddress}
-                          onChange={(e) => setShippingAddress(e.target.value)}
-                          placeholder="Suite, Street, Residential Complex"
-                          className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                          maxLength={6}
+                          value={pincode}
+                          onChange={(e) => handlePinCodeChange(e.target.value)}
+                          placeholder="e.g. 641031"
+                          className="w-full pl-10 pr-10 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-mono"
+                        />
+                        {isPinLoading && (
+                          <Loader2 className="absolute right-3.5 top-3 w-4 h-4 text-black/40 animate-spin" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Flat / Building & Street / Area */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                          Flat, House No., Building
+                        </label>
+                        <input
+                          type="text"
+                          value={flatBuilding}
+                          onChange={(e) => setFlatBuilding(e.target.value)}
+                          placeholder="e.g. Penthouse 4B"
+                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                          Street, Sector, Area
+                        </label>
+                        <input
+                          type="text"
+                          value={streetArea}
+                          onChange={(e) => setStreetArea(e.target.value)}
+                          placeholder="e.g. Sector 12"
+                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2.5">
+                    {/* Landmark, City & State */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
+                          Landmark
+                        </label>
+                        <input
+                          type="text"
+                          value={landmark}
+                          onChange={(e) => setLandmark(e.target.value)}
+                          placeholder="Near Metro"
+                          className="w-full px-2.5 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                        />
+                      </div>
                       <div>
                         <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
                           City
@@ -991,8 +1091,8 @@ export default function AuthModal() {
                           type="text"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          placeholder="Mumbai"
-                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                          placeholder="City"
+                          className="w-full px-2.5 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
                         />
                       </div>
                       <div>
@@ -1004,20 +1104,7 @@ export default function AuthModal() {
                           value={stateName}
                           onChange={(e) => setStateName(e.target.value)}
                           placeholder="State"
-                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-mono tracking-widest text-black/60 uppercase block mb-1">
-                          PIN Code
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={pincode}
-                          onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                          placeholder="400001"
-                          className="w-full px-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-mono"
+                          className="w-full px-2.5 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
                         />
                       </div>
                     </div>
@@ -1105,16 +1192,17 @@ export default function AuthModal() {
                       setError(null)
                       setSuccessMsg(null)
                       try {
-                        const res = await registerRequest({
-                          email: email.trim().toLowerCase(),
-                          name: name.trim() || undefined,
-                          password: password || undefined,
-                          phone: phone.trim() || undefined,
-                          shipping_address: shippingAddress.trim() || undefined,
-                          city: city.trim() || undefined,
-                          state: stateName.trim() || undefined,
-                          pincode: pincode.trim() || undefined,
-                        })
+                        const fullAddress = [flatBuilding.trim(), streetArea.trim(), landmark.trim() ? `Near ${landmark.trim()}` : ''].filter(Boolean).join(', ') || shippingAddress.trim()
+      const res = await registerRequest({
+        email: email.trim().toLowerCase(),
+        name: name.trim() || undefined,
+        password: password || undefined,
+        phone: phone.trim() || undefined,
+        shipping_address: fullAddress || undefined,
+        city: city.trim() || undefined,
+        state: stateName.trim() || undefined,
+        pincode: pincode.trim() || undefined,
+      })
                         setResendCooldown(45)
                         setSuccessMsg(res?.message || 'Fresh verification code dispatched.')
                       } catch (err: unknown) {

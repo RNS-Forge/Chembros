@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       }
     })
 
-    const shippingFee = subtotal >= 1500 ? 0 : 150
+    const shippingFee = body.shipping_fee !== undefined ? Number(body.shipping_fee) : (subtotal >= 1500 ? 0 : 100)
     const totalAmount = Math.round((subtotal + shippingFee) * 100) / 100
 
     const orderNumber = generateOrderNumber()
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       .from('orders')
       .insert({
         order_number: orderNumber,
-        user_id: currentUser?.id || null,
+        user_id: currentUser?.id || body.user_id || null,
         customer_name: cleanName,
         customer_email: cleanEmail,
         customer_phone: cleanPhone,

@@ -283,23 +283,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
   // Delivery fee fixed/managed by admin per product
-  const defaultFee = typeof settings?.default_delivery_fee === 'number' ? settings.default_delivery_fee : 150
+  const defaultFee = typeof settings?.default_delivery_fee === 'number' ? settings.default_delivery_fee : 100
   const freeThreshold = typeof settings?.free_shipping_threshold === 'number' ? settings.free_shipping_threshold : 1500
   const freeEnabled = settings?.enable_free_shipping !== false
 
   const hasCustomDeliveryFees = items.some((it) => typeof it.product.delivery_fee === 'number' && it.product.delivery_fee > 0)
-  const allFreeDelivery = items.length > 0 && items.every((it) => typeof it.product.delivery_fee === 'number' && it.product.delivery_fee === 0)
 
   const shippingFee = items.length === 0
     ? 0
-    : allFreeDelivery
-      ? 0
-      : hasCustomDeliveryFees
-        ? items.reduce((sum, it) => {
-            const fee = typeof it.product.delivery_fee === 'number' ? it.product.delivery_fee : 0
-            return sum + fee * it.quantity
-          }, 0)
-        : (freeEnabled && subtotal >= freeThreshold ? 0 : defaultFee)
+    : hasCustomDeliveryFees
+      ? items.reduce((sum, it) => {
+          const fee = typeof it.product.delivery_fee === 'number' && it.product.delivery_fee > 0
+            ? it.product.delivery_fee
+            : (freeEnabled && subtotal >= freeThreshold ? 0 : defaultFee)
+          return sum + fee * it.quantity
+        }, 0)
+      : (freeEnabled && subtotal >= freeThreshold ? 0 : defaultFee)
 
   const total = subtotal + shippingFee
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)

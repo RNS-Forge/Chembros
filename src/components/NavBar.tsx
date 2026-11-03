@@ -351,8 +351,8 @@ export default function NavBar({
                   <Link to="/fragrances/molecule-j" className="hover:text-black">
                     Molecule J // Citrus
                   </Link>
-                  <Link to="/fragrances/molecule-k" className="hover:text-black">
-                    Molecule K // Woody
+                  <Link to="/fragrances/molecule-r" className="hover:text-black">
+                    Molecule R // Woody
                   </Link>
                 </div>
               )}

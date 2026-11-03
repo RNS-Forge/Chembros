@@ -78,15 +78,20 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
         <div className="mt-5 pt-3 border-t border-neutral-100 flex items-center justify-between">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-black font-['Poppins',sans-serif]">
-              ₹{product.price.toLocaleString('en-IN')}
-            </span>
-            {product.original_price && product.original_price > product.price && (
-              <span className="text-xs text-neutral-400 line-through">
-                ₹{product.original_price.toLocaleString('en-IN')}
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-bold text-black font-['Poppins',sans-serif]">
+                ₹{product.price.toLocaleString('en-IN')}
               </span>
-            )}
+              {product.original_price && product.original_price > product.price && (
+                <span className="text-xs text-neutral-400 line-through">
+                  ₹{product.original_price.toLocaleString('en-IN')}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-neutral-400 font-['Inter',sans-serif] tracking-wider uppercase">
+              Inclusive of GST
+            </span>
           </div>
 
           <button

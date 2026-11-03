@@ -24,6 +24,8 @@ import {
   KeyRound,
   Home,
   CheckCircle2,
+  MapPin,
+  Check,
 } from 'lucide-react'
 
 export default function AuthPage() {
@@ -56,6 +58,52 @@ export default function AuthPage() {
   const [registerEmail, setRegisterEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [registerPassword, setRegisterPassword] = useState('')
+
+  // Address Add-On Fields
+  const [addAddress, setAddAddress] = useState(true)
+  const [flatBuilding, setFlatBuilding] = useState('')
+  const [streetArea, setStreetArea] = useState('')
+  const [landmark, setLandmark] = useState('')
+  const [city, setCity] = useState('')
+  const [stateName, setStateName] = useState('Tamil Nadu')
+  const [pinCode, setPinCode] = useState('')
+
+  // PIN lookup status
+  const [isPinLoading, setIsPinLoading] = useState(false)
+  const [pinSuccess, setPinSuccess] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
+
+  // Instant Postal PIN Code Lookup (India Post API)
+  const handlePinCodeChange = async (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 6)
+    setPinCode(cleaned)
+    setPinError(null)
+
+    if (cleaned.length === 6) {
+      setIsPinLoading(true)
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`)
+        const data = await res.json()
+
+        if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0]
+          setCity(po.District || po.Division || '')
+          setStateName(po.State || '')
+          setPinSuccess(true)
+          setPinError(null)
+        } else {
+          setPinError('Invalid PIN code. Please verify.')
+          setPinSuccess(false)
+        }
+      } catch (err) {
+        console.warn('PIN API lookup failed, falling back to manual entry:', err)
+      } finally {
+        setIsPinLoading(false)
+      }
+    } else {
+      setPinSuccess(false)
+    }
+  }
 
   // Password Recovery Fields
   const [forgotOtp, setForgotOtp] = useState('')
@@ -223,19 +271,19 @@ export default function AuthPage() {
     }
   }
 
-  // 5. Minimal Sign Up (Name, Email, Phone, Password)
+  // 5. Account Registration with Address Add-On
   const handleRegisterRequest = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
       setError('Please enter your full name.')
       return
     }
-    if (!registerEmail.trim()) {
-      setError('Please enter your email address.')
-      return
-    }
     if (!phone.trim() || phone.trim().length !== 10) {
       setError('Please enter a valid 10-digit mobile number.')
+      return
+    }
+    if (!registerEmail.trim()) {
+      setError('Please enter your email address.')
       return
     }
     if (registerPassword.length < 6) {
@@ -243,9 +291,36 @@ export default function AuthPage() {
       return
     }
 
+    if (addAddress) {
+      if (pinCode.trim().length !== 6) {
+        setError('Please enter a valid 6-digit postal PIN code.')
+        return
+      }
+      if (!flatBuilding.trim()) {
+        setError('Please enter your Flat, House No., or Building name.')
+        return
+      }
+      if (!streetArea.trim()) {
+        setError('Please enter your Street, Sector, or Area.')
+        return
+      }
+      if (!city.trim()) {
+        setError('Please enter your City or District.')
+        return
+      }
+      if (!stateName.trim()) {
+        setError('Please enter your State.')
+        return
+      }
+    }
+
     setLoading(true)
     setError(null)
     setSuccessMsg(null)
+
+    const fullAddress = addAddress
+      ? [flatBuilding.trim(), streetArea.trim(), landmark.trim() ? `Near ${landmark.trim()}` : ''].filter(Boolean).join(', ')
+      : undefined
 
     try {
       await registerRequest({
@@ -253,6 +328,10 @@ export default function AuthPage() {
         email: registerEmail.trim().toLowerCase(),
         phone: phone.trim(),
         password: registerPassword,
+        shipping_address: fullAddress,
+        city: addAddress ? city.trim() : undefined,
+        state: addAddress ? stateName.trim() : undefined,
+        pincode: addAddress ? pinCode.trim() : undefined,
       })
       setRegisterStep('otp')
       setResendCooldown(45)
@@ -264,7 +343,7 @@ export default function AuthPage() {
     }
   }
 
-  // 6. Sign Up OTP
+  // 6. Sign Up OTP Verification
   const handleRegisterVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     if (otpCode.trim().length !== 6) {
@@ -275,6 +354,10 @@ export default function AuthPage() {
     setLoading(true)
     setError(null)
 
+    const fullAddress = addAddress
+      ? [flatBuilding.trim(), streetArea.trim(), landmark.trim() ? `Near ${landmark.trim()}` : ''].filter(Boolean).join(', ')
+      : undefined
+
     try {
       const newUser = await verifyRegisterOtp({
         email: registerEmail.trim().toLowerCase(),
@@ -282,6 +365,10 @@ export default function AuthPage() {
         name: name.trim(),
         phone: phone.trim(),
         password: registerPassword,
+        shipping_address: fullAddress,
+        city: addAddress ? city.trim() : undefined,
+        state: addAddress ? stateName.trim() : undefined,
+        pincode: addAddress ? pinCode.trim() : undefined,
       })
       if (newUser.role === 'admin') {
         navigate('/admin', { replace: true })
@@ -305,11 +392,19 @@ export default function AuthPage() {
       if (tab === 'signin') {
         await loginRequest(loginEmail.trim().toLowerCase(), loginPassword)
       } else {
+        const fullAddress = addAddress
+          ? [flatBuilding.trim(), streetArea.trim(), landmark.trim() ? `Near ${landmark.trim()}` : ''].filter(Boolean).join(', ')
+          : undefined
+
         await registerRequest({
           name: name.trim(),
           email: registerEmail.trim().toLowerCase(),
           phone: phone.trim(),
           password: registerPassword,
+          shipping_address: fullAddress,
+          city: addAddress ? city.trim() : undefined,
+          state: addAddress ? stateName.trim() : undefined,
+          pincode: addAddress ? pinCode.trim() : undefined,
         })
       }
       setSuccessMsg('A new verification code has been sent.')
@@ -333,7 +428,7 @@ export default function AuthPage() {
       </Link>
 
       {/* Main Luxury Auth Card */}
-      <div className="w-full max-w-[440px] bg-white border border-black/5 rounded-[28px] sm:rounded-[32px] p-6 sm:p-9 shadow-[0_12px_40px_rgba(0,0,0,0.04)] flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200">
+      <div className={`w-full ${tab === 'register' ? 'max-w-[560px]' : 'max-w-[440px]'} bg-white border border-black/5 rounded-[28px] sm:rounded-[32px] p-6 sm:p-9 shadow-[0_12px_40px_rgba(0,0,0,0.04)] flex flex-col my-auto transition-all duration-300 animate-in fade-in zoom-in-95`}>
         
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6">
@@ -630,26 +725,47 @@ export default function AuthPage() {
           <div>
             {registerStep === 'details' && (
               <form onSubmit={handleRegisterRequest} className="space-y-3.5">
-                <div>
-                  <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Gowtham A"
-                      className="w-full pl-10 pr-4 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                    />
+                {/* 1. Full Name & Mobile Number */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                      Full Name *
+                    </label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Gowtham A"
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                      Phone Number (For Delivery OTP) *
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
+                      <input
+                        type="tel"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="9876543210"
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs font-mono text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
+                {/* 2. Email Address */}
                 <div>
                   <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
-                    Email Address *
+                    Email Address (For Invoicing & Tracking) *
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
@@ -658,29 +774,13 @@ export default function AuthPage() {
                       required
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
-                      placeholder="name@domain.com"
+                      placeholder="you@domain.com"
                       className="w-full pl-10 pr-4 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
-                    Mobile Number * (10 Digits)
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="9876543210"
-                      className="w-full pl-10 pr-4 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs font-mono text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                    />
-                  </div>
-                </div>
-
+                {/* 3. Password */}
                 <div>
                   <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
                     Password *
@@ -705,8 +805,142 @@ export default function AuthPage() {
                   </div>
                 </div>
 
+                {/* 4. Delivery Address Add-On */}
+                <div className="pt-2 border-t border-neutral-200/80">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-neutral-800" />
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-900 font-semibold">
+                        Delivery Address Details
+                      </span>
+                    </div>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-mono text-neutral-600 hover:text-black">
+                      <input
+                        type="checkbox"
+                        checked={addAddress}
+                        onChange={(e) => setAddAddress(e.target.checked)}
+                        className="rounded border-neutral-300 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span>Add to account</span>
+                    </label>
+                  </div>
+
+                  {addAddress && (
+                    <div className="space-y-3 animate-in fade-in duration-200">
+                      {/* Postal PIN Code */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600">
+                            Postal PIN Code (Auto-fills City & State) *
+                          </label>
+                          {pinSuccess && (
+                            <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
+                              <Check className="w-3 h-3" /> Valid Indian PIN
+                            </span>
+                          )}
+                          {pinError && (
+                            <span className="text-[10px] text-red-500 font-mono">
+                              {pinError}
+                            </span>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="text"
+                            required={addAddress}
+                            maxLength={6}
+                            value={pinCode}
+                            onChange={(e) => handlePinCodeChange(e.target.value)}
+                            placeholder="e.g. 641031"
+                            className="w-full pl-10 pr-10 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                          {isPinLoading && (
+                            <Loader2 className="absolute right-3.5 top-3 w-4 h-4 text-neutral-400 animate-spin" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Flat / Building & Street / Area */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                            Flat, House No., Building *
+                          </label>
+                          <input
+                            type="text"
+                            required={addAddress}
+                            value={flatBuilding}
+                            onChange={(e) => setFlatBuilding(e.target.value)}
+                            placeholder="e.g. Penthouse 4B, Emerald Heights"
+                            className="w-full px-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                            Street, Sector, Area *
+                          </label>
+                          <input
+                            type="text"
+                            required={addAddress}
+                            value={streetArea}
+                            onChange={(e) => setStreetArea(e.target.value)}
+                            placeholder="e.g. Narasimhanaickenpalayam"
+                            className="w-full px-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Landmark, City & State */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                            Landmark (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={landmark}
+                            onChange={(e) => setLandmark(e.target.value)}
+                            placeholder="Near Metro Station"
+                            className="w-full px-3 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                            City / District *
+                          </label>
+                          <input
+                            type="text"
+                            required={addAddress}
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            placeholder="Coimbatore"
+                            className="w-full px-3 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-600 mb-1">
+                            State *
+                          </label>
+                          <input
+                            type="text"
+                            required={addAddress}
+                            value={stateName}
+                            onChange={(e) => setStateName(e.target.value)}
+                            placeholder="Tamil Nadu"
+                            className="w-full px-3 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <p className="text-[11px] text-neutral-400 leading-normal pt-1">
-                  By continuing, you agree to Chembros' Terms of Service and Privacy Policy. Delivery addresses are added at checkout.
+                  By continuing, you agree to Chembros' Terms of Service and Privacy Policy. Delivery address is saved to your account for fast checkout.
                 </p>
 
                 <button

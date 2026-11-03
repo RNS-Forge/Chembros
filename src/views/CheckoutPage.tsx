@@ -44,7 +44,7 @@ declare global {
 
 export default function CheckoutPage() {
   const { items, subtotal, shippingFee, total, clearCart, updateQuantity, removeFromCart } = useCart()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, openAuthModal } = useAuth()
   const navigate = useNavigate()
 
   // 18% GST (9% CGST + 9% SGST) breakdown included in the displayed prices
@@ -210,6 +210,7 @@ export default function CheckoutPage() {
         customer_email: finalEmail,
         customer_phone: finalPhone,
         shipping_address: formattedShippingAddress,
+        shipping_fee: shippingFee,
         items: items.map((i) => ({
           product_id: i.product.id,
           name: i.product.name,
@@ -355,7 +356,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span className="text-emerald-700 font-medium">{shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}</span>
+                  <span className="text-emerald-700 font-medium">{shippingFee === 0 ? 'Free (Above ₹1,500)' : `₹${shippingFee} (Standard)`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>CGST @ 9%</span>
@@ -366,7 +367,7 @@ export default function CheckoutPage() {
                   <span className="font-mono text-black">₹{sgst.toLocaleString('en-IN')}</span>
                 </div>
                 <p className="text-[10px] text-neutral-400 pt-0.5">
-                  GST is included in the prices shown.
+                  All prices are inclusive of 18% GST (9% CGST + 9% SGST).
                 </p>
               </div>
             </div>
@@ -382,10 +383,10 @@ export default function CheckoutPage() {
             {/* Step 1: Contact Header */}
             <div className="flex items-center justify-between border-b border-black/5 pb-3">
               <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
-                1. Delivery & Contact
+                {isAuthenticated ? '1. Delivery & Contact' : 'Client Access'}
               </h2>
               <span className="text-[10px] font-mono tracking-widest text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-md font-semibold">
-                Guaranteed Dispatch
+                {isAuthenticated ? 'Guaranteed Dispatch' : 'Sign-In Required'}
               </span>
             </div>
 
@@ -396,7 +397,45 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            <form onSubmit={handleCheckout} className="space-y-6">
+            {!isAuthenticated ? (
+              <div className="py-12 px-6 sm:px-10 flex flex-col items-center justify-center text-center space-y-6">
+                <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center text-black border border-neutral-200 shadow-xs">
+                  <Lock className="w-7 h-7 stroke-[1.5]" />
+                </div>
+
+                <div className="space-y-2 max-w-md">
+                  <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-neutral-400">
+                    ATELIER CLIENT ACCESS
+                  </span>
+                  <h3 className="font-['Conquera',sans-serif] text-xl sm:text-2xl font-normal tracking-wider uppercase text-black">
+                    Sign In to Checkout
+                  </h3>
+                  <p className="text-xs text-neutral-600 leading-relaxed font-sans">
+                    You must be signed in to your Chembros client account to place an order, view live delivery telemetry, and access official tax invoices.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-sm pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof openAuthModal === 'function') openAuthModal()
+                      else navigate('/login?redirect=/checkout')
+                    }}
+                    className="w-full sm:w-auto px-8 py-4 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shadow-lg active:scale-95"
+                  >
+                    Sign In / Register to Place Order
+                  </button>
+                </div>
+
+                <div className="pt-6 border-t border-neutral-100 w-full max-w-sm flex items-center justify-center gap-4 text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+                  <span>Instant OTP Login</span>
+                  <span>•</span>
+                  <span>Encrypted Telemetry</span>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleCheckout} className="space-y-6">
               
               {/* SAVED ADDRESS PROFILE OPTION */}
               {isAuthenticated && user?.shipping_address && !useNewAddress && (
@@ -693,6 +732,7 @@ export default function CheckoutPage() {
                 <span>3–5 Days Express Delivery</span>
               </div>
             </form>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Desktop & Tablet Bag Summary */}
@@ -785,7 +825,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span className="font-medium text-emerald-700">
-                  {shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}
+                  {shippingFee === 0 ? 'Free (Above ₹1,500)' : `₹${shippingFee} (Standard)`}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -797,7 +837,7 @@ export default function CheckoutPage() {
                 <span className="font-mono text-black">₹{sgst.toLocaleString('en-IN')}</span>
               </div>
               <p className="text-[11px] text-neutral-400 pt-0.5">
-                GST is included in the prices shown.
+                All prices are inclusive of 18% GST (9% CGST + 9% SGST).
               </p>
               <div className="flex justify-between text-base font-bold text-black pt-3 border-t border-black/5">
                 <span>Total Due</span>

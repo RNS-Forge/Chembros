@@ -148,10 +148,15 @@ export default function CartDrawer() {
               </div>
               <div className="flex justify-between text-xs text-neutral-600">
                 <span>Shipping</span>
-                <span>{shippingFee === 0 ? 'Complimentary' : `₹${shippingFee}`}</span>
+                <span className={shippingFee === 0 ? 'text-emerald-700 font-medium' : ''}>
+                  {shippingFee === 0 ? 'Free (Above ₹1,500)' : `₹${shippingFee} (Standard)`}
+                </span>
               </div>
-              <div className="flex justify-between text-sm font-bold text-black pt-2 border-t border-neutral-200">
-                <span>Total</span>
+              <div className="flex justify-between text-sm font-bold text-black pt-2 border-t border-neutral-200 items-baseline">
+                <div className="flex flex-col">
+                  <span>Total Due</span>
+                  <span className="text-[10px] text-neutral-400 font-normal">Inclusive of all taxes (GST)</span>
+                </div>
                 <span>₹{total.toLocaleString('en-IN')}</span>
               </div>
 

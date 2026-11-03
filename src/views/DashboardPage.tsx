@@ -36,7 +36,7 @@ import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { getMyOrdersApi, cancelOrderApi } from '../services/api'
+import { getMyOrdersApi, cancelOrderApi, requestOrderCancelOtpApi } from '../services/api'
 import type { Order, UserAddress } from '../types'
 
 export type DashboardTab = 'overview' | 'orders' | 'repurchase' | 'addresses' | 'security' | 'help'
@@ -465,6 +465,12 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
   const [orders, setOrders] = useState<OrderWithTracking[]>([])
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [cancellingOrderId, setCancellingOrderId] = useState<number | string | null>(null)
+  const [cancelOtpStep, setCancelOtpStep] = useState<'request' | 'verify'>('request')
+  const [cancelOtpCode, setCancelOtpCode] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelError, setCancelError] = useState<string | null>(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelCooldown, setCancelCooldown] = useState(0)
   const [copiedTrackingId, setCopiedTrackingId] = useState<string | null>(null)
 
   // Feedback Alerts
@@ -643,20 +649,57 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
     }
   }
 
-  // Handle Order Cancellation
-  const confirmCancelOrder = async (orderId: number | string) => {
+  // Handle Order Cancellation with OTP Verification
+  useEffect(() => {
+    if (cancelCooldown <= 0) return
+    const timer = setInterval(() => {
+      setCancelCooldown((prev) => Math.max(0, prev - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cancelCooldown])
+
+  const handleStartCancelOrder = (orderId: number | string) => {
+    setCancellingOrderId(orderId)
+    setCancelOtpStep('request')
+    setCancelOtpCode('')
+    setCancelReason('')
+    setCancelError(null)
+  }
+
+  const handleRequestCancelOtp = async () => {
+    if (!cancellingOrderId) return
+    setCancelLoading(true)
+    setCancelError(null)
     try {
-      setLoading(true)
-      await cancelOrderApi(orderId)
+      await requestOrderCancelOtpApi(cancellingOrderId)
+      setCancelOtpStep('verify')
+      setCancelCooldown(45)
+    } catch (err: unknown) {
+      setCancelError(err instanceof Error ? err.message : 'Failed to send cancellation code.')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
+  const confirmCancelOrder = async (orderId: number | string) => {
+    if (cancelOtpStep === 'verify' && cancelOtpCode.trim().length !== 6 && user?.role !== 'admin') {
+      setCancelError('Please enter the complete 6-digit cancellation code.')
+      return
+    }
+
+    setCancelLoading(true)
+    setCancelError(null)
+    try {
+      const res = await cancelOrderApi(orderId, cancelReason, cancelOtpCode.trim() || undefined)
       setOrders((prev) =>
         prev.map((ord) => (String(ord.id) === String(orderId) ? { ...ord, order_status: 'Cancelled' } : ord))
       )
-      setSuccess('Order has been cancelled successfully. If paid, your refund will reflect within 3 to 5 business days.')
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel order.')
-    } finally {
-      setLoading(false)
+      setSuccess(res.message || 'Order has been cancelled successfully. If paid, your refund will reflect within 3 to 5 business days.')
       setCancellingOrderId(null)
+    } catch (err: unknown) {
+      setCancelError(err instanceof Error ? err.message : 'Failed to cancel order.')
+    } finally {
+      setCancelLoading(false)
     }
   }
 
@@ -1024,7 +1067,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                           const isCancelled = statusUpper === 'CANCELLED'
                           const isDelivered = statusUpper === 'DELIVERED'
                           const isShipped = statusUpper === 'SHIPPED' || isDelivered || Boolean(order.tracking_id || order.tracking_number)
-                          const canCancel = !isDelivered && !isCancelled && statusUpper !== 'SHIPPED'
+                          const canCancel = !isCancelled && (statusUpper === 'PLACED' || statusUpper === 'PROCESSING' || statusUpper === 'PENDING')
                           
                           // Fallback mock tracking ID for demo until backend supplies it
                           const displayTrackingId = order.tracking_id || order.tracking_number || (isShipped ? `AWB${order.order_number.replace(/\D/g, '') || '987654321'}` : null)
@@ -1144,7 +1187,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                                 {canCancel && (
                                   <button
                                     type="button"
-                                    onClick={() => setCancellingOrderId(order.id)}
+                                    onClick={() => handleStartCancelOrder(order.id)}
                                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold transition-all cursor-pointer"
                                   >
                                     <XCircle className="w-3.5 h-3.5" />
@@ -1852,7 +1895,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
         )}
       </main>
 
-      {/* Cancellation Confirmation Modal */}
+      {/* Cancellation Confirmation Modal with OTP Verification */}
       {cancellingOrderId !== null && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl p-7 max-w-sm w-full border border-neutral-200 shadow-2xl text-center space-y-4">
@@ -1862,29 +1905,112 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
 
             <div>
               <h3 className="text-lg font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black">
-                Cancel Order?
+                {cancelOtpStep === 'request' ? 'Cancel Order?' : 'Verify Cancellation'}
               </h3>
               <p className="text-xs text-neutral-500 mt-1">
-                Are you sure you want to cancel this order? If payment was made, your full refund will be processed within 3 to 5 business days.
+                {cancelOtpStep === 'request'
+                  ? 'To authorize cancellation and initiate your refund, a single-use 6-digit verification code will be dispatched to your registered email.'
+                  : `Enter the 6-digit verification code sent to ${user?.email || 'your email'} to finalize cancellation:`}
               </p>
             </div>
 
-            <div className="flex gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setCancellingOrderId(null)}
-                className="flex-1 py-3 px-4 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
-              >
-                Keep Order
-              </button>
-              <button
-                type="button"
-                onClick={() => confirmCancelOrder(cancellingOrderId)}
-                className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold uppercase tracking-wider hover:bg-red-700 transition-colors cursor-pointer"
-              >
-                Yes, Cancel
-              </button>
-            </div>
+            {cancelError && (
+              <div className="p-2.5 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-mono">
+                {cancelError}
+              </div>
+            )}
+
+            {cancelOtpStep === 'request' ? (
+              <div className="space-y-3 pt-2">
+                <div>
+                  <input
+                    type="text"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Reason for cancellation (optional)"
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-black placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black transition-all"
+                  />
+                </div>
+
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setCancellingOrderId(null)}
+                    disabled={cancelLoading}
+                    className="flex-1 py-3 px-4 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
+                  >
+                    Keep Order
+                  </button>
+                  <button
+                    type="button"
+                    onClick={user?.role === 'admin' ? () => confirmCancelOrder(cancellingOrderId) : handleRequestCancelOtp}
+                    disabled={cancelLoading}
+                    className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold uppercase tracking-wider hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {cancelLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <span>{user?.role === 'admin' ? 'Cancel Order' : 'Send Code'}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 pt-2">
+                <div>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    autoFocus
+                    value={cancelOtpCode}
+                    onChange={(e) => setCancelOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="6-digit code"
+                    className="w-full text-center tracking-[0.5em] font-mono text-lg py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:ring-1 focus:ring-black"
+                  />
+                </div>
+
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setCancellingOrderId(null)}
+                    disabled={cancelLoading}
+                    className="flex-1 py-3 px-4 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
+                  >
+                    Keep Order
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmCancelOrder(cancellingOrderId)}
+                    disabled={cancelLoading || cancelOtpCode.length !== 6}
+                    className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold uppercase tracking-wider hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {cancelLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <span>Verify & Cancel</span>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center text-[11px] font-mono text-neutral-400 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setCancelOtpStep('request')}
+                    className="hover:text-black cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRequestCancelOtp}
+                    disabled={cancelCooldown > 0 || cancelLoading}
+                    className="hover:text-black cursor-pointer disabled:opacity-40"
+                  >
+                    {cancelCooldown > 0 ? `Resend (${cancelCooldown}s)` : 'Resend Code'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

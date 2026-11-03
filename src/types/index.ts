@@ -199,7 +199,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   cod_max_order_limit: 15000,
 
   // Shipping Dispatch
-  default_delivery_fee: 150,
+  default_delivery_fee: 100,
   enable_free_shipping: true,
   free_shipping_threshold: 1500,
   default_courier: 'Blue Dart Express',

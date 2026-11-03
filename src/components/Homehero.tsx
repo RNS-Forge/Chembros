@@ -48,8 +48,8 @@ const BOTTLES: BottleConfig[] = [
     tablet1024: { left: '56.5%', top: '50%' },
   },
   {
-    id: 'molecule-k',
-    name: 'MOLECULE K',
+    id: 'molecule-r',
+    name: 'MOLECULE R',
     img: (bottle3 as any)?.src || bottle3,
     desktop: { left: '80.5%', top: '58%' },
     tablet1024: { left: '80.5%', top: '44%' },

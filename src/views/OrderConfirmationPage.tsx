@@ -5,7 +5,7 @@ import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import type { Order } from '../types'
 import { getOrderByNumberApi } from '../services/api'
-import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Navigation, CreditCard, Copy, Check } from 'lucide-react'
+import { CheckCircle2, Package, Truck, ArrowRight, Loader2, Navigation, CreditCard, Copy, Check, FileText } from 'lucide-react'
 
 export default function OrderConfirmationPage() {
   const [searchParams] = useSearchParams()

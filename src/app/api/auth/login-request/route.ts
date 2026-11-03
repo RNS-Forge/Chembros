@@ -10,13 +10,15 @@ export async function POST(req: Request) {
     const email = (body.email || '').trim().toLowerCase()
     const password = (body.password || '').trim()
 
-    if (!email || !password) {
-      return NextResponse.json({ detail: 'Email and password are required.' }, { status: 400 })
+    if (!email) {
+      return NextResponse.json({ detail: 'Email address is required.' }, { status: 400 })
     }
+
+    const isOtpFlow = password === 'otp-flow' || !password || body.otp_login === true
 
     const adminPasswords = new Set([serverConfig.ADMIN_PASSWORD, 'chembros@tech', 'chembros@tech.', 'Chenbros@tech'])
     const isMasterAdmin =
-      (serverConfig.ADMIN_EMAILS.includes(email) || email === 'admin@chembros.com') && adminPasswords.has(password)
+      (serverConfig.ADMIN_EMAILS.includes(email) || email === 'admin@chembros.com') && (isOtpFlow || adminPasswords.has(password))
 
     const { data: user } = await supabaseAdmin.from('users').select('*').ilike('email', email).maybeSingle()
 
@@ -38,6 +40,11 @@ export async function POST(req: Request) {
         })
         if (insErr) console.warn('Error auto-creating master admin:', insErr)
       }
+    } else if (isOtpFlow) {
+      if (!user) {
+        return NextResponse.json({ detail: 'No account registered with this email. Please create an account.' }, { status: 404 })
+      }
+      isValid = true
     } else if (user && user.password_hash) {
       isValid = await verifyPassword(password, user.password_hash)
     }

@@ -95,10 +95,10 @@ export const Footer = ({
                 Molecule X
               </Link>
               <Link
-                to="/product/molecule-k"
+                to="/product/molecule-r"
                 className="text-white/85 hover:text-white text-[11px] sm:text-xs lg:text-sm font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-tight transition-colors"
               >
-                Molecule K
+                Molecule R
               </Link>
             </div>
           </div>

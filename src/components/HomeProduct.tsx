@@ -36,6 +36,7 @@ function processLiveProducts(liveProducts: Product[]) {
     'molecule-j': 0,
     'molecule-x': 1,
     'molecule-t': 2,
+    'molecule-r': 3,
     'molecule-k': 3,
   }
   const sortedMolecules = [...molecules].sort((a, b) => {
@@ -107,7 +108,7 @@ export default function HomeProduct() {
     if (idx === 0) return bottle3Src
     if (prod.slug === 'molecule-x') return bottle1Src
     if (prod.slug === 'molecule-t') return bottle2Src
-    if (prod.slug === 'molecule-k') return bottle4Src
+    if (prod.slug === 'molecule-k' || prod.slug === 'molecule-r') return bottle4Src
     const list = [bottle3Src, bottle1Src, bottle2Src, bottle4Src]
     return prod.image_base64 || list[idx % list.length]
   }
@@ -302,8 +303,13 @@ export default function HomeProduct() {
 
                   {/* Price & CTA */}
                   <div className="w-full flex flex-col items-center gap-1.5 sm:gap-2.5 lg:gap-2 xl:gap-3 pb-0.5 sm:pb-1">
-                    <div className="text-white text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
-                      ₹{prod.price.toLocaleString('en-IN')}
+                    <div className="flex flex-col items-center">
+                      <div className="text-white text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
+                        ₹{prod.price.toLocaleString('en-IN')}
+                      </div>
+                      <span className="text-[9px] sm:text-[10px] text-white/60 tracking-wider uppercase font-['Inter',sans-serif]">
+                        Inclusive of GST
+                      </span>
                     </div>
 
                     <button
@@ -386,8 +392,13 @@ export default function HomeProduct() {
                   </div>
 
                   <div className="pt-1.5 lg:pt-1 xl:pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 xl:gap-6">
-                    <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
-                      ₹{discoveryArchive.price.toLocaleString('en-IN')}
+                    <div className="flex flex-col">
+                      <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
+                        ₹{discoveryArchive.price.toLocaleString('en-IN')}
+                      </div>
+                      <span className="text-[10px] text-white/70 tracking-widest uppercase font-['Inter',sans-serif]">
+                        Inclusive of GST
+                      </span>
                     </div>
 
                     <button

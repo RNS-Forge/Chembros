@@ -78,7 +78,8 @@ const landscapeDiscoverySrc = resolveAssetSrc(
 // Map of static landscape imagery for each product
 const PRODUCT_LANDSCAPE_ASSETS: Record<string, string> = {
   'molecule-x': landscapeXSrc,
-  'molecule-r': landscapeXSrc,
+  'molecule-r': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
+  '12': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
   '1': landscapeXSrc,
   'molecule-t': landscapeTSrc,
   '2': landscapeTSrc,
@@ -383,7 +384,7 @@ export default function ProductDetail() {
                   </div>
                 </div>
                 <span className="text-[10px] font-mono text-neutral-500 uppercase">
-                  Inclusive of all taxes
+                  Inclusive of all taxes (GST)
                 </span>
               </div>
 
@@ -432,7 +433,7 @@ export default function ProductDetail() {
               {/* Trust Badges */}
               <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500 uppercase pt-2">
                 <span className="flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
+                  <Truck className="w-3.5 h-3.5" /> {product.price >= 1500 ? 'Free Dispatch Across India' : 'Standard Shipping ₹100 (Free above ₹1,500)'}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> 10+ Hours Wear Time
