@@ -1382,6 +1382,8 @@ export interface CreateOrderPayload {
   customer_phone: string
   shipping_address: string
   shipping_fee?: number
+  payment_method?: string
+  delivery_method?: string
   items: {
     product_id: number | string
     name: string
@@ -1393,10 +1395,12 @@ export interface CreateOrderPayload {
 
 export async function createOrderApi(payload: CreateOrderPayload): Promise<{
   order_number: string
-  cashfree_order_id: string
-  payment_session_id: string
+  cashfree_order_id?: string
+  payment_session_id?: string
   total_amount: number
-  cf_environment: string
+  cf_environment?: string
+  payment_method?: string
+  status?: string
 }> {
   return request('/api/orders/create', {
     method: 'POST',
@@ -1977,7 +1981,17 @@ export async function getPlatformSettingsApi(): Promise<PlatformSettings> {
     }
   } catch {}
 
-  // Returns in 0.01ms without waiting on non-existent Supabase table
+  try {
+    const res = await fetch(`${API_BASE_URL}/settings`, { cache: 'no-store' })
+    if (res.ok) {
+      const serverSettings = await res.json()
+      if (serverSettings && typeof serverSettings === 'object') {
+        settings = { ...settings, ...serverSettings }
+        safeStorage.setItem(PLATFORM_SETTINGS_KEY, JSON.stringify(settings))
+      }
+    }
+  } catch {}
+
   return settings
 }
 
@@ -1986,11 +2000,27 @@ export async function updatePlatformSettingsApi(newSettings: Partial<PlatformSet
   const merged: PlatformSettings = { ...current, ...newSettings }
 
   try {
-    safeStorage.setItem(PLATFORM_SETTINGS_KEY, JSON.stringify(merged))
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('chembros_settings_updated', { detail: merged }))
+    const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(merged),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      safeStorage.setItem(PLATFORM_SETTINGS_KEY, JSON.stringify(updated))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chembros_settings_updated', { detail: updated }))
+      }
+      return updated
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Server settings update note:', err)
+  }
+
+  safeStorage.setItem(PLATFORM_SETTINGS_KEY, JSON.stringify(merged))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('chembros_settings_updated', { detail: merged }))
+  }
 
   return merged
 }

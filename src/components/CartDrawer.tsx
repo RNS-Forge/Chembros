@@ -3,7 +3,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
-import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react'
+import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag, AlertCircle } from 'lucide-react'
 import bottleImg from '../assets/bottle.png'
 
 const defaultBottleImg = (bottleImg as any)?.src || bottleImg
@@ -142,12 +142,21 @@ export default function CartDrawer() {
           {/* Footer Checkout Summary */}
           {items.length > 0 && (
             <div className="p-6 border-t border-neutral-100 bg-neutral-50/50 space-y-3">
+              {settings.max_cart_value && settings.max_cart_value > 0 && subtotal > settings.max_cart_value && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
+                  <span>
+                    Exceeds maximum allowed cart limit of ₹{settings.max_cart_value.toLocaleString('en-IN')}. Please reduce cart value to proceed.
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between text-xs text-neutral-600">
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-xs text-neutral-600">
-                <span>Shipping</span>
+                <span>Shipping ({settings.default_courier || 'Blue Dart'})</span>
                 <span className={shippingFee === 0 ? 'text-emerald-700 font-medium' : ''}>
                   {shippingFee === 0 ? 'Free (Above ₹1,500)' : `₹${shippingFee} (Standard)`}
                 </span>
@@ -165,7 +174,8 @@ export default function CartDrawer() {
                   setIsCartOpen(false)
                   navigate('/checkout')
                 }}
-                className="w-full mt-2 py-3.5 px-4 bg-black text-white rounded-full text-xs font-medium uppercase tracking-[0.15em] flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all cursor-pointer shadow-lg shadow-black/10"
+                disabled={Boolean(settings.max_cart_value && settings.max_cart_value > 0 && subtotal > settings.max_cart_value)}
+                className="w-full mt-2 py-3.5 px-4 bg-black text-white rounded-full text-xs font-medium uppercase tracking-[0.15em] flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all cursor-pointer shadow-lg shadow-black/10 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Proceed to Checkout
                 <ArrowRight className="w-4 h-4" />

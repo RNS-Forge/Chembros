@@ -156,15 +156,26 @@ export interface CreateReviewInput {
   sillage?: string
 }
 
+export interface LocationDeliveryRate {
+  id: string
+  name: string
+  states: string
+  fee: number
+}
+
 export interface PlatformSettings {
-  // 1. Payment Methods & Cash on Delivery Permissions
+  // 1. Payment Methods Permissions
   enable_online_payment: boolean
   enable_cod: boolean
   enforce_online_only: boolean
   cod_handling_fee: number
   cod_max_order_limit: number
 
-  // 2. Shipping Dispatch & Logistics Controls (Fixed by Admin)
+  // 2. Cart Limits
+  max_cart_value: number
+
+  // 3. Shipping & Delivery Controls (Admin Configured)
+  enable_delivery_methods: boolean
   default_delivery_fee: number
   enable_free_shipping: boolean
   free_shipping_threshold: number
@@ -175,19 +186,20 @@ export interface PlatformSettings {
   express_dispatch_fee: number
   require_dispatch_tracking: boolean
   auto_email_dispatch: boolean
+  location_delivery_rates?: LocationDeliveryRate[]
 
-  // 3. Checkout Flow & Client Permissions
+  // 4. Checkout Flow & Client Permissions
   allow_guest_checkout: boolean
-  enable_coupons: boolean
-  allow_client_cancellation: boolean
+  enable_coupons?: boolean
+  allow_client_cancellation?: boolean
 
-  // 4. Storefront & Catalog Permissions
-  enable_customer_reviews: boolean
-  allow_guest_reviews: boolean
-  show_stock_scarcity: boolean
-  show_trending_badges: boolean
-  enable_video_stories: boolean
-  maintenance_mode: boolean
+  // Storefront & Catalog (Preserved for internal compatibility)
+  enable_customer_reviews?: boolean
+  allow_guest_reviews?: boolean
+  show_stock_scarcity?: boolean
+  show_trending_badges?: boolean
+  enable_video_stories?: boolean
+  maintenance_mode?: boolean
 }
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
@@ -198,7 +210,11 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   cod_handling_fee: 0,
   cod_max_order_limit: 15000,
 
+  // Cart Limits
+  max_cart_value: 50000,
+
   // Shipping Dispatch
+  enable_delivery_methods: true,
   default_delivery_fee: 100,
   enable_free_shipping: true,
   free_shipping_threshold: 1500,
@@ -209,6 +225,11 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   express_dispatch_fee: 100,
   require_dispatch_tracking: true,
   auto_email_dispatch: true,
+  location_delivery_rates: [
+    { id: 'loc-tn', name: 'Tamil Nadu (Local Zone)', states: 'Tamil Nadu, TN, Pondicherry, PY', fee: 60 },
+    { id: 'loc-south', name: 'South India Zone', states: 'Kerala, Karnataka, Andhra Pradesh, Telangana', fee: 80 },
+    { id: 'loc-default', name: 'Rest of India (National Standard)', states: 'All Other States', fee: 100 },
+  ],
 
   // Checkout & Accounts
   allow_guest_checkout: true,

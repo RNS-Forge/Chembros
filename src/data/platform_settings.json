@@ -1,0 +1,48 @@
+{
+  "enable_online_payment": true,
+  "enable_cod": true,
+  "enforce_online_only": false,
+  "cod_handling_fee": 0,
+  "cod_max_order_limit": 15000,
+  "max_cart_value": 50000,
+  "enable_delivery_methods": true,
+  "default_delivery_fee": 100,
+  "enable_free_shipping": true,
+  "free_shipping_threshold": 1500,
+  "default_courier": "Blue Dart Express",
+  "estimated_delivery_days": "2-4 Business Days",
+  "same_day_dispatch_cutoff": "14:00",
+  "enable_express_dispatch": true,
+  "express_dispatch_fee": 150,
+  "require_dispatch_tracking": true,
+  "auto_email_dispatch": true,
+  "location_delivery_rates": [
+    {
+      "id": "loc-tn",
+      "name": "Tamil Nadu (Local Zone)",
+      "states": "Tamil Nadu, TN, Pondicherry, PY",
+      "fee": 60
+    },
+    {
+      "id": "loc-south",
+      "name": "South India Zone",
+      "states": "Kerala, Karnataka, Andhra Pradesh, Telangana",
+      "fee": 80
+    },
+    {
+      "id": "loc-default",
+      "name": "Rest of India (National Standard)",
+      "states": "All Other States",
+      "fee": 100
+    }
+  ],
+  "allow_guest_checkout": true,
+  "enable_coupons": true,
+  "allow_client_cancellation": true,
+  "enable_customer_reviews": true,
+  "allow_guest_reviews": false,
+  "show_stock_scarcity": true,
+  "show_trending_badges": true,
+  "enable_video_stories": true,
+  "maintenance_mode": false
+}

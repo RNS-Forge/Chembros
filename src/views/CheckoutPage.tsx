@@ -11,6 +11,7 @@ import { createOrderApi, verifyOrderPaymentApi, updateProfileApi } from '../serv
 import {
   Lock,
   CreditCard,
+  Banknote,
   ArrowLeft,
   Loader2,
   CheckCircle2,
@@ -28,7 +29,8 @@ import {
   ChevronDown,
   ChevronUp,
   Truck,
-  Check
+  Check,
+  Zap,
 } from 'lucide-react'
 
 declare global {
@@ -43,14 +45,10 @@ declare global {
 }
 
 export default function CheckoutPage() {
-  const { items, subtotal, shippingFee, total, clearCart, updateQuantity, removeFromCart } = useCart()
+  const { items, subtotal, clearCart, updateQuantity, removeFromCart } = useCart()
   const { user, isAuthenticated, openAuthModal } = useAuth()
+  const { settings } = usePlatformSettings()
   const navigate = useNavigate()
-
-  // 18% GST (9% CGST + 9% SGST) breakdown included in the displayed prices
-  const totalGst = subtotal > 0 ? subtotal - subtotal / 1.18 : 0
-  const cgst = Math.ceil(totalGst / 2)
-  const sgst = Math.floor(totalGst / 2)
 
   const hasSavedAddress = Boolean(user?.shipping_address && user.shipping_address.trim().length > 0)
   const [useNewAddress, setUseNewAddress] = useState(!hasSavedAddress)
@@ -78,7 +76,22 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Populate user data if logged in
+  // Delivery Method Selection (Standard vs Express Priority)
+  const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
+
+  // Payment Method Selection (ONLINE vs COD)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'ONLINE' | 'COD'>('ONLINE')
+
+  // Synchronize payment method based on platform permissions
+  useEffect(() => {
+    if (settings.enable_online_payment !== false) {
+      setSelectedPaymentMethod('ONLINE')
+    } else if (settings.enable_cod) {
+      setSelectedPaymentMethod('COD')
+    }
+  }, [settings.enable_online_payment, settings.enable_cod])
+
+  // Populate user profile address if signed in
   useEffect(() => {
     if (user) {
       if (user.name) setCustomerName(user.name)
@@ -126,6 +139,59 @@ export default function CheckoutPage() {
     }
   }
 
+  // Calculate dynamic delivery fee based on location rates and thresholds
+  const effectiveState = (!useNewAddress && user?.state ? user.state : stateName).trim().toLowerCase()
+  let matchedLocationFee: number | null = null
+  if (effectiveState && Array.isArray(settings.location_delivery_rates)) {
+    for (const loc of settings.location_delivery_rates) {
+      if (!loc.states) continue
+      const stateList = loc.states.split(',').map((s: string) => s.trim().toLowerCase())
+      if (stateList.some((s: string) => s && (effectiveState.includes(s) || s.includes(effectiveState)))) {
+        matchedLocationFee = Number(loc.fee)
+        break
+      }
+    }
+  }
+
+  const baseStandardFee = matchedLocationFee !== null
+    ? matchedLocationFee
+    : (typeof settings.default_delivery_fee === 'number' ? settings.default_delivery_fee : 100)
+
+  const freeThreshold = typeof settings.free_shipping_threshold === 'number' ? settings.free_shipping_threshold : 1500
+  const isFreeShipping = settings.enable_free_shipping !== false && subtotal >= freeThreshold
+  const standardShippingCost = isFreeShipping ? 0 : baseStandardFee
+
+  const expressAddonFee = typeof settings.express_dispatch_fee === 'number' ? settings.express_dispatch_fee : 150
+  const expressShippingCost = standardShippingCost + expressAddonFee
+
+  const deliveryMethodsEnabled = settings.enable_delivery_methods !== false
+  const expressEnabled = deliveryMethodsEnabled && Boolean(settings.enable_express_dispatch)
+
+  const finalShippingFee = (deliveryMethodsEnabled && selectedDeliveryMethod === 'EXPRESS' && expressEnabled)
+    ? expressShippingCost
+    : standardShippingCost
+
+  const isCodSelected = selectedPaymentMethod === 'COD' && settings.enable_cod
+  const codHandlingFee = isCodSelected ? (settings.cod_handling_fee || 0) : 0
+
+  const finalTotal = subtotal + finalShippingFee + codHandlingFee
+
+  // 18% GST (9% CGST + 9% SGST) breakdown included in formulation prices
+  const totalGst = subtotal > 0 ? subtotal - subtotal / 1.18 : 0
+  const cgst = Math.ceil(totalGst / 2)
+  const sgst = Math.floor(totalGst / 2)
+
+  // Max Cart Value Limit enforcement
+  const maxCartLimit = settings.max_cart_value || 0
+  const isMaxCartExceeded = maxCartLimit > 0 && subtotal > maxCartLimit
+
+  // COD Max Order Limit enforcement
+  const codLimit = settings.cod_max_order_limit || 15000
+  const isCodLimitExceeded = isCodSelected && subtotal > codLimit
+
+  // Guest checkout permission enforcement
+  const allowGuestCheckout = settings.allow_guest_checkout !== false
+
   const [simulationModal, setSimulationModal] = useState<{
     orderNumber: string
     cfOrderId: string
@@ -141,10 +207,10 @@ export default function CheckoutPage() {
           <div className="w-16 h-16 rounded-full bg-neutral-200/60 flex items-center justify-center text-black mb-4">
             <Lock className="w-6 h-6 stroke-[1.5]" />
           </div>
-          <h2 className="font-['Conquera',sans-serif] text-xl sm:text-2xl font-normal tracking-wider uppercase text-black">
+          <h2 className="font-['Cinzel',serif] text-xl sm:text-2xl font-bold tracking-wider uppercase text-black">
             Your Bag is Empty
           </h2>
-          <p className="text-xs text-neutral-500 mt-2 mb-6 max-w-xs font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
+          <p className="text-xs text-neutral-500 mt-2 mb-6 max-w-xs font-sans">
             Select from our molecular extrait formulations before proceeding to checkout.
           </p>
           <Link
@@ -162,11 +228,20 @@ export default function CheckoutPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (isMaxCartExceeded) {
+      setError(`Your cart subtotal (₹${subtotal.toLocaleString('en-IN')}) exceeds the maximum allowed order limit of ₹${maxCartLimit.toLocaleString('en-IN')}. Please adjust quantities.`)
+      return
+    }
+
+    if (isCodLimitExceeded) {
+      setError(`Cash on Delivery is limited to orders up to ₹${codLimit.toLocaleString('en-IN')}. Please choose Online Pre-Payment.`)
+      return
+    }
+
     const finalName = !useNewAddress && user?.name ? user.name : customerName.trim()
     const finalEmail = user?.email || customerEmail.trim()
     const finalPhone = !useNewAddress && user?.phone ? user.phone : customerPhone.trim()
-    
-    // Construct verified address string
+
     let finalAddress = ''
     if (!useNewAddress && user?.shipping_address) {
       finalAddress = user.shipping_address
@@ -210,7 +285,9 @@ export default function CheckoutPage() {
         customer_email: finalEmail,
         customer_phone: finalPhone,
         shipping_address: formattedShippingAddress,
-        shipping_fee: shippingFee,
+        shipping_fee: finalShippingFee,
+        payment_method: selectedPaymentMethod,
+        delivery_method: selectedDeliveryMethod,
         items: items.map((i) => ({
           product_id: i.product.id,
           name: i.product.name,
@@ -220,8 +297,16 @@ export default function CheckoutPage() {
         })),
       })
 
+      // COD Direct Fulfillment
+      if (selectedPaymentMethod === 'COD') {
+        clearCart()
+        navigate(`/order-confirmation?order_number=${orderRes.order_number}&status=Placed`)
+        return
+      }
+
+      // Online Cashfree Gateway Processing
       let cashfreeLoaded = false
-      if (typeof window.Cashfree === 'function') {
+      if (typeof window.Cashfree === 'function' && orderRes.payment_session_id && orderRes.cashfree_order_id) {
         try {
           const cashfree = window.Cashfree({
             mode: orderRes.cf_environment === 'PRODUCTION' ? 'production' : 'sandbox',
@@ -254,7 +339,13 @@ export default function CheckoutPage() {
         }
       }
 
-      if ((!cashfreeLoaded || orderRes.cf_environment === 'SANDBOX') && orderRes.cf_environment !== 'PRODUCTION') {
+      // Sandbox Fallback Simulation Modal
+      if (
+        (!cashfreeLoaded || orderRes.cf_environment === 'SANDBOX') &&
+        orderRes.cf_environment !== 'PRODUCTION' &&
+        orderRes.payment_session_id &&
+        orderRes.cashfree_order_id
+      ) {
         setSimulationModal({
           orderNumber: orderRes.order_number,
           cfOrderId: orderRes.cashfree_order_id,
@@ -304,24 +395,28 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Guest Auth Banner */}
-        {!isAuthenticated && (
+        {/* Guest Auth Banner if Guest Checkout is allowed and user is not signed in */}
+        {!isAuthenticated && allowGuestCheckout && (
           <div className="mb-8 p-4 sm:p-5 bg-white border border-black/5 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
                 <Sparkles className="w-4 h-4 text-black" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-black">Already have an account?</p>
+                <p className="text-xs font-semibold text-black">Already have a Chembros client account?</p>
                 <p className="text-[11px] text-neutral-500">Sign in to load your saved delivery addresses in 1 click.</p>
               </div>
             </div>
-            <Link
-              to="/login?redirect=/checkout"
-              className="px-5 py-2 bg-black text-white rounded-full text-xs uppercase tracking-wider font-medium text-center shrink-0 hover:bg-neutral-800 transition-colors"
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof openAuthModal === 'function') openAuthModal()
+                else navigate('/login?redirect=/checkout')
+              }}
+              className="px-5 py-2 bg-black text-white rounded-full text-xs uppercase tracking-wider font-medium text-center shrink-0 hover:bg-neutral-800 transition-colors cursor-pointer"
             >
               Sign In
-            </Link>
+            </button>
           </div>
         )}
 
@@ -336,7 +431,7 @@ export default function CheckoutPage() {
               <span>Order Summary ({items.reduce((s, i) => s + i.quantity, 0)} items)</span>
               {mobileSummaryOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
-            <span className="text-sm font-bold text-black font-mono">₹{total.toLocaleString('en-IN')}</span>
+            <span className="text-sm font-bold text-black font-mono">₹{finalTotal.toLocaleString('en-IN')}</span>
           </button>
 
           {mobileSummaryOpen && (
@@ -355,9 +450,15 @@ export default function CheckoutPage() {
                   <span className="font-mono text-black">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span className="text-emerald-700 font-medium">{shippingFee === 0 ? 'Free (Above ₹1,500)' : `₹${shippingFee} (Standard)`}</span>
+                  <span>Shipping ({selectedDeliveryMethod === 'EXPRESS' ? 'Express Air' : 'Standard'})</span>
+                  <span className="text-emerald-700 font-medium">{finalShippingFee === 0 ? 'Complimentary Free' : `₹${finalShippingFee}`}</span>
                 </div>
+                {isCodSelected && codHandlingFee > 0 && (
+                  <div className="flex justify-between">
+                    <span>COD Handling Fee</span>
+                    <span className="font-mono text-black">₹{codHandlingFee}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>CGST @ 9%</span>
                   <span className="font-mono text-black">₹{cgst.toLocaleString('en-IN')}</span>
@@ -377,16 +478,16 @@ export default function CheckoutPage() {
         {/* 7:5 Ratio Grid: Left Shipping Form & Right Bag Summary */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12 items-start">
           
-          {/* LEFT COLUMN: Shipping & Payment Form */}
+          {/* LEFT COLUMN: Shipping, Delivery & Payment Form */}
           <div className="lg:col-span-7 bg-white border border-black/5 rounded-3xl p-5 sm:p-7 md:p-9 shadow-xs space-y-6">
             
             {/* Step 1: Contact Header */}
             <div className="flex items-center justify-between border-b border-black/5 pb-3">
-              <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
-                {isAuthenticated ? '1. Delivery & Contact' : 'Client Access'}
+              <h2 className="font-['Cinzel',serif] text-base sm:text-lg font-bold tracking-wider uppercase text-black">
+                {isAuthenticated ? '1. Delivery & Contact' : 'Delivery & Client Information'}
               </h2>
-              <span className="text-[10px] font-mono tracking-widest text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-md font-semibold">
-                {isAuthenticated ? 'Guaranteed Dispatch' : 'Sign-In Required'}
+              <span className="text-[10px] font-mono tracking-widest text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-md font-semibold">
+                {settings.default_courier || 'Blue Dart Express'}
               </span>
             </div>
 
@@ -397,7 +498,20 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {!isAuthenticated ? (
+            {isMaxCartExceeded && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900 animate-in fade-in">
+                <AlertCircle className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
+                <div>
+                  <p className="font-bold uppercase tracking-wider text-[11px]">Maximum Order Limit Exceeded</p>
+                  <p className="text-neutral-700 mt-0.5 leading-relaxed">
+                    Your cart subtotal is ₹{subtotal.toLocaleString('en-IN')}, exceeding the allowed maximum order limit of ₹{maxCartLimit.toLocaleString('en-IN')}. Please reduce cart quantities to proceed with checkout.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* CHECKOUT ACCESS GATE: If Guest Checkout is disabled and user is not signed in */}
+            {!isAuthenticated && !allowGuestCheckout ? (
               <div className="py-12 px-6 sm:px-10 flex flex-col items-center justify-center text-center space-y-6">
                 <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center text-black border border-neutral-200 shadow-xs">
                   <Lock className="w-7 h-7 stroke-[1.5]" />
@@ -405,13 +519,13 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2 max-w-md">
                   <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-neutral-400">
-                    ATELIER CLIENT ACCESS
+                    CLIENT AUTHENTICATION REQUIRED
                   </span>
-                  <h3 className="font-['Conquera',sans-serif] text-xl sm:text-2xl font-normal tracking-wider uppercase text-black">
+                  <h3 className="font-['Cinzel',serif] text-xl sm:text-2xl font-bold tracking-wider uppercase text-black">
                     Sign In to Checkout
                   </h3>
                   <p className="text-xs text-neutral-600 leading-relaxed font-sans">
-                    You must be signed in to your Chembros client account to place an order, view live delivery telemetry, and access official tax invoices.
+                    Guest checkout is currently disabled by atelier administration. Clients must sign in or register before checking out to place an order, view live delivery telemetry, and access official tax invoices.
                   </p>
                 </div>
 
@@ -422,7 +536,7 @@ export default function CheckoutPage() {
                       if (typeof openAuthModal === 'function') openAuthModal()
                       else navigate('/login?redirect=/checkout')
                     }}
-                    className="w-full sm:w-auto px-8 py-4 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shadow-lg active:scale-95"
+                    className="w-full sm:w-auto px-8 py-3.5 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shadow-lg active:scale-95"
                   >
                     Sign In / Register to Place Order
                   </button>
@@ -437,308 +551,543 @@ export default function CheckoutPage() {
             ) : (
               <form onSubmit={handleCheckout} className="space-y-6">
               
-              {/* SAVED ADDRESS PROFILE OPTION */}
-              {isAuthenticated && user?.shipping_address && !useNewAddress && (
-                <div className="p-5 sm:p-6 rounded-2xl border-2 border-black bg-neutral-50/70 relative">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full border-2 border-black flex items-center justify-center mt-0.5">
-                        <div className="w-2.5 h-2.5 bg-black rounded-full" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-black uppercase tracking-wider">{user.name || 'Recipient'}</span>
-                          <span className="px-2 py-0.5 bg-black text-white text-[9px] uppercase font-mono tracking-widest rounded-full">
-                            Saved Primary
-                          </span>
+                {/* SAVED ADDRESS PROFILE OPTION FOR SIGNED-IN CLIENTS */}
+                {isAuthenticated && user?.shipping_address && !useNewAddress && (
+                  <div className="p-5 sm:p-6 rounded-2xl border-2 border-black bg-neutral-50/70 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-black flex items-center justify-center mt-0.5">
+                          <div className="w-2.5 h-2.5 bg-black rounded-full" />
                         </div>
-                        <p className="text-xs text-neutral-700 mt-1.5 font-medium leading-relaxed">
-                          {user.shipping_address}
-                        </p>
-                        {(user.city || user.state || user.pincode) && (
-                          <p className="text-xs text-neutral-500 mt-0.5 font-mono">
-                            {[user.city, user.state].filter(Boolean).join(', ')}{user.pincode ? ` - ${user.pincode}` : ''}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-black uppercase tracking-wider">{user.name || 'Recipient'}</span>
+                            <span className="px-2 py-0.5 bg-black text-white text-[9px] uppercase font-mono tracking-widest rounded-full">
+                              Saved Primary
+                            </span>
+                          </div>
+                          <p className="text-xs text-neutral-700 mt-1.5 font-medium leading-relaxed">
+                            {user.shipping_address}
                           </p>
-                        )}
-                        {user.phone && (
-                          <p className="text-xs text-neutral-500 mt-1 font-mono">
-                            Phone: {user.phone}
-                          </p>
-                        )}
+                          {(user.city || user.state || user.pincode) && (
+                            <p className="text-xs text-neutral-500 mt-0.5 font-mono">
+                              {[user.city, user.state].filter(Boolean).join(', ')}{user.pincode ? ` - ${user.pincode}` : ''}
+                            </p>
+                          )}
+                          {user.phone && (
+                            <p className="text-xs text-neutral-500 mt-1 font-mono">
+                              Phone: {user.phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Home className="w-4 h-4 text-neutral-400" />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setUseNewAddress(true)}
+                      className="mt-4 pt-3 border-t border-black/5 text-[11px] font-mono tracking-wider uppercase text-neutral-700 hover:text-black flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Enter a different delivery address</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* GRANULAR ADDRESS FIELDS WITH AUTOFILL */}
+                {(useNewAddress || !isAuthenticated || !user?.shipping_address) && (
+                  <div className="space-y-4">
+                    {isAuthenticated && user?.shipping_address && (
+                      <div className="flex items-center justify-between pb-2 border-b border-black/5">
+                        <span className="text-xs font-semibold text-black uppercase tracking-wider">New Shipping Details</span>
+                        <button
+                          type="button"
+                          onClick={() => setUseNewAddress(false)}
+                          className="text-[11px] font-mono text-neutral-500 hover:text-black underline cursor-pointer"
+                        >
+                          Use saved profile
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Recipient Name & Phone */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          Full Name *
+                        </label>
+                        <div className="relative">
+                          <UserIcon className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="text"
+                            required
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="e.g. Gowtham A"
+                            className="w-full pl-10 pr-4 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          Phone Number (For Delivery OTP) *
+                        </label>
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="tel"
+                            required
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            placeholder="+91 98765 43210"
+                            className="w-full pl-10 pr-4 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <Home className="w-4 h-4 text-neutral-400" />
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setUseNewAddress(true)}
-                    className="mt-4 pt-3 border-t border-black/5 text-[11px] font-mono tracking-wider uppercase text-neutral-700 hover:text-black flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Enter a different delivery address</span>
-                  </button>
-                </div>
-              )}
+                    {!isAuthenticated && (
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          Email Address (For Tax Invoice & Waybill Tracking) *
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                          <input
+                            type="email"
+                            required
+                            value={customerEmail}
+                            onChange={(e) => setCustomerEmail(e.target.value)}
+                            placeholder="you@domain.com"
+                            className="w-full pl-10 pr-4 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          />
+                        </div>
+                      </div>
+                    )}
 
-              {/* GRANULAR ADDRESS FIELDS WITH AUTOFILL */}
-              {(useNewAddress || !isAuthenticated || !user?.shipping_address) && (
-                <div className="space-y-4">
-                  {isAuthenticated && user?.shipping_address && (
-                    <div className="flex items-center justify-between pb-2 border-b border-black/5">
-                      <span className="text-xs font-semibold text-black uppercase tracking-wider">New Shipping Details</span>
-                      <button
-                        type="button"
-                        onClick={() => setUseNewAddress(false)}
-                        className="text-[11px] font-mono text-neutral-500 hover:text-black underline cursor-pointer"
-                      >
-                        Use saved profile
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Recipient Name & Phone */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Postal PIN Code with Real-Time Validation */}
                     <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        Full Name *
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
+                          Postal PIN Code (Auto-fills City & State) *
+                        </label>
+                        {pinSuccess && (
+                          <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
+                            <Check className="w-3 h-3" /> Valid Indian PIN
+                          </span>
+                        )}
+                        {pinError && (
+                          <span className="text-[10px] text-rose-600 font-mono font-semibold">
+                            {pinError}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative">
-                        <UserIcon className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                        <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
                         <input
                           type="text"
                           required
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          placeholder="e.g. Gowtham A"
-                          className="w-full pl-10 pr-4 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          maxLength={6}
+                          value={pinCode}
+                          onChange={(e) => handlePinCodeChange(e.target.value)}
+                          placeholder="e.g. 641031"
+                          className="w-full pl-10 pr-10 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black font-mono focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
                         />
+                        {isPinLoading && (
+                          <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-neutral-400 animate-spin" />
+                        )}
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        Phone Number (For Delivery OTP) *
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                    {/* House / Flat & Street */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          Flat, House No., Building *
+                        </label>
                         <input
-                          type="tel"
+                          type="text"
                           required
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          placeholder="+91 98765 43210"
-                          className="w-full pl-10 pr-4 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          value={flatBuilding}
+                          onChange={(e) => setFlatBuilding(e.target.value)}
+                          placeholder="e.g. Penthouse 4B, Emerald Heights"
+                          className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
                         />
                       </div>
-                    </div>
-                  </div>
 
-                  {!isAuthenticated && (
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        Email Address (For Invoicing & Tracking) *
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          Street, Sector, Area *
+                        </label>
                         <input
-                          type="email"
+                          type="text"
                           required
-                          value={customerEmail}
-                          onChange={(e) => setCustomerEmail(e.target.value)}
-                          placeholder="you@domain.com"
-                          className="w-full pl-10 pr-4 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                          value={streetArea}
+                          onChange={(e) => setStreetArea(e.target.value)}
+                          placeholder="e.g. Narasimhanaickenpalayam"
+                          className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
                         />
                       </div>
                     </div>
-                  )}
 
-                  {/* Postal PIN Code with Real-Time Validation */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 uppercase tracking-wider">
-                        Postal PIN Code (Auto-fills City & State) *
-                      </label>
-                      {pinSuccess && (
-                        <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
-                          <Check className="w-3 h-3" /> Valid Indian PIN
+                    {/* Landmark, City & State */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          Landmark (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={landmark}
+                          onChange={(e) => setLandmark(e.target.value)}
+                          placeholder="Near Metro Station"
+                          className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          City / District *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="Coimbatore"
+                          className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
+                          State *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={stateName}
+                          onChange={(e) => setStateName(e.target.value)}
+                          placeholder="Tamil Nadu"
+                          className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {isAuthenticated && (
+                      <label className="flex items-center gap-2 pt-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={saveAsDefault}
+                          onChange={(e) => setSaveAsDefault(e.target.checked)}
+                          className="w-4 h-4 rounded text-black border-neutral-300 focus:ring-black accent-black"
+                        />
+                        <span className="text-xs text-neutral-700">
+                          Save this address as my primary default delivery destination
                         </span>
-                      )}
-                      {pinError && (
-                        <span className="text-[10px] text-rose-600 font-mono font-semibold">
-                          {pinError}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <MapPin className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
-                      <input
-                        type="text"
-                        required
-                        maxLength={6}
-                        value={pinCode}
-                        onChange={(e) => handlePinCodeChange(e.target.value)}
-                        placeholder="e.g. 641031"
-                        className="w-full pl-10 pr-10 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black font-mono focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                      />
-                      {isPinLoading && (
-                        <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-neutral-400 animate-spin" />
-                      )}
-                    </div>
+                      </label>
+                    )}
                   </div>
-
-                  {/* House / Flat & Street */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        Flat, House No., Building *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={flatBuilding}
-                        onChange={(e) => setFlatBuilding(e.target.value)}
-                        placeholder="e.g. Penthouse 4B, Emerald Heights"
-                        className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        Street, Sector, Area *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={streetArea}
-                        onChange={(e) => setStreetArea(e.target.value)}
-                        placeholder="e.g. Narasimhanaickenpalayam"
-                        className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Landmark, City & State */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        Landmark (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={landmark}
-                        onChange={(e) => setLandmark(e.target.value)}
-                        placeholder="Near Metro Station"
-                        className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        City / District *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder="Coimbatore"
-                        className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-mono font-medium text-neutral-600 mb-1.5 uppercase tracking-wider">
-                        State *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={stateName}
-                        onChange={(e) => setStateName(e.target.value)}
-                        placeholder="Tamil Nadu"
-                        className="w-full px-3.5 py-3 bg-neutral-50/80 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {isAuthenticated && (
-                    <label className="flex items-center gap-2 pt-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={saveAsDefault}
-                        onChange={(e) => setSaveAsDefault(e.target.checked)}
-                        className="w-4 h-4 rounded text-black border-neutral-300 focus:ring-black accent-black"
-                      />
-                      <span className="text-xs text-neutral-700">
-                        Save this address as my primary default delivery destination
-                      </span>
-                    </label>
-                  )}
-                </div>
-              )}
-
-              {/* Step 2: Payment Gateway Options */}
-              <div className="pt-4 border-t border-black/5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-['Conquera',sans-serif] text-sm font-normal tracking-wider uppercase text-black">
-                    2. Payment Method
-                  </h3>
-                  <span className="text-[10px] font-mono text-neutral-400">INSTANT DISPATCH</span>
-                </div>
-
-                <div className="p-4 bg-neutral-50 rounded-2xl border border-black/5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-black/5 shadow-xs">
-                      <CreditCard className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-semibold text-black uppercase tracking-wider">
-                        Cashfree Payments Gateway
-                      </h4>
-                      <p className="text-[11px] text-neutral-500">
-                        UPI (GPay / PhonePe / Paytm), Credit / Debit Cards, NetBanking
-                      </p>
-                    </div>
-                  </div>
-                  <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-                </div>
-              </div>
-
-              {/* CTA Placement */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 px-6 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-medium uppercase tracking-[0.2em] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg active:scale-[0.99] disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Pay ₹{total.toLocaleString('en-IN')} & Place Order</span>
-                  </>
                 )}
-              </button>
 
-              <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-neutral-400 uppercase tracking-widest pt-2">
-                <span className="flex items-center gap-1">
-                  <Truck className="w-3 h-3 text-neutral-500" /> Free Dispatch Across India
-                </span>
-                <span>•</span>
-                <span>3–5 Days Express Delivery</span>
-              </div>
-            </form>
+                {/* STEP 2: DELIVERY METHOD SELECTION (Controlled by Admin Permission) */}
+                <div className="pt-4 border-t border-black/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-['Cinzel',serif] text-sm font-bold tracking-wider uppercase text-black">
+                      2. Delivery Method
+                    </h3>
+                    <span className="text-[10px] font-mono text-neutral-400 uppercase">
+                      Carrier: {settings.default_courier || 'Blue Dart Express'}
+                    </span>
+                  </div>
+
+                  {deliveryMethodsEnabled ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Option A: Standard Courier Dispatch */}
+                      <div
+                        onClick={() => setSelectedDeliveryMethod('STANDARD')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                          selectedDeliveryMethod === 'STANDARD'
+                            ? 'border-black bg-neutral-50 ring-1 ring-black'
+                            : 'border-neutral-200 bg-white hover:border-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-black">
+                              <Truck className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-black uppercase tracking-wider">
+                                Standard Courier
+                              </p>
+                              <p className="text-[10px] font-mono text-neutral-500">
+                                {settings.estimated_delivery_days || '2-4 Business Days'}
+                              </p>
+                            </div>
+                          </div>
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${
+                              selectedDeliveryMethod === 'STANDARD'
+                                ? 'border-black bg-black text-white'
+                                : 'border-neutral-300 bg-white'
+                            }`}
+                          >
+                            {selectedDeliveryMethod === 'STANDARD' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-xs">
+                          <span className="text-[10px] font-mono text-neutral-400 uppercase truncate">
+                            {settings.default_courier || 'Blue Dart Express'}
+                          </span>
+                          <span className="font-mono font-bold text-black">
+                            {standardShippingCost === 0 ? 'FREE' : `₹${standardShippingCost}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Option B: Express Priority Air Dispatch (if enabled by admin) */}
+                      {expressEnabled ? (
+                        <div
+                          onClick={() => setSelectedDeliveryMethod('EXPRESS')}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                            selectedDeliveryMethod === 'EXPRESS'
+                              ? 'border-black bg-neutral-50 ring-1 ring-black'
+                              : 'border-neutral-200 bg-white hover:border-neutral-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-[#4a2e70]/10 flex items-center justify-center text-[#4a2e70]">
+                                <Zap className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-xs font-bold text-black uppercase tracking-wider">
+                                    Express Priority
+                                  </p>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#4a2e70] text-white uppercase">
+                                    Air
+                                  </span>
+                                </div>
+                                <p className="text-[10px] font-mono text-neutral-500">
+                                  1–2 Business Days
+                                </p>
+                              </div>
+                            </div>
+                            <div
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${
+                                selectedDeliveryMethod === 'EXPRESS'
+                                  ? 'border-black bg-black text-white'
+                                  : 'border-neutral-300 bg-white'
+                              }`}
+                            >
+                              {selectedDeliveryMethod === 'EXPRESS' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                            </div>
+                          </div>
+
+                          <div className="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-xs">
+                            <span className="text-[10px] font-mono text-neutral-400 uppercase truncate">
+                              Priority Air Transit
+                            </span>
+                            <span className="font-mono font-bold text-black">
+                              {expressShippingCost === 0 ? 'FREE' : `₹${expressShippingCost}`}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between opacity-60">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-400">
+                              <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                                Express Air Dispatch
+                              </p>
+                              <p className="text-[10px] font-mono text-neutral-400">
+                                Currently Unavailable
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-neutral-400 mt-3 pt-2 border-t border-neutral-200">
+                            Standard courier active for this route
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* When delivery methods selection is disabled by admin */
+                    <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
+                          <Truck className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-black uppercase tracking-wider">
+                              Standard Dispatch: {settings.default_courier || 'Blue Dart Express'}
+                            </span>
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 uppercase">
+                              Standard
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-500 mt-0.5">
+                            Estimated transit: {settings.estimated_delivery_days || '2-4 Business Days'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-black">
+                        {standardShippingCost === 0 ? 'FREE' : `₹${standardShippingCost}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* STEP 3: PAYMENT METHOD PERMISSIONS */}
+                <div className="pt-4 border-t border-black/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-['Cinzel',serif] text-sm font-bold tracking-wider uppercase text-black">
+                      3. Payment Method
+                    </h3>
+                    <span className="text-[10px] font-mono text-neutral-400 uppercase">INSTANT VERIFICATION</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Method 1: Online Pre-Payment via Cashfree */}
+                    {settings.enable_online_payment !== false && (
+                      <div
+                        onClick={() => setSelectedPaymentMethod('ONLINE')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          selectedPaymentMethod === 'ONLINE'
+                            ? 'border-black bg-neutral-50 ring-1 ring-black'
+                            : 'border-neutral-200 bg-white hover:border-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
+                            <CreditCard className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">
+                                Online Pre-Payment (Cashfree Gateway)
+                              </h4>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase font-semibold">
+                                Recommended
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 mt-0.5">
+                              UPI (GPay, PhonePe, Paytm), Credit & Debit Cards, NetBanking
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            selectedPaymentMethod === 'ONLINE'
+                              ? 'border-black bg-black text-white'
+                              : 'border-neutral-300 bg-white'
+                          }`}
+                        >
+                          {selectedPaymentMethod === 'ONLINE' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Method 2: Cash on Delivery (COD) */}
+                    {settings.enable_cod && (
+                      <div
+                        onClick={() => setSelectedPaymentMethod('COD')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          selectedPaymentMethod === 'COD'
+                            ? 'border-black bg-neutral-50 ring-1 ring-black'
+                            : 'border-neutral-200 bg-white hover:border-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
+                            <Banknote className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">
+                                Cash on Delivery (COD)
+                              </h4>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase font-semibold">
+                                Doorstep
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 mt-0.5">
+                              Pay in cash or UPI at the doorstep upon courier arrival.
+                              {settings.cod_handling_fee ? ` (Includes ₹${settings.cod_handling_fee} handling fee)` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            selectedPaymentMethod === 'COD'
+                              ? 'border-black bg-black text-white'
+                              : 'border-neutral-300 bg-white'
+                          }`}
+                        >
+                          {selectedPaymentMethod === 'COD' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                      </div>
+                    )}
+
+                    {isCodLimitExceeded && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
+                        <span>
+                          Cash on Delivery is limited to orders up to ₹{codLimit.toLocaleString('en-IN')}. Please select Online Pre-Payment.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* CTA Placement */}
+                <button
+                  type="submit"
+                  disabled={loading || isMaxCartExceeded || isCodLimitExceeded}
+                  className="w-full py-4 px-6 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Processing Order...</span>
+                    </>
+                  ) : selectedPaymentMethod === 'COD' ? (
+                    <>
+                      <Banknote className="w-3.5 h-3.5" />
+                      <span>Confirm COD Order (₹{finalTotal.toLocaleString('en-IN')})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Pay ₹{finalTotal.toLocaleString('en-IN')} & Place Order</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-neutral-400 uppercase tracking-widest pt-2">
+                  <span className="flex items-center gap-1">
+                    <Truck className="w-3 h-3 text-neutral-500" /> Dispatched via {settings.default_courier || 'Blue Dart Express'}
+                  </span>
+                  <span>•</span>
+                  <span>{settings.estimated_delivery_days || '2-4 Days Express'}</span>
+                </div>
+              </form>
             )}
           </div>
 
           {/* RIGHT COLUMN: Desktop & Tablet Bag Summary */}
           <div className="hidden lg:block lg:col-span-5 sticky top-28 bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-black/5">
-              <h3 className="font-['Conquera',sans-serif] text-base font-normal tracking-wider uppercase text-black">
+              <h3 className="font-['Cinzel',serif] text-base font-bold tracking-wider uppercase text-black">
                 Bag Summary
               </h3>
               <span className="text-xs font-mono text-neutral-400">
@@ -759,7 +1108,7 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-['Conquera',sans-serif] text-xs font-normal tracking-wide text-black uppercase truncate">
+                      <h4 className="font-['Cinzel',serif] text-xs font-bold tracking-wide text-black uppercase truncate">
                         {product.name}
                       </h4>
                       <p className="text-[10px] text-neutral-400 uppercase font-mono">
@@ -820,14 +1169,20 @@ export default function CheckoutPage() {
             <div className="space-y-2.5 pt-4 border-t border-black/5 text-xs text-neutral-600">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-mono text-black">₹{subtotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono text-black font-semibold">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
+                <span>Delivery ({selectedDeliveryMethod === 'EXPRESS' ? 'Express Air' : 'Standard'})</span>
                 <span className="font-medium text-emerald-700">
-                  {shippingFee === 0 ? 'Free (Above ₹1,500)' : `₹${shippingFee} (Standard)`}
+                  {finalShippingFee === 0 ? 'Complimentary Free' : `₹${finalShippingFee}`}
                 </span>
               </div>
+              {isCodSelected && codHandlingFee > 0 && (
+                <div className="flex justify-between">
+                  <span>COD Handling Surcharge</span>
+                  <span className="font-mono text-black">₹{codHandlingFee}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>CGST @ 9%</span>
                 <span className="font-mono text-black">₹{cgst.toLocaleString('en-IN')}</span>
@@ -841,7 +1196,7 @@ export default function CheckoutPage() {
               </p>
               <div className="flex justify-between text-base font-bold text-black pt-3 border-t border-black/5">
                 <span>Total Due</span>
-                <span className="font-mono text-lg">₹{total.toLocaleString('en-IN')}</span>
+                <span className="font-mono text-lg">₹{finalTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -851,7 +1206,7 @@ export default function CheckoutPage() {
                 <Truck className="w-3.5 h-3.5" />
               </div>
               <p className="text-[11px] text-neutral-500 leading-snug">
-                Insured express delivery with temperature-controlled transit packaging.
+                Insured express delivery via <strong className="text-black font-semibold">{settings.default_courier || 'Blue Dart Express'}</strong> with temperature-controlled transit packaging.
               </p>
             </div>
           </div>
@@ -869,7 +1224,7 @@ export default function CheckoutPage() {
 
             <div>
               <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-mono">SANDBOX GATEWAY</p>
-              <h3 className="text-lg font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black mt-1">
+              <h3 className="text-lg font-bold font-['Cinzel',serif] uppercase tracking-wide text-black mt-1">
                 Authorize Payment
               </h3>
               <p className="text-xs text-neutral-500 mt-1 font-mono">

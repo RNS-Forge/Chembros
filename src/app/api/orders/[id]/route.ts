@@ -25,6 +25,8 @@ function formatOrder(row: any) {
     shipping_fee: Number(row.shipping_fee) || 0,
     total_amount: Number(row.total_amount) || 0,
     payment_status: row.payment_status || 'PENDING',
+    payment_method: row.payment_method || (row.payment_status === 'PENDING_COD' ? 'Cash on Delivery' : 'Online Pre-Payment'),
+    delivery_method: row.delivery_method || 'Standard',
     order_status: row.order_status || 'Placed',
     tracking_number: row.tracking_number,
     created_at: row.created_at || new Date().toISOString(),

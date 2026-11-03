@@ -2681,7 +2681,7 @@ export default function AdminPage() {
         )}
 
         {/* ========================================================
-            TAB 6: SETTINGS & PERMISSIONS (NEW TAB - Full Feature Controls)
+            TAB 6: SETTINGS & PERMISSIONS (Operations & Controls)
            ======================================================== */}
         {activeTab === 'settings' && (
           <div className="space-y-8 animate-in fade-in duration-200">
@@ -2689,10 +2689,10 @@ export default function AdminPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
               <div>
                 <h2 className="text-xl font-bold font-['Cinzel',serif] text-black uppercase tracking-wide flex items-center gap-2">
-                  <span>Platform Feature Permissions & Shipping Controls</span>
+                  <span>Platform Settings & Operational Permissions</span>
                 </h2>
                 <p className="text-xs text-neutral-500 mt-1">
-                  Manage Cash on Delivery vs Online Payment permissions, fixed shipping dispatch rules, and storefront feature gates.
+                  Configure client payment methods, cart order thresholds, dispatch courier partners, delivery charges, and checkout access.
                 </p>
               </div>
 
@@ -2757,24 +2757,24 @@ export default function AdminPage() {
             )}
 
             <form onSubmit={handleSavePlatformSettings} className="space-y-8">
-              {/* SECTION 1: PAYMENT GATEWAYS & CASH ON DELIVERY (COD) CONTROLS */}
+              {/* SECTION 1: PAYMENT METHOD CONTROLS */}
               <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
                 <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
                   <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
-                    <Banknote className="w-5 h-5" />
+                    <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
-                      1. Payment Gateways & Cash on Delivery (COD) Permissions
+                      1. Payment Method Permissions
                     </h3>
                     <p className="text-[11px] text-neutral-500">
-                      Enable or disable doorstep payment collection vs enforcing strictly 100% online pre-payment.
+                      Enable or disable payment options visible to clients at checkout.
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  {/* Toggle 1: Enable Online Payment */}
+                  {/* Toggle 1: Online Pre-Payment */}
                   <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -2782,7 +2782,7 @@ export default function AdminPage() {
                           Online Pre-Payment (Cashfree PG)
                         </span>
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
-                          UPI · Cards
+                          UPI / Cards
                         </span>
                       </div>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
@@ -2808,7 +2808,7 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Toggle 2: Enable COD */}
+                  {/* Toggle 2: Cash on Delivery */}
                   <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -2820,7 +2820,7 @@ export default function AdminPage() {
                         </span>
                       </div>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Allow customers to place orders with zero upfront charge and pay cash or UPI directly to courier upon arrival.
+                        Allow customers to place orders without upfront charge and pay cash or UPI directly upon courier delivery.
                       </p>
                     </div>
                     <button
@@ -2840,82 +2840,87 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Toggle 3: Enforce Online Payment Only */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4 md:col-span-2">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-black uppercase tracking-wider text-[11px]">
-                          Enforce Online Payment Only (Strict Atelier Policy)
-                        </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-red-100 text-red-800 uppercase">
-                          Blocks COD
-                        </span>
+                  {/* COD Sub-settings if enabled */}
+                  {settingsForm.enable_cod && (
+                    <>
+                      <div>
+                        <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                          COD Handling Surcharge (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={settingsForm.cod_handling_fee}
+                          onChange={(e) =>
+                            setSettingsForm({ ...settingsForm, cod_handling_fee: Math.max(0, Number(e.target.value)) })
+                          }
+                          className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                        />
+                        <p className="text-[10px] text-neutral-400 mt-1">
+                          Optional handling fee added to COD orders (default ₹0).
+                        </p>
                       </div>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        When enabled, Cash on Delivery is strictly hidden and disabled across the store. All orders must be 100% pre-paid before studio decanting.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.enforce_online_only}
-                      onClick={() =>
-                        setSettingsForm({ ...settingsForm, enforce_online_only: !settingsForm.enforce_online_only })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.enforce_online_only ? 'bg-red-700' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.enforce_online_only ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
 
-                  {/* Input 1: COD Handling Fee */}
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      COD Handling Surcharge (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={settingsForm.cod_handling_fee}
-                      onChange={(e) =>
-                        setSettingsForm({ ...settingsForm, cod_handling_fee: Math.max(0, Number(e.target.value)) })
-                      }
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-1">
-                      Optional extra fee added to COD orders (set to 0 for complimentary COD).
-                    </p>
-                  </div>
-
-                  {/* Input 2: COD Maximum Cap */}
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Maximum Cart Value for COD (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min="1000"
-                      step="500"
-                      value={settingsForm.cod_max_order_limit}
-                      onChange={(e) =>
-                        setSettingsForm({ ...settingsForm, cod_max_order_limit: Math.max(1000, Number(e.target.value)) })
-                      }
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-1">
-                      Orders exceeding this total are blocked from COD and require online payment (default ₹15,000).
-                    </p>
-                  </div>
+                      <div>
+                        <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                          COD Maximum Order Limit (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="1000"
+                          step="500"
+                          value={settingsForm.cod_max_order_limit}
+                          onChange={(e) =>
+                            setSettingsForm({ ...settingsForm, cod_max_order_limit: Math.max(1000, Number(e.target.value)) })
+                          }
+                          className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                        />
+                        <p className="text-[10px] text-neutral-400 mt-1">
+                          Orders exceeding this amount require online payment (default ₹15,000).
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* SECTION 2: SHIPPING DISPATCH & LOGISTICS CONTROLS (FIXED BY ADMIN) */}
+              {/* SECTION 2: CART & ORDER VALUE CONTROLS */}
+              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
+                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
+                      2. Cart & Order Value Controls
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Enforce laboratory purchase caps and maximum cart acquisition value.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="max-w-md text-xs">
+                  <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                    Maximum Cart Order Limit (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={settingsForm.max_cart_value || 0}
+                    onChange={(e) =>
+                      setSettingsForm({ ...settingsForm, max_cart_value: Math.max(0, Number(e.target.value)) })
+                    }
+                    className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                  />
+                  <p className="text-[10px] text-neutral-400 mt-1.5">
+                    Orders with subtotal exceeding this amount cannot be checked out (set to 0 to permit unlimited cart acquisitions).
+                  </p>
+                </div>
+              </div>
+
+              {/* SECTION 3: DELIVERY METHODS & SHIPPING DISPATCH CONTROLS */}
               <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
                 <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
                   <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
@@ -2923,28 +2928,109 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
-                      2. Shipping Dispatch & Logistics Controls (Fixed by Admin)
+                      3. Delivery Methods & Shipping Controls
                     </h3>
                     <p className="text-[11px] text-neutral-500">
-                      Configure standard delivery fees, free shipping thresholds, primary courier partners, and transit windows.
+                      Configure delivery method options, courier partner, default delivery charge, and location-based rates.
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                  {/* Toggle: Enable Free Shipping */}
+                  {/* Toggle: Enable Delivery Method Selection */}
                   <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4 md:col-span-2 lg:col-span-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-black uppercase tracking-wider text-[11px]">
-                          Enable Complimentary Shipping Threshold
+                          Enable Delivery Method Selection
                         </span>
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
-                          Free Over ₹{settingsForm.free_shipping_threshold.toLocaleString('en-IN')}
+                          {settingsForm.enable_delivery_methods !== false ? 'Active' : 'Disabled'}
                         </span>
                       </div>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        When enabled, all domestic orders that meet or exceed the free shipping threshold receive complimentary shipping.
+                        When enabled, clients can view and select delivery methods (Standard vs Express Priority). When disabled, only standard delivery is used.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settingsForm.enable_delivery_methods !== false}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          enable_delivery_methods: !(settingsForm.enable_delivery_methods !== false),
+                        })
+                      }
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                        settingsForm.enable_delivery_methods !== false ? 'bg-[#4a2e70]' : 'bg-neutral-300'
+                      }`}
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.enable_delivery_methods !== false ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Primary Dispatch Courier Partner */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Primary Dispatch Courier Partner *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsForm.default_courier}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, default_courier: e.target.value })}
+                      placeholder="e.g. Blue Dart Express"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Official carrier shown on customer checkout, telemetry, and tax invoices.</p>
+                  </div>
+
+                  {/* Default Delivery Charge */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Default Delivery Charge (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={settingsForm.default_delivery_fee}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, default_delivery_fee: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Base shipping charge applied when order is below complimentary threshold.</p>
+                  </div>
+
+                  {/* Estimated Transit Timeline */}
+                  <div>
+                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                      Estimated Transit Timeline *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsForm.estimated_delivery_days}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, estimated_delivery_days: e.target.value })}
+                      placeholder="e.g. 2-4 Business Days"
+                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-1">Displayed to clients on checkout and confirmation receipts.</p>
+                  </div>
+
+                  {/* Toggle: Enable Free Shipping */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Complimentary Free Shipping
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Waive standard shipping fees when subtotal meets threshold.
                       </p>
                     </div>
                     <button
@@ -2966,7 +3052,7 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Free Shipping Threshold */}
+                  {/* Free Shipping Order Minimum */}
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
                       Free Shipping Order Minimum (₹) *
@@ -2981,78 +3067,18 @@ export default function AdminPage() {
                       }
                       className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
                     />
-                    <p className="text-[10px] text-neutral-400 mt-1">Orders reaching this subtotal receive free delivery.</p>
+                    <p className="text-[10px] text-neutral-400 mt-1">Cart orders reaching this amount receive complimentary shipping.</p>
                   </div>
 
-                  {/* Default Delivery Fee */}
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Default Delivery Charge (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={settingsForm.default_delivery_fee}
-                      onChange={(e) =>
-                        setSettingsForm({ ...settingsForm, default_delivery_fee: Math.max(0, Number(e.target.value)) })
-                      }
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-1">Applied when cart is below the free shipping threshold.</p>
-                  </div>
-
-                  {/* Primary Courier Partner */}
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Primary Dispatch Courier Partner *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={settingsForm.default_courier}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, default_courier: e.target.value })}
-                      placeholder="e.g. Blue Dart Express"
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-1">Default carrier shown on checkout and order receipts.</p>
-                  </div>
-
-                  {/* Delivery Timeline Window */}
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Estimated Transit Timeline *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={settingsForm.estimated_delivery_days}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, estimated_delivery_days: e.target.value })}
-                      placeholder="e.g. 2-4 Business Days"
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-1">Shown to clients on checkout and confirmation receipt.</p>
-                  </div>
-
-                  {/* Same-Day Cutoff */}
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Same-Day Packaging Cutoff Time
-                    </label>
-                    <input
-                      type="text"
-                      value={settingsForm.same_day_dispatch_cutoff}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, same_day_dispatch_cutoff: e.target.value })}
-                      placeholder="e.g. 02:00 PM IST"
-                      className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-black focus:outline-none focus:border-[#4a2e70]"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-1">Orders placed before this hour leave the laboratory today.</p>
-                  </div>
-
-                  {/* Express Dispatch Toggle & Fee */}
-                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-black uppercase text-[10px] block">Express Air Priority Upgrade</span>
-                      <span className="text-[10px] text-neutral-500">Offer priority air dispatch at checkout</span>
+                  {/* Express Priority Air Dispatch Toggle & Fee */}
+                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Express Priority Air Dispatch
+                      </span>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Offer optional expedited transit option at checkout.
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -3064,7 +3090,7 @@ export default function AdminPage() {
                           enable_express_dispatch: !settingsForm.enable_express_dispatch,
                         })
                       }
-                      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
                         settingsForm.enable_express_dispatch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
                       }`}
                     >
@@ -3076,89 +3102,106 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Mandatory Tracking */}
-                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between">
+                  {/* Express Dispatch Fee */}
+                  {settingsForm.enable_express_dispatch && (
                     <div>
-                      <span className="font-bold text-black uppercase text-[10px] block">Require AWB Tracking ID</span>
-                      <span className="text-[10px] text-neutral-500">Require tracking code before marking Shipped</span>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.require_dispatch_tracking}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          require_dispatch_tracking: !settingsForm.require_dispatch_tracking,
-                        })
-                      }
-                      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.require_dispatch_tracking ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.require_dispatch_tracking ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                      <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                        Express Priority Extra Surcharge (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settingsForm.express_dispatch_fee}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, express_dispatch_fee: Math.max(0, Number(e.target.value)) })
+                        }
+                        className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
                       />
-                    </button>
+                      <p className="text-[10px] text-neutral-400 mt-1">Added to order when customer selects Express Priority Dispatch.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-block: Location-Based Delivery Charges */}
+                <div className="pt-4 border-t border-neutral-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
+                        Location-Based Delivery Charges (Regional Shipping Zones)
+                      </span>
+                      <p className="text-[10px] text-neutral-500">
+                        Customize delivery charge variations for specific client destinations and state postal zones.
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Auto Dispatch Notification Email */}
-                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-black uppercase text-[10px] block">Auto-Email Dispatch Tracking</span>
-                      <span className="text-[10px] text-neutral-500">Email client tracking link via Gmail SMTP</span>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.auto_email_dispatch}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          auto_email_dispatch: !settingsForm.auto_email_dispatch,
-                        })
-                      }
-                      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.auto_email_dispatch ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.auto_email_dispatch ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {(settingsForm.location_delivery_rates || DEFAULT_PLATFORM_SETTINGS.location_delivery_rates || []).map((loc, idx) => (
+                      <div key={loc.id || idx} className="p-3.5 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[11px] text-black uppercase">{loc.name}</span>
+                          <span className="text-[9px] font-mono text-neutral-400 uppercase">Zone {idx + 1}</span>
+                        </div>
+                        <p className="text-[10px] text-neutral-500 line-clamp-1">{loc.states}</p>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs font-semibold text-neutral-600">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={loc.fee}
+                            onChange={(e) => {
+                              const newFee = Math.max(0, Number(e.target.value))
+                              const updatedRates = [
+                                ...(settingsForm.location_delivery_rates || DEFAULT_PLATFORM_SETTINGS.location_delivery_rates || []),
+                              ]
+                              updatedRates[idx] = { ...updatedRates[idx], fee: newFee }
+                              setSettingsForm({ ...settingsForm, location_delivery_rates: updatedRates })
+                            }}
+                            className="w-full px-3 py-1.5 bg-white border border-neutral-300 rounded-lg font-mono text-xs text-black focus:outline-none focus:border-[#4a2e70]"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 3: CHECKOUT FLOW & CLIENT PRIVILEGES */}
+              {/* SECTION 4: CHECKOUT FLOW & CLIENT ACCESS (ONLY GUEST CHECKOUT) */}
               <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
                 <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
                   <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
-                    <ShoppingBag className="w-5 h-5" />
+                    <Lock className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
-                      3. Checkout Flow & Client Permissions
+                      4. Checkout Flow & Client Permissions
                     </h3>
                     <p className="text-[11px] text-neutral-500">
-                      Configure guest checkout, voucher permissions, and client order cancellation privileges.
+                      Configure guest checkout access. When disabled, clients must sign in or register before checking out.
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  {/* Allow Guest Checkout */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
+                <div className="max-w-xl text-xs">
+                  {/* Allow Guest Checkout - ONLY OPTION */}
+                  <div className="p-5 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Allow Guest Checkout
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        When disabled, clients must sign in or register before checking out.
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-black uppercase tracking-wider text-xs">
+                          Allow Guest Checkout
+                        </span>
+                        <span
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded uppercase font-semibold ${
+                            settingsForm.allow_guest_checkout
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {settingsForm.allow_guest_checkout ? 'Guest Access Allowed' : 'Sign-In Required'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-600 leading-relaxed pt-1">
+                        When disabled, clients must sign in or register before checking out. When enabled, clients may complete orders without creating an account.
                       </p>
                     </div>
                     <button
@@ -3168,283 +3211,13 @@ export default function AdminPage() {
                       onClick={() =>
                         setSettingsForm({ ...settingsForm, allow_guest_checkout: !settingsForm.allow_guest_checkout })
                       }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
+                      className={`w-12 h-6.5 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
                         settingsForm.allow_guest_checkout ? 'bg-[#4a2e70]' : 'bg-neutral-300'
                       }`}
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.allow_guest_checkout ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Enable Coupons */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Promotional Coupons & Vouchers
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Allow clients to apply promotional voucher codes during checkout.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.enable_coupons}
-                      onClick={() => setSettingsForm({ ...settingsForm, enable_coupons: !settingsForm.enable_coupons })}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.enable_coupons ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.enable_coupons ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Allow Client Cancellation */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Client Self-Cancellation (1 Hour)
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Allow clients to cancel placed orders directly before atelier packing begins.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.allow_client_cancellation}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          allow_client_cancellation: !settingsForm.allow_client_cancellation,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.allow_client_cancellation ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.allow_client_cancellation ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 4: STOREFRONT & CATALOG EXPERIENCE PERMISSIONS */}
-              <div className="bg-white border border-neutral-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-                <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">
-                  <div className="w-10 h-10 rounded-2xl bg-[#f4effc] border border-[#e2dcee] flex items-center justify-center text-[#4a2e70]">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-['Cinzel',serif] text-base font-bold text-black uppercase tracking-wide">
-                      4. Storefront & Catalog Experience Permissions
-                    </h3>
-                    <p className="text-[11px] text-neutral-500">
-                      Enable or disable customer reviews, scarcity stock badges, and atelier narrative video stories.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                  {/* Enable Reviews */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Customer Olfactory Reviews
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Display star ratings and community wear experiences on fragrance pages.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.enable_customer_reviews}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          enable_customer_reviews: !settingsForm.enable_customer_reviews,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.enable_customer_reviews ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.enable_customer_reviews ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Allow Guest Reviews */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Allow Guest Reviews
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Allow any visitor to submit reviews without verified purchase history.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.allow_guest_reviews}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          allow_guest_reviews: !settingsForm.allow_guest_reviews,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.allow_guest_reviews ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.allow_guest_reviews ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Stock Scarcity */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Low Stock Scarcity Warnings
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Displays 'Only X flacons remaining' badge when stock drops to 10 or below.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.show_stock_scarcity}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          show_stock_scarcity: !settingsForm.show_stock_scarcity,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.show_stock_scarcity ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.show_stock_scarcity ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Trending Badges */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Trending Formulation Badges
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Displays Trending and Featured curation tags on formulations.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.show_trending_badges}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          show_trending_badges: !settingsForm.show_trending_badges,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.show_trending_badges ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.show_trending_badges ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Video Stories */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Artisanal Video Area on Homepage
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Renders the haute parfumerie film area and narrative video on the homepage.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.enable_video_stories}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          enable_video_stories: !settingsForm.enable_video_stories,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.enable_video_stories ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.enable_video_stories ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Maintenance Mode */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="font-bold text-black uppercase tracking-wider text-[11px] block">
-                        Private Atelier Tasting Mode
-                      </span>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Activates private studio tasting banner across the storefront.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.maintenance_mode}
-                      onClick={() =>
-                        setSettingsForm({
-                          ...settingsForm,
-                          maintenance_mode: !settingsForm.maintenance_mode,
-                        })
-                      }
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.maintenance_mode ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.maintenance_mode ? 'translate-x-5' : 'translate-x-0'
+                        className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-transform ${
+                          settingsForm.allow_guest_checkout ? 'translate-x-5.5' : 'translate-x-0'
                         }`}
                       />
                     </button>
@@ -3453,20 +3226,20 @@ export default function AdminPage() {
               </div>
 
               {/* Bottom Primary Save Bar */}
-              <div className="flex items-center justify-between p-6 bg-neutral-50 border border-neutral-200 rounded-3xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-neutral-50 border border-neutral-200 rounded-3xl gap-4">
                 <div>
                   <h4 className="font-bold text-xs uppercase tracking-wider text-black">
                     Commit Platform Permissions & Logistics
                   </h4>
                   <p className="text-[11px] text-neutral-500 mt-0.5">
-                    Changes take effect across customer checkout, shipping calculations, and catalog controls immediately.
+                    Changes take effect across customer checkout, shipping calculations, and order creation immediately.
                   </p>
                 </div>
 
                 <button
                   type="submit"
                   disabled={settingsSaving}
-                  className="px-6 py-3 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                  className="px-6 py-3 bg-[#4a2e70] hover:bg-[#3b245e] text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs shrink-0"
                 >
                   {settingsSaving ? (
                     <>
