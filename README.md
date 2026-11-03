@@ -145,15 +145,6 @@ Create a `.env.local` file in the root directory (or configure them in your Verc
 # CHEM BROS ENVIRONMENT CONFIGURATION
 # ==============================================================
 
-# Client-Side Variables (Exposed to Browser)
-NEXT_PUBLIC_SUPABASE_URL=https://sbbqxtqiuafjceayaigp.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_M1Ag1eRpUvWdBWJI55_79g_uLj5sop7
-NEXT_PUBLIC_API_BASE_URL=
-
-# Server-Side Supabase Privileged Key
-SUPABASE_URL=https://sbbqxtqiuafjceayaigp.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
 # Gmail SMTP 2FA & Multi-Stage Tracking Emails
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
