@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCart } from '../context/CartContext'
-import { getProductsApi, getCachedProductsSync } from '../services/api'
+import { getProductsApi } from '../services/api'
 import type { Product } from '../types'
 
 import boyImg from '../assets/tonedboy.png'
@@ -23,32 +23,6 @@ const discoverySrc = (DiscoveryRaw as any)?.src || DiscoveryRaw
 
 gsap.registerPlugin(ScrollTrigger)
 
-function processLiveProducts(liveProducts: Product[]) {
-  const molecules = liveProducts.filter((p) => !p.is_archive)
-  const archive = liveProducts.find(
-    (p) =>
-      p.is_archive ||
-      p.slug === 'the-discovery-archive' ||
-      p.name.toLowerCase().includes('discovery')
-  ) || null
-
-  const orderMap: Record<string, number> = {
-    'molecule-j': 0,
-    'molecule-x': 1,
-    'molecule-t': 2,
-    'molecule-r': 3,
-    'molecule-k': 3,
-  }
-  const sortedMolecules = [...molecules].sort((a, b) => {
-    const posA = a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99
-    const posB = b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99
-    return posA - posB
-  })
-
-  return { sortedMolecules, archive }
-}
-
-
 export default function HomeProduct() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const { addToCart } = useCart()
@@ -56,7 +30,7 @@ export default function HomeProduct() {
   const [discoveryArchive, setDiscoveryArchive] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch only dynamic products from live database
+  // Fetch dynamic products from live database
   useEffect(() => {
     let isMounted = true
     async function loadProducts() {
@@ -78,6 +52,7 @@ export default function HomeProduct() {
             'molecule-x': 1,
             'molecule-t': 2,
             'molecule-k': 3,
+            'molecule-r': 3,
           }
           const sortedMolecules = [...molecules].sort((a, b) => {
             const posA = a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99
@@ -113,9 +88,9 @@ export default function HomeProduct() {
     return prod.image_base64 || list[idx % list.length]
   }
 
-  // 100% Symmetrical, Bidirectional Scroll Flight Animation
+  // Symmetrical Desktop Scroll Flight
   useEffect(() => {
-    if (window.innerWidth < 768) return
+    if (typeof window === 'undefined' || window.innerWidth < 768) return
 
     let flightTimeline: gsap.core.Timeline | null = null
     let flightClone: HTMLDivElement | null = null
@@ -126,12 +101,10 @@ export default function HomeProduct() {
 
       if (!heroBottle || !targetSlot) return
 
-      // Clean up previous proxy
       const existing = document.getElementById('gsap-floating-flight-bottle')
       if (existing) existing.remove()
       if (flightTimeline) flightTimeline.kill()
 
-      // Fixed viewport coordinate translation avoids page scroll math errors completely
       flightClone = document.createElement('div')
       flightClone.id = 'gsap-floating-flight-bottle'
       flightClone.style.position = 'fixed'
@@ -152,19 +125,17 @@ export default function HomeProduct() {
 
       document.body.appendChild(flightClone)
 
-      // Dedicated single-timeline ScrollTrigger with symmetrical interpolation
       flightTimeline = gsap.timeline({
         scrollTrigger: {
           trigger: '#home-hero-section',
           start: 'top top',
           endTrigger: sectionRef.current,
           end: 'top 25%',
-          scrub: true, // Direct 1:1 scrub binds forward and backward scroll to identical frames
+          scrub: true,
           onUpdate: (self) => {
             const p = self.progress
 
             if (p <= 0.015) {
-              // At hero rest
               gsap.set(flightClone, { opacity: 0 })
               gsap.set(heroBottle, { opacity: 1 })
               gsap.set(targetSlot, { opacity: 0 })
@@ -172,29 +143,23 @@ export default function HomeProduct() {
             }
 
             if (p >= 0.985) {
-              // At Card 1 rest
               gsap.set(flightClone, { opacity: 0 })
               gsap.set(heroBottle, { opacity: 0 })
               gsap.set(targetSlot, { opacity: 1 })
               return
             }
 
-            // In-flight
             gsap.set(flightClone, { opacity: 1 })
             gsap.set(heroBottle, { opacity: 0 })
             gsap.set(targetSlot, { opacity: 0 })
 
-            // Get live viewport bounding boxes
             const heroRect = heroBottle.getBoundingClientRect()
             const targetRect = targetSlot.getBoundingClientRect()
 
-            // Calculate instantaneous positions
             const x = heroRect.left + (targetRect.left - heroRect.left) * p
             const y = heroRect.top + (targetRect.top - heroRect.top) * p
             const width = heroRect.width + (targetRect.width - heroRect.width) * p
             const height = heroRect.height + (targetRect.height - heroRect.height) * p
-
-            // Sine curve for smooth aerodynamic tilt: 0Â° -> -7Â° -> 0Â°
             const rotation = Math.sin(p * Math.PI) * -7
 
             gsap.set(flightClone, {
@@ -210,41 +175,24 @@ export default function HomeProduct() {
       })
     }
 
+    // Direct, reliable execution with automatic fallback
+    const timer = setTimeout(createFlight, 800)
     window.addEventListener('hero-animation-complete', createFlight)
-    window.addEventListener('reinit-flight-bottle', createFlight)
-    const timer = setTimeout(createFlight, 2200)
-
-    const handleResize = () => {
-      ScrollTrigger.refresh()
-      createFlight()
-    }
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', createFlight)
 
     return () => {
       window.removeEventListener('hero-animation-complete', createFlight)
-      window.removeEventListener('reinit-flight-bottle', createFlight)
-      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('resize', createFlight)
       clearTimeout(timer)
       if (flightTimeline) flightTimeline.kill()
       if (flightClone) flightClone.remove()
-    }
-  }, [])
-
-  // Once database products are rendered, refresh ScrollTrigger and initialize flight bottle
-  useEffect(() => {
-    if (moleculeProducts.length > 0) {
-      const t = setTimeout(() => {
-        ScrollTrigger.refresh()
-        window.dispatchEvent(new CustomEvent('reinit-flight-bottle'))
-      }, 100)
-      return () => clearTimeout(t)
     }
   }, [moleculeProducts])
 
   return (
     <section
       ref={sectionRef}
-      className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center"
+      className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center font-sans"
     >
       <div className="w-full max-w-[1583px] flex flex-col items-center gap-10 sm:gap-14 lg:gap-16 xl:gap-20 relative z-10">
         
@@ -301,13 +249,13 @@ export default function HomeProduct() {
                     />
                   </Link>
 
-                  {/* Price & CTA */}
+                  {/* Price and CTA */}
                   <div className="w-full flex flex-col items-center gap-1.5 sm:gap-2.5 lg:gap-2 xl:gap-3 pb-0.5 sm:pb-1">
                     <div className="flex flex-col items-center">
                       <div className="text-white text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
                         ₹{prod.price.toLocaleString('en-IN')}
                       </div>
-                      <span className="text-[9px] sm:text-[10px] text-white/60 tracking-wider uppercase font-['Inter',sans-serif]">
+                      <span className="text-[9px] sm:text-[10px] text-white/60 tracking-wider uppercase font-sans">
                         Inclusive of GST
                       </span>
                     </div>
@@ -318,7 +266,7 @@ export default function HomeProduct() {
                       className="w-full max-w-[130px] sm:max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-7 sm:h-9 md:h-10 lg:h-9 xl:h-12 2xl:h-14 bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-xl sm:rounded-2xl xl:rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-sm"
                       aria-label={`Add ${prod.name} to Cart`}
                     >
-                      <span className="text-white text-[9px] sm:text-[11px] md:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
+                      <span className="text-white text-[9px] sm:text-[11px] md:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-sans tracking-wide transition-transform group-hover/btn:scale-105">
                         Add to cart
                       </span>
                     </button>
@@ -380,11 +328,11 @@ export default function HomeProduct() {
                     )}
                   </Link>
 
-                  <p className="text-white text-xs sm:text-sm lg:text-xs xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-normal tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+                  <p className="text-white text-xs sm:text-sm lg:text-xs xl:text-sm 2xl:text-base font-medium font-sans leading-normal tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
                     {discoveryArchive.subtitle || 'The complete Molecule Series, in miniature.'}
                   </p>
 
-                  <div className="text-white/90 text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-normal font-['General_Sans','Poppins',sans-serif] leading-relaxed tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+                  <div className="text-white/90 text-[11px] sm:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-normal font-sans leading-relaxed tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
                     {discoveryArchive.volume_ml ? `${Math.round(discoveryArchive.volume_ml / 3)} × 3ml Extrait` : '4 × 3ml Extrait'}<br />
                     {discoveryArchive.category || 'Extrait de Parfum'}<br />
                     {discoveryArchive.concentration || '25% natural oil concentration'}<br />
@@ -396,7 +344,7 @@ export default function HomeProduct() {
                       <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
                         ₹{discoveryArchive.price.toLocaleString('en-IN')}
                       </div>
-                      <span className="text-[10px] text-white/70 tracking-widest uppercase font-['Inter',sans-serif]">
+                      <span className="text-[10px] text-white/70 tracking-widest uppercase font-sans">
                         Inclusive of GST
                       </span>
                     </div>
@@ -407,7 +355,7 @@ export default function HomeProduct() {
                       className="w-full sm:w-44 lg:w-40 xl:w-52 2xl:w-56 h-10 lg:h-9 xl:h-12 2xl:h-14 bg-white/85 hover:bg-white active:scale-95 rounded-2xl xl:rounded-3xl overflow-hidden transition-all duration-300 shadow-[0_6px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_10px_24px_rgba(255,255,255,0.4)] flex items-center justify-center cursor-pointer group/btn"
                       aria-label={`Add ${discoveryArchive.name} to Cart`}
                     >
-                      <span className="text-black text-xs lg:text-xs xl:text-sm 2xl:text-base font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-wide transition-transform group-hover/btn:scale-105">
+                      <span className="text-black text-xs lg:text-xs xl:text-sm 2xl:text-base font-medium font-sans tracking-wide transition-transform group-hover/btn:scale-105">
                         Add to cart
                       </span>
                     </button>

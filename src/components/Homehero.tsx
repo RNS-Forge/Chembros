@@ -61,21 +61,32 @@ export default function HomeHero() {
   const [loadingFinished, setLoadingFinished] = useState<boolean>(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const loaderOverlayRef = useRef<HTMLDivElement>(null)
-  const loaderTextRef = useRef<HTMLDivElement>(null)
   const heroBgRef = useRef<HTMLImageElement>(null)
   const leftTextRef = useRef<HTMLDivElement>(null)
   const rightMetaRef = useRef<HTMLDivElement>(null)
   const bottleRefs = useRef<(HTMLAnchorElement | null)[]>([])
 
-  // Mobile Animation Targets
-  const mobileStageRef = useRef<HTMLDivElement>(null)
-  const mobileWindowFrameRef = useRef<HTMLDivElement>(null)
+  // Mobile Cinematic Targets
+  const mobileCardSlotRef = useRef<HTMLDivElement>(null)
+  const mobileCardRef = useRef<HTMLDivElement>(null)
+  const mobileCardImgRef = useRef<HTMLImageElement>(null)
+  const mobileCurtainRef = useRef<HTMLDivElement>(null)
   const mobileBadgesRef = useRef<HTMLDivElement>(null)
-  const mobileTextRef = useRef<HTMLDivElement>(null)
-  const mobileFooterMetaRef = useRef<HTMLDivElement>(null)
+  const mobileHeadlineRef = useRef<HTMLHeadingElement>(null)
+  const mobileItalicRef = useRef<HTMLDivElement>(null)
+  const mobileSubRef = useRef<HTMLParagraphElement>(null)
+  const mobileCtaRef = useRef<HTMLDivElement>(null)
+  const mobileMetaRef = useRef<HTMLDivElement>(null)
 
-  // Debug Replay Button Handler
+  const notifyComplete = useCallback(() => {
+    setLoadingFinished(true)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('chembros_hero_animated', 'true')
+      window.dispatchEvent(new CustomEvent('hero-animation-complete'))
+      ScrollTrigger.refresh()
+    }
+  }, [])
+
   const handleReplayAnimation = useCallback(() => {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('chembros_hero_animated')
@@ -90,27 +101,29 @@ export default function HomeHero() {
       typeof window !== 'undefined' &&
       sessionStorage.getItem('chembros_hero_animated') === 'true'
 
+    // Fallback timer: unlock within 2.5s regardless of browser/render quirks
+    const watchdogTimer = setTimeout(() => {
+      notifyComplete()
+    }, 2500)
+
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO A: Already Animated in Session (Skip Animation)
+    // SCENARIO A: Already Animated in Session (Instant Layout)
     // ─────────────────────────────────────────────────────────────────────────────
     if (alreadyAnimated) {
-      setLoadingFinished(true)
-      ScrollTrigger.refresh()
-      window.dispatchEvent(new CustomEvent('hero-animation-complete'))
+      clearTimeout(watchdogTimer)
+      notifyComplete()
 
       if (isMobile) {
-        if (mobileWindowFrameRef.current) {
-          gsap.set(mobileWindowFrameRef.current, {
-            scale: 1,
-            borderRadius: '28px',
-            boxShadow: '0 20px 45px -12px rgba(0, 0, 0, 0.2)',
-          })
-        }
+        if (mobileCardRef.current) gsap.set(mobileCardRef.current, { clearProps: 'all' })
+        if (mobileCardImgRef.current) gsap.set(mobileCardImgRef.current, { clearProps: 'all' })
+        if (mobileCurtainRef.current) gsap.set(mobileCurtainRef.current, { opacity: 0 })
         if (mobileBadgesRef.current) gsap.set(mobileBadgesRef.current, { opacity: 1 })
-        if (mobileTextRef.current) gsap.set(mobileTextRef.current, { opacity: 1, y: 0 })
-        if (mobileFooterMetaRef.current) gsap.set(mobileFooterMetaRef.current, { opacity: 1 })
+        if (mobileHeadlineRef.current) gsap.set(mobileHeadlineRef.current, { yPercent: 0, opacity: 1 })
+        if (mobileItalicRef.current) gsap.set(mobileItalicRef.current, { yPercent: 0, opacity: 1 })
+        if (mobileSubRef.current) gsap.set(mobileSubRef.current, { opacity: 1, y: 0 })
+        if (mobileCtaRef.current) gsap.set(mobileCtaRef.current, { opacity: 1, y: 0 })
+        if (mobileMetaRef.current) gsap.set(mobileMetaRef.current, { opacity: 1 })
       } else {
-        if (loaderOverlayRef.current) gsap.set(loaderOverlayRef.current, { display: 'none' })
         if (heroBgRef.current) gsap.set(heroBgRef.current, { opacity: 1, y: 0, scale: 1 })
         if (leftTextRef.current) gsap.set(leftTextRef.current, { opacity: 1, y: 0 })
         if (rightMetaRef.current) gsap.set(rightMetaRef.current, { opacity: 1, y: 0 })
@@ -130,108 +143,177 @@ export default function HomeHero() {
           })
         })
       }
-      return
+      return () => clearTimeout(watchdogTimer)
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO B: Play Zoom-Out Animation
+    // SCENARIO B: Mobile Cinematic Reveal (< 768px)
     // ─────────────────────────────────────────────────────────────────────────────
-
-    // 1. MOBILE ANIMATION (< 768px): RECTANGULAR WINDOW ZOOM-OUT
     if (isMobile) {
       const mobileCtx = gsap.context(() => {
-        const frame = mobileWindowFrameRef.current
+        const slot = mobileCardSlotRef.current
+        const card = mobileCardRef.current
+        const cardImg = mobileCardImgRef.current
+        const curtain = mobileCurtainRef.current
         const badges = mobileBadgesRef.current
-        const text = mobileTextRef.current
-        const footerMeta = mobileFooterMetaRef.current
+        const headline = mobileHeadlineRef.current
+        const italic = mobileItalicRef.current
+        const sub = mobileSubRef.current
+        const cta = mobileCtaRef.current
+        const meta = mobileMetaRef.current
 
-        if (!frame || !text || !badges) {
-          setLoadingFinished(true)
-          sessionStorage.setItem('chembros_hero_animated', 'true')
+        if (!slot || !card || !cardImg) {
+          clearTimeout(watchdogTimer)
+          notifyComplete()
           return
         }
 
-        // Calculate initial zoom scale so the window spans well beyond the screen edges
-        const frameRect = frame.getBoundingClientRect()
-        const scaleNeeded = Math.max(
-          (window.innerWidth / (frameRect.width || 340)) * 1.5,
-          (window.innerHeight / (frameRect.height || 360)) * 1.5,
-          3.5
-        )
+        const rect = slot.getBoundingClientRect()
+        const vw = window.innerWidth
+        const vh = window.innerHeight
 
-        // Setup starting state:
-        // Window is zoomed WAY in (revealing the full image behind it)
-        gsap.set(frame, {
-          scale: scaleNeeded,
-          transformOrigin: 'center center',
-          borderRadius: '0px',
-          boxShadow: '0 0 0 9999px #ffffff',
+        const targetW = rect.width > 50 ? rect.width : 340
+        const targetH = rect.height > 50 ? rect.height : 420
+        const targetLeft = rect.left || (vw - targetW) / 2
+        const targetTop = rect.top || 96
+
+        const scale = Math.max(vw / targetW, vh / targetH)
+        const deltaX = vw / 2 - (targetLeft + targetW / 2)
+        const deltaY = vh / 2 - (targetTop + targetH / 2)
+
+        gsap.set(card, {
+          x: deltaX,
+          y: deltaY,
+          scale: scale,
+          borderRadius: 0,
+          zIndex: 60,
+          transformOrigin: '50% 50%',
         })
 
-        gsap.set(text, { opacity: 0, y: 16 })
-        gsap.set(badges, { opacity: 0 })
-        if (footerMeta) gsap.set(footerMeta, { opacity: 0 })
+        gsap.set(cardImg, {
+          scale: 1.35,
+          transformOrigin: 'center 30%',
+        })
 
-        const mobileTl = gsap.timeline({
+        if (curtain) gsap.set(curtain, { opacity: 0.35 })
+        if (badges) gsap.set(badges, { opacity: 0 })
+        if (headline) gsap.set(headline, { yPercent: 120, opacity: 0 })
+        if (italic) gsap.set(italic, { yPercent: 120, opacity: 0 })
+        if (sub) gsap.set(sub, { opacity: 0, y: 15 })
+        if (cta) gsap.set(cta, { opacity: 0, scale: 0.94, y: 10 })
+        if (meta) gsap.set(meta, { opacity: 0 })
+
+        const tl = gsap.timeline({
           onComplete: () => {
-            setLoadingFinished(true)
-            sessionStorage.setItem('chembros_hero_animated', 'true')
-            ScrollTrigger.refresh()
-            window.dispatchEvent(new CustomEvent('hero-animation-complete'))
+            clearTimeout(watchdogTimer)
+            gsap.set(card, { clearProps: 'zIndex,transformOrigin' })
+            notifyComplete()
           },
         })
 
-        // 1. Hold on fullscreen image for 1.0 second
-        mobileTl.to({}, { duration: 1.0 })
+        // Stage 1: Cinematic pause
+        tl.to({}, { duration: 0.85 })
 
-        // 2. Zoom out the rectangular frame smoothly to its card resting size
-        mobileTl.to(frame, {
-          scale: 1,
-          borderRadius: '28px',
-          duration: 1.45,
-          ease: 'expo.inOut',
-        })
+        // Stage 2: Dual Camera Pull-Back
+        tl.to(
+          card,
+          {
+            x: 0,
+            y: 0,
+            scale: 1,
+            borderRadius: '32px',
+            duration: 1.45,
+            ease: 'expo.inOut',
+            boxShadow: '0 25px 60px -15px rgba(0,0,0,0.22)',
+          },
+          'zoom'
+        )
+        .to(
+          cardImg,
+          {
+            scale: 1,
+            duration: 1.45,
+            ease: 'expo.inOut',
+          },
+          'zoom'
+        )
+        .to(
+          curtain,
+          {
+            opacity: 0,
+            duration: 1.1,
+            ease: 'power2.out',
+          },
+          'zoom'
+        )
 
-        // 3. Fade in the card badges near completion
-        mobileTl.to(
+        // Stage 3: Card Badges
+        tl.to(
           badges,
           {
             opacity: 1,
-            duration: 0.4,
+            duration: 0.45,
             ease: 'power2.out',
           },
           '-=0.45'
         )
 
-        // 4. Reveal editorial text & CTA
-        mobileTl.to(
-          text,
+        // Stage 4: Typography Glide
+        tl.to(
+          [headline, italic],
+          {
+            yPercent: 0,
+            opacity: 1,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: 'power4.out',
+          },
+          '-=0.35'
+        )
+        .to(
+          sub,
           {
             opacity: 1,
             y: 0,
-            duration: 0.55,
+            duration: 0.6,
             ease: 'power3.out',
           },
-          '-=0.3'
+          '-=0.55'
+        )
+        .to(
+          cta,
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: 0.6,
+            ease: 'back.out(1.5)',
+          },
+          '-=0.45'
         )
 
-        if (footerMeta) {
-          mobileTl.to(
-            footerMeta,
+        if (meta) {
+          tl.to(
+            meta,
             {
               opacity: 1,
-              duration: 0.35,
+              duration: 0.4,
               ease: 'power2.out',
             },
-            '-=0.2'
+            '-=0.3'
           )
         }
       }, containerRef)
 
-      return () => mobileCtx.revert()
+      return () => {
+        clearTimeout(watchdogTimer)
+        mobileCtx.revert()
+      }
     }
 
-    // 2. DESKTOP / TABLET ANIMATION (>= 768px) - UNTOUCHED
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO C: Desktop & Tablet Animation (>= 768px)
+    // ─────────────────────────────────────────────────────────────────────────────
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia()
 
@@ -245,10 +327,8 @@ export default function HomeHero() {
 
           const tl = gsap.timeline({
             onComplete: () => {
-              setLoadingFinished(true)
-              sessionStorage.setItem('chembros_hero_animated', 'true')
-              ScrollTrigger.refresh()
-              window.dispatchEvent(new CustomEvent('hero-animation-complete'))
+              clearTimeout(watchdogTimer)
+              notifyComplete()
             },
           })
 
@@ -274,33 +354,7 @@ export default function HomeHero() {
             duration: 0.8,
             stagger: 0.08,
             ease: 'power2.out',
-          }).to(
-            loaderTextRef.current,
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              ease: 'power2.out',
-            },
-            '-=0.4'
-          )
-
-          tl.to({}, { duration: 1.5 })
-
-          tl.to(loaderTextRef.current, {
-            opacity: 0,
-            y: -15,
-            duration: 0.5,
-            ease: 'power2.in',
-          }).to(
-            loaderOverlayRef.current,
-            {
-              opacity: 0,
-              duration: 1.0,
-              ease: 'power3.inOut',
-            },
-            '-=0.2'
-          )
+          })
 
           tl.to(
             heroBgRef.current,
@@ -308,10 +362,10 @@ export default function HomeHero() {
               opacity: 1,
               y: 0,
               scale: 1,
-              duration: 1.6,
+              duration: 1.4,
               ease: 'power3.out',
             },
-            '-=0.9'
+            '-=0.4'
           )
 
           BOTTLES.forEach((bottle, idx) => {
@@ -358,16 +412,22 @@ export default function HomeHero() {
       )
     }, containerRef)
 
-    return () => ctx.revert()
-  }, [animKey])
+    return () => {
+      clearTimeout(watchdogTimer)
+      ctx.revert()
+    }
+  }, [animKey, notifyComplete])
 
   return (
     <section
       ref={containerRef}
       id="home-hero-section"
-      className="w-full h-[100dvh] md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex items-start justify-center overflow-hidden"
+      className="w-full h-[100dvh] md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex flex-col items-center overflow-x-hidden"
     >
-      <NavBar />
+      {/* Top Floating Navigation */}
+      <div className="w-full fixed top-0 left-0 right-0 z-[70] pointer-events-auto">
+        <NavBar />
+      </div>
 
       {/* Floating Replay Button for Testing */}
       <button
@@ -379,30 +439,8 @@ export default function HomeHero() {
         <span>Replay Hero Animation</span>
       </button>
 
-      {/* Desktop/Tablet Loading Overlay: unchanged */}
-      {!loadingFinished && (
-        <div
-          ref={loaderOverlayRef}
-          className="hidden md:flex fixed inset-0 w-screen h-screen bg-white z-[150] pointer-events-none flex-col items-center justify-between py-12"
-        >
-          <div className="text-[11px] font-mono tracking-[0.3em] uppercase text-black/40">
-            CHEMBROS
-          </div>
-
-          <div
-            ref={loaderTextRef}
-            className="opacity-0 translate-y-3 flex flex-col items-center gap-2.5 mb-16 text-center"
-          >
-            <div className="flex items-center gap-2 text-xs font-mono tracking-[0.25em] uppercase text-black">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
-              <span>Loading</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* =========================================================================
-          DESKTOP & TABLET ARTBOARD (>= 768px) - UNCHANGED
+          DESKTOP & TABLET ARTBOARD (>= 768px)
           ========================================================================= */}
       <div className="hidden md:flex w-full h-full relative items-start justify-center overflow-hidden">
         <div className="relative w-full h-full max-w-[1920px] flex items-start justify-center overflow-hidden">
@@ -504,86 +542,107 @@ export default function HomeHero() {
       </div>
 
       {/* =========================================================================
-          MOBILE VIEWPORT (< 768px): STATIONARY BACKDROP WITH ZOOMING OVERLAY WINDOW
+          MOBILE VIEWPORT (< 768px): ZERO-SNAP UNIFIED ZOOM-OUT
           ========================================================================= */}
-      <div
-        ref={mobileStageRef}
-        className="md:hidden relative w-full h-[100dvh] flex flex-col justify-between pt-20 pb-5 px-5 overflow-hidden"
-      >
-        {/* 1. FIXED IMAGE: Anchored behind everything; 100% stationary throughout */}
-        <div className="fixed inset-0 w-screen h-screen z-0 pointer-events-none overflow-hidden">
-          <img
-            className="w-full h-full object-cover object-[center_20%] select-none pointer-events-none"
-            src={DEFAULT_MOBILE_PORTRAIT}
-            alt="Chembros Mobile Editorial"
-            draggable={false}
-          />
-        </div>
-
-        {/* 2. THE RECTANGULAR WINDOW FRAME (ZOOMS OUT FROM SCREEN-FILLING TO RESTING SIZE) */}
-        <div className="relative w-full z-10 shrink-0 flex items-center justify-center">
+      <div className="md:hidden w-full h-[100dvh] flex flex-col justify-between items-center px-6 pt-24 pb-6 relative z-10 overflow-hidden">
+        
+        {/* Top: Card Plinth Slot */}
+        <div
+          ref={mobileCardSlotRef}
+          className="w-full max-w-[340px] aspect-[3/3.75] shrink-0 relative flex items-center justify-center"
+        >
           <div
-            ref={mobileWindowFrameRef}
-            className="w-full h-[min(48vh,380px)] min-h-[290px] relative border border-black/10 overflow-hidden will-change-transform [backface-visibility:hidden]"
-            style={{
-              boxShadow: '0 0 0 9999px #ffffff', // Masks everything outside the card window in pure white
-            }}
+            ref={mobileCardRef}
+            className="w-full h-full relative rounded-[32px] overflow-hidden bg-neutral-900 will-change-transform [backface-visibility:hidden]"
           >
-            {/* Card Badges (fades in as frame reaches resting position) */}
+            {/* Portrait Image */}
+            <img
+              ref={mobileCardImgRef}
+              src={DEFAULT_MOBILE_PORTRAIT}
+              alt="Chembros Molecular Fragrance"
+              className="w-full h-full object-cover object-[center_22%] pointer-events-none select-none will-change-transform [backface-visibility:hidden]"
+              draggable={false}
+            />
+
+            {/* Atmosphere Mood Darkener */}
+            <div
+              ref={mobileCurtainRef}
+              className="absolute inset-0 bg-black pointer-events-none"
+            />
+
+            {/* Overlay Vignette */}
             <div
               ref={mobileBadgesRef}
-              className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+              className="absolute inset-0 pointer-events-none"
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-widest text-white/90 uppercase pointer-events-none">
-                <span>ARCHIVE // 2026</span>
+              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
+                  ARCHIVE // 2026
+                </span>
                 <span>MADURAI · PARIS</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 3. EDITORIAL TEXT & CTA */}
-        <div
-          ref={mobileTextRef}
-          className={`flex flex-col will-change-transform relative z-20 my-auto ${
-            loadingFinished ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
-          }`}
-        >
-          <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-black/60 mb-2">
-            <span>4 SCENTS INFINITE POSSIBILITIES</span>
+        {/* Middle: Kinetic Typography */}
+        <div className="w-full max-w-[340px] flex flex-col my-auto text-left space-y-2">
+          
+          <div className="overflow-hidden">
+            <div className="text-[9px] font-mono tracking-[0.28em] uppercase text-black/50">
+              4 SCENTS · INFINITE POSSIBILITIES
+            </div>
           </div>
 
-          <h1 className="text-black text-[clamp(22px,6vw,28px)] font-normal font-['Conquera',sans-serif] leading-[1.12] uppercase tracking-wider">
-            Chemistry captured
-          </h1>
-          <span className="text-[clamp(19px,5vw,24px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90">
-            in a bottle.
-          </span>
-          <p className="text-black/70 text-xs font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed mt-1.5 max-w-sm">
-            Where science meets scent. Explore our molecular series.
+          <div className="overflow-hidden">
+            <h1
+              ref={mobileHeadlineRef}
+              className="text-black text-[clamp(24px,6.8vw,30px)] font-normal font-['Conquera',sans-serif] leading-[1.04] uppercase tracking-wider will-change-transform"
+            >
+              Chemistry captured
+            </h1>
+          </div>
+
+          <div className="overflow-hidden">
+            <div
+              ref={mobileItalicRef}
+              className="text-[clamp(21px,5.8vw,26px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90 leading-[1.1] will-change-transform"
+            >
+              in a bottle.
+            </div>
+          </div>
+
+          <p
+            ref={mobileSubRef}
+            className="text-black/65 text-xs font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed pt-1"
+          >
+            Where science meets scent. Explore our pure extrait molecular series.
           </p>
 
-          <Link
-            to="/fragrances"
-            className="w-full h-12 bg-black active:scale-95 text-white rounded-2xl flex items-center justify-center font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-xs uppercase tracking-wider shadow-lg transition-all mt-4"
-          >
-            Explore collection
-          </Link>
+          <div ref={mobileCtaRef} className="pt-2">
+            <Link
+              to="/fragrances"
+              className="w-full h-12 bg-black hover:bg-neutral-900 active:scale-[0.98] text-white rounded-full flex items-center justify-center font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-xs font-semibold tracking-[0.22em] uppercase shadow-[0_12px_24px_rgba(0,0,0,0.14)] transition-all duration-300"
+            >
+              Explore Collection
+            </Link>
+          </div>
         </div>
 
-        {/* 4. BOTTOM SCROLL STRIP */}
+        {/* Bottom: Minimal Scroll Indicator */}
         <div
-          ref={mobileFooterMetaRef}
-          className={`w-full pt-3 flex items-center justify-between text-[9px] font-mono tracking-widest text-black/45 uppercase shrink-0 relative z-20 ${
-            loadingFinished ? 'opacity-100' : 'opacity-0'
-          }`}
+          ref={mobileMetaRef}
+          className="w-full max-w-[340px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-2 shrink-0"
         >
-          <span className="flex items-center gap-1 text-black/70 font-semibold animate-bounce">
+          <span>CHEMBROS © 2026</span>
+          <span className="flex items-center gap-1 font-semibold text-black/70 animate-bounce">
             <span>SCROLL</span>
             <span>↓</span>
           </span>
         </div>
+
       </div>
     </section>
   )
