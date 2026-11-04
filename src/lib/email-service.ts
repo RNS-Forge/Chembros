@@ -1,6 +1,15 @@
 import nodemailer from 'nodemailer'
 import { serverConfig } from './server-config'
 
+function cleanText(text?: string): string {
+  if (!text) return ''
+  return text
+    .replace(/[±]/g, '-')
+    .replace(/\u00B1/g, '-')
+    .replace(/Â±/g, '-')
+    .replace(/\s*-\s*([0-9]{6})/g, ' - $1')
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -74,7 +83,7 @@ export async function sendEmail({
     }
   }
 
-  // 4. Nodemailer via Gmail SMTP
+  // 4. Nodemailer via SMTP
   try {
     const transporter = nodemailer.createTransport({
       host: serverConfig.SMTP_HOST,
@@ -101,7 +110,7 @@ export async function sendEmail({
     console.warn('Nodemailer SMTP dispatch note:', smtpErr)
   }
 
-  // 5. Supabase Auth OTP Fallback (if OTP email)
+  // 5. Supabase Auth OTP Fallback
   try {
     const res = await fetch(`${serverConfig.SUPABASE_URL}/auth/v1/otp`, {
       method: 'POST',
@@ -120,6 +129,56 @@ export async function sendEmail({
   return false
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BASE EMAIL LAYOUT WRAPPER
+// ─────────────────────────────────────────────────────────────────────────────
+function wrapEmailHtml(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chembros Parfums</title>
+</head>
+<body style="margin: 0; padding: 32px 12px; background-color: #f7f7f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);">
+        <!-- Minimal Header -->
+        <tr>
+            <td style="padding: 28px 24px 20px; text-align: center; border-bottom: 1px solid #f3f4f6;">
+                <div style="font-size: 20px; font-weight: 800; letter-spacing: 5px; color: #000000; text-transform: uppercase;">CHEM BROS</div>
+                <div style="font-size: 10px; font-weight: 600; letter-spacing: 2.5px; color: #6b7280; text-transform: uppercase; margin-top: 4px;">HAUTE PARFUMERIE</div>
+            </td>
+        </tr>
+
+        <!-- Main Body -->
+        <tr>
+            <td style="padding: 32px 24px;">
+                ${content}
+            </td>
+        </tr>
+
+        <!-- Minimal Footer -->
+        <tr>
+            <td style="background-color: #fafafa; border-top: 1px solid #f3f4f6; padding: 24px 24px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #4b5563; text-transform: uppercase;">
+                    Chembros Parfums Private Limited
+                </div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+                    Madurai, Tamil Nadu, India
+                </div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 8px;">
+                    Questions? Contact us at <a href="mailto:connect@thechemicalbrothers.in" style="color: #000000; text-decoration: underline;">connect@thechemicalbrothers.in</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. AUTH & OTP EMAILS
+// ─────────────────────────────────────────────────────────────────────────────
 export async function sendOtpEmail(
   to_email: string,
   otp_code: string,
@@ -129,167 +188,99 @@ export async function sendOtpEmail(
     message?: string
   }
 ): Promise<boolean> {
-  const badge = options?.purpose ? options.purpose.toUpperCase() : 'AUTHENTICATION PASSCODE'
-  const headline = options?.headline || 'Sign in to Chembros Parfums'
-  const message = options?.message || 'Enter the one-time verification passcode below to access your Chembros account, orders, and profile.'
-  const subject = options?.purpose ? `Chembros ${options.purpose}: ${otp_code}` : `Chembros Access Passcode: ${otp_code}`
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chembros Verification</title>
-</head>
-<body style="margin: 0; padding: 40px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-font-smoothing: antialiased;">
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);">
-        <tr>
-            <td style="background-color: #000000; padding: 36px 32px 30px; text-align: center;">
-                <div style="font-size: 22px; font-weight: 700; letter-spacing: 6px; color: #ffffff; text-transform: uppercase;">CHEM BROS</div>
-                <div style="font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #a1a1aa; text-transform: uppercase; margin-top: 8px;">Haute Parfumerie &amp; Chemistry</div>
-            </td>
-        </tr>
-        <tr>
-            <td style="height: 1px; background-color: #27272a; line-height: 1px; font-size: 1px;">&nbsp;</td>
-        </tr>
-        <tr>
-            <td style="padding: 40px 36px 32px; text-align: center;">
-                <div style="font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #71717a; margin-bottom: 12px;">${badge}</div>
-                <h1 style="font-size: 20px; font-weight: 600; color: #18181b; margin: 0 0 16px; line-height: 1.4;">${headline}</h1>
-                <p style="font-size: 14px; line-height: 1.6; color: #52525b; margin: 0 0 28px;">
-                    ${message}
-                </p>
-                <div style="background-color: #fafafa; border: 1px solid #000000; border-radius: 14px; padding: 24px 20px; margin: 0 auto 24px; text-align: center;">
-                    <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #000000; text-align: center; margin: 0 auto; user-select: all; -webkit-user-select: all;">
-                        ${otp_code}
-                    </div>
-                    <div style="margin-top: 14px;">
-                        <span style="display: inline-block; padding: 8px 18px; background-color: #000000; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 9999px; user-select: all; -webkit-user-select: all;">
-                            Copy Code: ${otp_code}
-                        </span>
-                    </div>
-                    <div style="font-size: 11px; color: #71717a; margin-top: 8px;">
-                        Tap or click above to copy code to clipboard
-                    </div>
-                </div>
-                <div style="border-top: 1px solid #f4f4f5; padding-top: 24px; text-align: left;">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td style="font-size: 12px; line-height: 1.6; color: #71717a;">
-                                <strong style="color: #18181b;">Security Protocol:</strong> This passcode remains valid for 10 minutes and is single-use. Chembros representatives will never ask for this code.
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 24px 32px; text-align: center;">
-                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #71717a; text-transform: uppercase;">
-                    Chembros Parfums Private Limited
-                </div>
-                <div style="font-size: 11px; color: #a1a1aa; margin-top: 6px;">
-                    Chemistry Captured in a Bottle. All rights reserved.
-                </div>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>`
-  return await sendEmail({ to: to_email, subject, html })
+  const badge = options?.purpose ? options.purpose.toUpperCase() : 'VERIFICATION CODE'
+  const headline = options?.headline || 'Your Verification Code'
+  const message =
+    options?.message ||
+    'Use the one-time code below to access your Chembros account and orders.'
+  const subject = options?.purpose
+    ? `Chembros ${options.purpose}: ${otp_code}`
+    : `Your Chembros Access Code: ${otp_code}`
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+        <span style="display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background-color: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 9999px;">
+            ${badge}
+        </span>
+        <h1 style="font-size: 22px; font-weight: 700; color: #111827; margin: 12px 0 6px; line-height: 1.3;">
+            ${headline}
+        </h1>
+        <p style="font-size: 13px; line-height: 1.5; color: #4b5563; margin: 0 auto; max-width: 420px;">
+            ${message}
+        </p>
+    </div>
+
+    <!-- OTP Code Display -->
+    <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px 16px; margin: 0 auto 24px; text-align: center;">
+        <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #000000; margin-bottom: 8px;">
+            ${otp_code}
+        </div>
+        <div style="font-size: 11px; color: #6b7280;">
+            This code expires in 10 minutes. Do not share it with anyone.
+        </div>
+    </div>
+  `
+
+  return await sendEmail({ to: to_email, subject, html: wrapEmailHtml(content) })
 }
 
-export async function sendPasswordResetOtpEmail(to_email: string, otp_code: string): Promise<boolean> {
-  const subject = `Chembros Password Reset Passcode: ${otp_code}`
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chembros Password Reset</title>
-</head>
-<body style="margin: 0; padding: 40px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-font-smoothing: antialiased;">
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);">
-        <tr>
-            <td style="background-color: #000000; padding: 36px 32px 30px; text-align: center;">
-                <div style="font-size: 22px; font-weight: 700; letter-spacing: 6px; color: #ffffff; text-transform: uppercase;">CHEM BROS</div>
-                <div style="font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #a1a1aa; text-transform: uppercase; margin-top: 8px;">Haute Parfumerie &amp; Chemistry</div>
-            </td>
-        </tr>
-        <tr>
-            <td style="height: 1px; background-color: #27272a; line-height: 1px; font-size: 1px;">&nbsp;</td>
-        </tr>
-        <tr>
-            <td style="padding: 40px 36px 32px; text-align: center;">
-                <div style="font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #71717a; margin-bottom: 12px;">Laboratory Security Protocol</div>
-                <h1 style="font-size: 20px; font-weight: 600; color: #18181b; margin: 0 0 16px; line-height: 1.4;">Reset Your Account Password</h1>
-                <p style="font-size: 14px; line-height: 1.6; color: #52525b; margin: 0 0 28px;">
-                    We received a request to reset the password associated with your Chembros client account. Enter the verification passcode below to choose a new password.
-                </p>
-                <div style="background-color: #fafafa; border: 1px solid #000000; border-radius: 14px; padding: 24px 20px; margin: 0 auto 24px; text-align: center;">
-                    <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #000000; text-align: center; margin: 0 auto; user-select: all; -webkit-user-select: all;">
-                        ${otp_code}
-                    </div>
-                    <div style="margin-top: 14px;">
-                        <span style="display: inline-block; padding: 8px 18px; background-color: #000000; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 9999px; user-select: all; -webkit-user-select: all;">
-                            Copy Code: ${otp_code}
-                        </span>
-                    </div>
-                    <div style="font-size: 11px; color: #71717a; margin-top: 8px;">
-                        Tap or click above to copy code to clipboard
-                    </div>
-                </div>
-                <div style="border-top: 1px solid #f4f4f5; padding-top: 24px; text-align: left;">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td style="font-size: 12px; line-height: 1.6; color: #71717a;">
-                                <strong style="color: #18181b;">Security Notice:</strong> This reset code expires in 10 minutes. If you did not initiate this request, your account remains secure and you may safely disregard this message.
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 24px 32px; text-align: center;">
-                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #71717a; text-transform: uppercase;">
-                    Chembros Parfums Private Limited
-                </div>
-                <div style="font-size: 11px; color: #a1a1aa; margin-top: 6px;">
-                    Chemistry Captured in a Bottle. All rights reserved.
-                </div>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>`
-  return await sendEmail({ to: to_email, subject, html })
+export async function sendPasswordResetOtpEmail(
+  to_email: string,
+  otp_code: string
+): Promise<boolean> {
+  const subject = `Reset Your Password - Chembros Code: ${otp_code}`
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+        <span style="display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background-color: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 9999px;">
+            PASSWORD RESET
+        </span>
+        <h1 style="font-size: 22px; font-weight: 700; color: #111827; margin: 12px 0 6px; line-height: 1.3;">
+            Reset Your Chembros Password
+        </h1>
+        <p style="font-size: 13px; line-height: 1.5; color: #4b5563; margin: 0 auto; max-width: 420px;">
+            We received a request to reset your password. Enter the code below to choose a new password.
+        </p>
+    </div>
+
+    <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px 16px; margin: 0 auto 24px; text-align: center;">
+        <div style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #000000; margin-bottom: 8px;">
+            ${otp_code}
+        </div>
+        <div style="font-size: 11px; color: #6b7280;">
+            This code expires in 10 minutes. If you did not request this, you can ignore this email.
+        </div>
+    </div>
+  `
+
+  return await sendEmail({ to: to_email, subject, html: wrapEmailHtml(content) })
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. ORDER PROGRESS TIMELINE (Clean, numbered 4-stage bar)
+// ─────────────────────────────────────────────────────────────────────────────
 function renderProgressTimeline(stageNum: number): string {
   const stages = [
     { num: 1, label: 'Placed' },
-    { num: 2, label: 'Paid' },
+    { num: 2, label: 'Confirmed' },
     { num: 3, label: 'Shipped' },
-    { num: 4, label: 'Out Today' },
-    { num: 5, label: 'Delivered' },
+    { num: 4, label: 'Delivered' },
   ]
 
   const cols = stages
     .map((s) => {
       const isDoneOrCurrent = s.num <= stageNum
       const isCurrent = s.num === stageNum
-      const bgColor = isDoneOrCurrent ? '#000000' : '#e4e4e7'
-      const textColor = isDoneOrCurrent ? '#ffffff' : '#71717a'
-      const labelColor = isCurrent ? '#000000' : isDoneOrCurrent ? '#52525b' : '#a1a1aa'
+      const bgColor = isDoneOrCurrent ? '#000000' : '#e5e7eb'
+      const textColor = isDoneOrCurrent ? '#ffffff' : '#6b7280'
+      const labelColor = isCurrent ? '#000000' : isDoneOrCurrent ? '#374151' : '#9ca3af'
       const labelWeight = isCurrent ? '700' : '500'
-      const border = isCurrent ? '2px solid #000000' : 'none'
 
       return `
-        <td style="width: 20%; padding: 0 4px; vertical-align: top; text-align: center;">
-            <div style="width: 30px; height: 30px; border-radius: 50%; background-color: ${bgColor}; color: ${textColor}; line-height: 30px; margin: 0 auto 6px; font-size: 12px; font-weight: 700; border: ${border};">
+        <td style="width: 25%; padding: 0 4px; vertical-align: top; text-align: center;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; background-color: ${bgColor}; color: ${textColor}; line-height: 26px; margin: 0 auto 6px; font-size: 11px; font-weight: 700;">
                 ${s.num}
             </div>
-            <div style="font-size: 10px; font-weight: ${labelWeight}; text-transform: uppercase; letter-spacing: 1px; color: ${labelColor};">
+            <div style="font-size: 10px; font-weight: ${labelWeight}; text-transform: uppercase; letter-spacing: 0.5px; color: ${labelColor};">
                 ${s.label}
             </div>
         </td>`
@@ -297,32 +288,168 @@ function renderProgressTimeline(stageNum: number): string {
     .join('')
 
   return `
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0 28px; background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 12px; padding: 18px 12px;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0 24px; background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 8px;">
         <tr>
             ${cols}
         </tr>
     </table>`
 }
 
-function renderTrackingButton(trackingUrl: string): string {
-  return `
-    <div style="text-align: center; margin: 32px 0 28px;">
-        <a href="${trackingUrl}" style="background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; text-decoration: none; padding: 16px 36px; border-radius: 50px; display: inline-block; box-shadow: 0 6px 18px rgba(0,0,0,0.18);">
-            TRACK YOUR SHIPMENT &rarr;
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. E-COMMERCE ORDER TEMPLATE BUILDER
+// ─────────────────────────────────────────────────────────────────────────────
+function buildOrderHtml(params: {
+  titleBadge: string
+  headline: string
+  messageText: string
+  stageNum: number
+  orderNumber: string
+  customerName: string
+  totalAmount: number
+  itemsSummary: string
+  shippingAddress?: string
+  trackingNumber?: string
+  carrier?: string
+  showReviewPrompt?: boolean
+  productId?: string | number
+}): string {
+  const trackingUrl = `${serverConfig.FRONTEND_URL}/order-confirmation?order_id=${params.orderNumber}`
+  const timelineHtml = renderProgressTimeline(params.stageNum)
+
+  // Tracking box
+  const trackingBox = params.trackingNumber
+    ? `
+      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin: 18px 0; text-align: center;">
+          <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; margin-bottom: 4px;">
+              Courier Tracking ID (${params.carrier || 'Express Courier'})
+          </div>
+          <div style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 18px; font-weight: 700; color: #000000; letter-spacing: 1.5px;">
+              ${cleanText(params.trackingNumber)}
+          </div>
+      </div>`
+    : ''
+
+  // Delivery Address box
+  const addressBox = params.shippingAddress
+    ? `
+      <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+          <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; margin-bottom: 4px;">
+              Delivery Address
+          </div>
+          <div style="font-size: 13px; color: #111827; line-height: 1.5; font-weight: 500;">
+              ${cleanText(params.shippingAddress)}
+          </div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+              Recipient: ${cleanText(params.customerName)}
+          </div>
+      </div>`
+    : ''
+
+  // Review Invitation for Delivered Status
+  const reviewCard = params.showReviewPrompt
+    ? `
+      <div style="background-color: #000000; color: #ffffff; border-radius: 16px; padding: 24px 20px; margin: 28px 0; text-align: center;">
+          <div style="font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px;">
+              WE VALUE YOUR FEEDBACK
+          </div>
+          <h2 style="font-size: 18px; font-weight: 600; color: #ffffff; margin: 0 0 8px;">
+              How does your fragrance wear?
+          </h2>
+          <p style="font-size: 13px; line-height: 1.5; color: #d1d5db; margin: 0 auto 16px; max-width: 380px;">
+              Share your honest wear experience, longevity, and scent notes with our fragrance community.
+          </p>
+
+          <!-- Interactive Star Row -->
+          <div style="margin-bottom: 18px;">
+              <a href="${serverConfig.FRONTEND_URL}/fragrances" style="text-decoration: none; font-size: 24px; color: #f59e0b; margin: 0 2px;">★</a>
+              <a href="${serverConfig.FRONTEND_URL}/fragrances" style="text-decoration: none; font-size: 24px; color: #f59e0b; margin: 0 2px;">★</a>
+              <a href="${serverConfig.FRONTEND_URL}/fragrances" style="text-decoration: none; font-size: 24px; color: #f59e0b; margin: 0 2px;">★</a>
+              <a href="${serverConfig.FRONTEND_URL}/fragrances" style="text-decoration: none; font-size: 24px; color: #f59e0b; margin: 0 2px;">★</a>
+              <a href="${serverConfig.FRONTEND_URL}/fragrances" style="text-decoration: none; font-size: 24px; color: #f59e0b; margin: 0 2px;">★</a>
+          </div>
+
+          <div>
+              <a href="${serverConfig.FRONTEND_URL}/fragrances" style="background-color: #ffffff; color: #000000; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; padding: 12px 28px; border-radius: 9999px; display: inline-block;">
+                  WRITE A REVIEW &rarr;
+              </a>
+          </div>
+      </div>`
+    : ''
+
+  const content = `
+    <!-- Top Pill & Headline -->
+    <div style="margin-bottom: 20px;">
+        <span style="display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background-color: #f3f4f6; color: #111827; padding: 4px 12px; border-radius: 9999px; margin-bottom: 10px;">
+            ${params.titleBadge}
+        </span>
+        <h1 style="font-size: 22px; font-weight: 700; color: #111827; margin: 0 0 8px; line-height: 1.3;">
+            ${params.headline}
+        </h1>
+        <p style="font-size: 13px; line-height: 1.5; color: #4b5563; margin: 0;">
+            ${params.messageText}
+        </p>
+    </div>
+
+    ${timelineHtml}
+
+    <!-- Primary Track Order Button -->
+    <div style="text-align: center; margin: 20px 0 24px;">
+        <a href="${trackingUrl}" style="background-color: #000000; color: #ffffff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; padding: 14px 32px; border-radius: 9999px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            VIEW ORDER STATUS &rarr;
         </a>
-        <div style="font-size: 11px; color: #71717a; margin-top: 10px; font-family: monospace;">
-            Direct Order Monograph &bull; Real-time Telemetry
+    </div>
+
+    ${trackingBox}
+
+    <!-- Order Meta Block -->
+    <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; padding: 3px 0;">Order Number</td>
+                <td style="font-size: 13px; font-weight: 700; font-family: monospace; color: #000000; text-align: right; padding: 3px 0;">#${cleanText(params.orderNumber)}</td>
+            </tr>
+            <tr>
+                <td style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; padding: 3px 0;">Customer</td>
+                <td style="font-size: 12px; font-weight: 600; color: #111827; text-align: right; padding: 3px 0;">${cleanText(params.customerName)}</td>
+            </tr>
+        </table>
+    </div>
+
+    ${addressBox}
+
+    <!-- Items Summary -->
+    <div style="margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #111827; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;">
+            Items Ordered
         </div>
-    </div>`
+        <div style="font-size: 13px; line-height: 1.6; color: #374151; white-space: pre-line;">
+            ${cleanText(params.itemsSummary)}
+        </div>
+    </div>
+
+    <!-- Total Paid -->
+    <div style="border-top: 1px solid #000000; padding-top: 14px; text-align: right;">
+        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-right: 8px;">Total:</span>
+        <span style="font-size: 18px; font-weight: 800; color: #000000;">₹${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+    </div>
+
+    ${reviewCard}
+  `
+
+  return wrapEmailHtml(content)
 }
 
-
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. ATTACHMENT & INVOICE GENERATOR
+// ─────────────────────────────────────────────────────────────────────────────
 function parseItemsSummaryToInvoiceItems(summary: string, total: number) {
   if (!summary) return [{ name: 'Chembros Extrait de Parfum', price: total, quantity: 1 }]
   const lines = summary.split('\n').map((l) => l.trim()).filter(Boolean)
   const items: any[] = []
   for (const line of lines) {
-    const match = line.match(/[•\-\*]?\s*(.*?)(?:\s*\((\d+)ml\))?\s*[×x]\s*(\d+)\s*[-—–]\s*Rs\.?\s*([\d,]+)/i)
+    const match = line.match(
+      /[•\-\*]?\s*(.*?)(?:\s*\((\d+)ml\))?\s*[×x]\s*(\d+)\s*[-—–]\s*Rs\.?\s*([\d,]+)/i
+    )
     if (match) {
       items.push({
         name: match[1].trim(),
@@ -372,7 +499,7 @@ async function getInvoiceAttachment(params: {
         customer_name: dbOrder.customer_name || params.customerName,
         customer_email: dbOrder.customer_email || params.toEmail,
         customer_phone: dbOrder.customer_phone || '',
-        shipping_address: dbOrder.shipping_address || params.shippingAddress || '',
+        shipping_address: cleanText(dbOrder.shipping_address || params.shippingAddress || ''),
         items: itemsList,
         subtotal: Number(dbOrder.subtotal) || Number(params.totalAmount),
         shipping_fee: Number(dbOrder.shipping_fee) || 0,
@@ -388,7 +515,7 @@ async function getInvoiceAttachment(params: {
         customer_name: params.customerName,
         customer_email: params.toEmail,
         customer_phone: '',
-        shipping_address: params.shippingAddress || '',
+        shipping_address: cleanText(params.shippingAddress || ''),
         items: parseItemsSummaryToInvoiceItems(params.itemsSummary, params.totalAmount),
         subtotal: params.totalAmount,
         shipping_fee: 0,
@@ -412,129 +539,9 @@ async function getInvoiceAttachment(params: {
   }
 }
 
-function buildOrderHtml(params: {
-  titleBadge: string
-  headline: string
-  messageText: string
-  stageNum: number
-  orderNumber: string
-  customerName: string
-  totalAmount: number
-  itemsSummary: string
-  shippingAddress?: string
-  trackingNumber?: string
-  carrier?: string
-}): string {
-  const trackingUrl = `${serverConfig.FRONTEND_URL}/order-confirmation?order_id=${params.orderNumber}`
-  const timelineHtml = renderProgressTimeline(params.stageNum)
-  const buttonHtml = renderTrackingButton(trackingUrl)
-
-  const trackingBox = params.trackingNumber
-    ? `
-        <div style="background-color: #fafafa; border: 1px dashed #000000; border-radius: 10px; padding: 18px; margin: 20px 0; text-align: center;">
-            <div style="font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #71717a; margin-bottom: 4px;">Waybill Consignment Tracking Number</div>
-            <div style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 20px; font-weight: 700; color: #000000; letter-spacing: 3px;">${params.trackingNumber}</div>
-            <div style="font-size: 11px; color: #52525b; margin-top: 4px;">Carrier Service: ${params.carrier || 'Chembros Priority Express'}</div>
-        </div>`
-    : ''
-
-  const addressBox = params.shippingAddress
-    ? `
-        <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;">
-            <div style="font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #71717a; margin-bottom: 6px;">White-Glove Delivery Destination</div>
-            <div style="font-size: 13px; color: #18181b; line-height: 1.5; font-weight: 500;">${params.shippingAddress}</div>
-            <div style="font-size: 12px; color: #71717a; margin-top: 4px;">Recipient: ${params.customerName}</div>
-        </div>`
-    : ''
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${params.headline}</title>
-</head>
-<body style="margin: 0; padding: 40px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-font-smoothing: antialiased;">
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);">
-        <tr>
-            <td style="background-color: #000000; padding: 36px 32px 30px; text-align: center;">
-                <div style="font-size: 22px; font-weight: 700; letter-spacing: 6px; color: #ffffff; text-transform: uppercase;">CHEM BROS</div>
-                <div style="font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #a1a1aa; text-transform: uppercase; margin-top: 8px;">Haute Parfumerie &amp; Chemistry</div>
-            </td>
-        </tr>
-        <tr>
-            <td style="padding: 36px 32px 28px;">
-                <div style="display: inline-block; background-color: #000000; color: #ffffff; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; margin-bottom: 14px;">
-                    ${params.titleBadge}
-                </div>
-
-                <h1 style="font-size: 22px; font-weight: 700; color: #18181b; margin: 0 0 12px; line-height: 1.3;">
-                    ${params.headline}
-                </h1>
-                <p style="font-size: 14px; line-height: 1.6; color: #52525b; margin: 0 0 20px;">
-                    ${params.messageText}
-                </p>
-
-                ${timelineHtml}
-                ${buttonHtml}
-                <div style="text-align: center; margin: 10px 0 24px;">
-                    <a href="${serverConfig.FRONTEND_URL}/api/orders/${params.orderNumber}/invoice" style="background-color: #ffffff; color: #000000; border: 1.5px solid #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; padding: 12px 28px; border-radius: 50px; display: inline-block;">
-                        VIEW / DOWNLOAD TAX INVOICE (PDF) &rarr;
-                    </a>
-                    <div style="font-size: 11px; color: #71717a; margin-top: 8px;">
-                        Official GST Tax Invoice (PDF) is attached to this email.
-                    </div>
-                </div>
-                ${trackingBox}
-
-                <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px;">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Order Reference</td>
-                            <td style="font-size: 14px; font-weight: 700; color: #000000; text-align: right; padding: 4px 0; font-family: monospace;">#${params.orderNumber}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Customer Name</td>
-                            <td style="font-size: 13px; font-weight: 600; color: #18181b; text-align: right; padding: 4px 0;">${params.customerName}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Order Status</td>
-                            <td style="font-size: 12px; font-weight: 700; color: #000000; text-align: right; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">${params.titleBadge}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                ${addressBox}
-
-                <div style="margin-bottom: 24px;">
-                    <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #18181b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e4e4e7;">
-                        Items Ordered
-                    </div>
-                    <div style="font-size: 13px; line-height: 1.7; color: #3f3f46; white-space: pre-line;">
-                        ${params.itemsSummary}
-                    </div>
-                </div>
-
-                <div style="border-top: 2px solid #000000; padding-top: 18px; text-align: right;">
-                    <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #71717a; margin-right: 12px;">Total Amount:</span>
-                    <span style="font-size: 22px; font-weight: 800; color: #000000;">Rs. ${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 24px 32px; text-align: center;">
-                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #71717a; text-transform: uppercase;">
-                    Chembros Parfums Private Limited
-                </div>
-                <div style="font-size: 11px; color: #a1a1aa; margin-top: 6px;">
-                    Chemistry Captured in a Bottle. All rights reserved.
-                </div>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>`
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. PUBLIC E-COMMERCE EMAIL DISPATCHERS
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function sendOrderPlacedEmail(params: {
   toEmail: string
@@ -544,12 +551,12 @@ export async function sendOrderPlacedEmail(params: {
   itemsSummary: string
   shippingAddress?: string
 }): Promise<boolean> {
-  const subject = `Chembros Order #${params.orderNumber} Received & Confirmed`
+  const subject = `Order Confirmed #${cleanText(params.orderNumber)} - Chembros Parfums`
   const html = buildOrderHtml({
-    titleBadge: '1. ORDER PLACED',
-    headline: `Your Chembros Order is Confirmed, ${params.customerName}`,
+    titleBadge: 'Order Confirmed',
+    headline: `Thank You, ${cleanText(params.customerName)}!`,
     messageText:
-      'Thank you for shopping with Chembros! Your luxury perfume order has been confirmed and is being carefully prepared for dispatch.',
+      'We have received your order. Our atelier is carefully preparing your fragrances for packaging.',
     stageNum: 1,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -569,11 +576,11 @@ export async function sendPaymentDoneEmail(params: {
   itemsSummary: string
   shippingAddress?: string
 }): Promise<boolean> {
-  const subject = `Payment Confirmed - Chembros Order #${params.orderNumber}`
+  const subject = `Payment Received for Order #${cleanText(params.orderNumber)}`
   const html = buildOrderHtml({
-    titleBadge: '2. PAYMENT CONFIRMED',
-    headline: `Payment Received for Order #${params.orderNumber}`,
-    messageText: `Your payment of Rs. ${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} has been received successfully. Your order is confirmed and being packed for delivery.`,
+    titleBadge: 'Payment Verified',
+    headline: `Payment Confirmed, ${cleanText(params.customerName)}`,
+    messageText: `Your payment of ₹${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} has been received. Your order is confirmed and queued for packing.`,
     stageNum: 2,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -595,12 +602,12 @@ export async function sendOrderShippedEmail(params: {
   shippingAddress?: string
   carrier?: string
 }): Promise<boolean> {
-  const subject = `Your Chembros Order #${params.orderNumber} Has Been Shipped`
+  const subject = `Your Order #${cleanText(params.orderNumber)} Has Been Shipped!`
   const html = buildOrderHtml({
-    titleBadge: '3. DISPATCHED & SHIPPED',
-    headline: `Your Chembros Order Has Shipped, ${params.customerName}`,
+    titleBadge: 'Order Dispatched',
+    headline: `Your Fragrance is on its Way, ${cleanText(params.customerName)}`,
     messageText:
-      'Your perfumes have been packed securely and handed over to our courier partner for express delivery.',
+      'Your order has been handed over to our courier partner for priority express delivery.',
     stageNum: 3,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -608,7 +615,7 @@ export async function sendOrderShippedEmail(params: {
     itemsSummary: params.itemsSummary,
     shippingAddress: params.shippingAddress,
     trackingNumber: params.trackingNumber,
-    carrier: params.carrier,
+    carrier: params.carrier || 'Express Courier',
   })
   const attachments = await getInvoiceAttachment(params)
   return await sendEmail({ to: params.toEmail, subject, html, attachments })
@@ -624,13 +631,13 @@ export async function sendDeliveryTodayEmail(params: {
   shippingAddress?: string
   carrier?: string
 }): Promise<boolean> {
-  const subject = `Out for Delivery Today - Chembros Order #${params.orderNumber}`
+  const subject = `Out for Delivery Today - Chembros Order #${cleanText(params.orderNumber)}`
   const html = buildOrderHtml({
-    titleBadge: '4. DELIVERY BY TODAY',
-    headline: `Your Package is Arriving Today, ${params.customerName}`,
+    titleBadge: 'Arriving Today',
+    headline: `Your Package Arrives Today!`,
     messageText:
-      'Your Chembros package is out for delivery today! Our delivery representative will arrive at your shipping address soon.',
-    stageNum: 4,
+      'Your order is out for delivery with our courier executive. Please ensure someone is available at your address to receive it.',
+    stageNum: 3,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
     totalAmount: params.totalAmount,
@@ -650,18 +657,19 @@ export async function sendOrderDeliveredEmail(params: {
   itemsSummary: string
   shippingAddress?: string
 }): Promise<boolean> {
-  const subject = `Delivered: Chembros Order #${params.orderNumber}`
+  const subject = `Delivered: Chembros Order #${cleanText(params.orderNumber)}`
   const html = buildOrderHtml({
-    titleBadge: '5. SAFELY DELIVERED',
-    headline: `Your Chembros Parcel Has Arrived, ${params.customerName}`,
+    titleBadge: 'Delivered',
+    headline: `Your Fragrances Have Arrived!`,
     messageText:
-      'Your Chembros luxury perfumes have been delivered safely. We hope you enjoy your exquisite new fragrances. Thank you for choosing Chembros!',
-    stageNum: 5,
+      'Your package has been delivered successfully. We hope you enjoy wearing your new fragrance formulation.',
+    stageNum: 4,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
     totalAmount: params.totalAmount,
     itemsSummary: params.itemsSummary,
     shippingAddress: params.shippingAddress,
+    showReviewPrompt: true, // Enables the interactive 5-star review request card
   })
   return await sendEmail({ to: params.toEmail, subject, html })
 }
@@ -675,102 +683,59 @@ export async function sendOrderCancelledEmail(params: {
   reason?: string
   shippingAddress?: string
 }): Promise<boolean> {
-  const subject = `Chembros Order #${params.orderNumber} Has Been Cancelled`
-  const reasonText = params.reason ? `<div style="font-size: 12px; color: #71717a; margin-top: 6px;">Cancellation Reason: ${params.reason}</div>` : ''
+  const subject = `Order #${cleanText(params.orderNumber)} Cancelled`
+  const reasonText = params.reason
+    ? `<div style="font-size: 12px; color: #dc2626; margin-top: 6px; font-weight: 500;">Reason: ${params.reason}</div>`
+    : ''
   const trackingUrl = `${serverConfig.FRONTEND_URL}/dashboard?tab=orders`
 
   const addressBox = params.shippingAddress
     ? `
-        <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;">
-            <div style="font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #71717a; margin-bottom: 6px;">Original Destination</div>
-            <div style="font-size: 13px; color: #18181b; line-height: 1.5; font-weight: 500;">${params.shippingAddress}</div>
-            <div style="font-size: 12px; color: #71717a; margin-top: 4px;">Recipient: ${params.customerName}</div>
-        </div>`
+      <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+          <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; margin-bottom: 4px;">Destination Address</div>
+          <div style="font-size: 13px; color: #111827; line-height: 1.5; font-weight: 500;">${cleanText(params.shippingAddress)}</div>
+      </div>`
     : ''
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order #${params.orderNumber} Cancelled</title>
-</head>
-<body style="margin: 0; padding: 40px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-font-smoothing: antialiased;">
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);">
-        <tr>
-            <td style="background-color: #000000; padding: 36px 32px 30px; text-align: center;">
-                <div style="font-size: 22px; font-weight: 700; letter-spacing: 6px; color: #ffffff; text-transform: uppercase;">CHEM BROS</div>
-                <div style="font-size: 10px; font-weight: 600; letter-spacing: 3px; color: #a1a1aa; text-transform: uppercase; margin-top: 8px;">Haute Parfumerie &amp; Chemistry</div>
-            </td>
-        </tr>
-        <tr>
-            <td style="padding: 36px 32px 28px;">
-                <div style="display: inline-block; background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; margin-bottom: 14px;">
-                    ORDER CANCELLED
-                </div>
+  const content = `
+    <div style="margin-bottom: 20px;">
+        <span style="display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background-color: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 9999px; margin-bottom: 10px;">
+            ORDER CANCELLED
+        </span>
+        <h1 style="font-size: 22px; font-weight: 700; color: #111827; margin: 0 0 8px; line-height: 1.3;">
+            Order #${cleanText(params.orderNumber)} Has Been Cancelled
+        </h1>
+        <p style="font-size: 13px; line-height: 1.5; color: #4b5563; margin: 0;">
+            Your order has been cancelled. If payment was completed, your refund has been initiated and will reflect in your original payment account within 3 to 5 business days.
+        </p>
+        ${reasonText}
+    </div>
 
-                <h1 style="font-size: 22px; font-weight: 700; color: #18181b; margin: 0 0 12px; line-height: 1.3;">
-                    Order #${params.orderNumber} Has Been Cancelled
-                </h1>
-                <p style="font-size: 14px; line-height: 1.6; color: #52525b; margin: 0 0 20px;">
-                    Your bespoke fragrance order has been cancelled. If your order was already paid, a complete refund has been initiated and will reflect in your original payment method within 3 to 5 business days.
-                </p>
-                ${reasonText}
+    <!-- Order Meta Block -->
+    <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 16px; margin: 20px 0;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; padding: 3px 0;">Order Reference</td>
+                <td style="font-size: 13px; font-weight: 700; font-family: monospace; color: #000000; text-align: right; padding: 3px 0;">#${cleanText(params.orderNumber)}</td>
+            </tr>
+            <tr>
+                <td style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; padding: 3px 0;">Refund Amount</td>
+                <td style="font-size: 14px; font-weight: 700; color: #000000; text-align: right; padding: 3px 0;">₹${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+        </table>
+    </div>
 
-                <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 10px; padding: 18px 20px; margin: 20px 0 24px;">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Order Reference</td>
-                            <td style="font-size: 14px; font-weight: 700; color: #000000; text-align: right; padding: 4px 0; font-family: monospace;">#${params.orderNumber}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Customer Name</td>
-                            <td style="font-size: 13px; font-weight: 600; color: #18181b; text-align: right; padding: 4px 0;">${params.customerName}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Order Status</td>
-                            <td style="font-size: 12px; font-weight: 700; color: #b91c1c; text-align: right; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">CANCELLED</td>
-                        </tr>
-                    </table>
-                </div>
+    ${addressBox}
 
-                ${addressBox}
+    <!-- Primary Button -->
+    <div style="text-align: center; margin: 24px 0 10px;">
+        <a href="${trackingUrl}" style="background-color: #000000; color: #ffffff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; padding: 14px 32px; border-radius: 9999px; display: inline-block;">
+            VIEW YOUR ACCOUNT &rarr;
+        </a>
+    </div>
+  `
 
-                <div style="margin-bottom: 24px;">
-                    <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #18181b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e4e4e7;">
-                        Cancelled Items
-                    </div>
-                    <div style="font-size: 13px; line-height: 1.7; color: #3f3f46; white-space: pre-line;">
-                        ${params.itemsSummary}
-                    </div>
-                </div>
-
-                <div style="border-top: 2px solid #000000; padding-top: 18px; text-align: right;">
-                    <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #71717a; margin-right: 12px;">Refund Amount:</span>
-                    <span style="font-size: 22px; font-weight: 800; color: #000000;">Rs. ${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-
-                <div style="text-align: center; margin: 32px 0 10px;">
-                    <a href="${trackingUrl}" style="background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; padding: 14px 32px; border-radius: 50px; display: inline-block;">
-                        VIEW YOUR ACCOUNT &rarr;
-                    </a>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 24px 32px; text-align: center;">
-                <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #71717a; text-transform: uppercase;">
-                    Chemical Brothers Perfumery LLP
-                </div>
-                <div style="font-size: 11px; color: #a1a1aa; margin-top: 6px;">
-                    For concierge inquiries: connect@thechemicalbrothers.in · 6374470866
-                </div>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>`
-  return await sendEmail({ to: params.toEmail, subject, html })
+  return await sendEmail({ to: params.toEmail, subject, html: wrapEmailHtml(content) })
 }
 
 export async function sendOrderStatusEmail(params: {
@@ -784,17 +749,11 @@ export async function sendOrderStatusEmail(params: {
   shippingAddress?: string
 }): Promise<boolean> {
   const statusLower = (params.newStatus || '').toLowerCase()
+
   if (statusLower.includes('cancel')) {
-    return await sendOrderCancelledEmail({
-      toEmail: params.toEmail,
-      customerName: params.customerName,
-      orderNumber: params.orderNumber,
-      totalAmount: params.totalAmount,
-      itemsSummary: params.itemsSummary,
-      shippingAddress: params.shippingAddress,
-    })
+    return await sendOrderCancelledEmail(params)
   } else if (statusLower.includes('shipped') || statusLower.includes('dispatch')) {
-    let carrier = 'Blue Dart Express'
+    let carrier = 'Express Courier'
     let trackingNum = params.trackingNumber || 'CB-EXP-9921'
     if (params.trackingNumber && params.trackingNumber.includes(' - ')) {
       const parts = params.trackingNumber.split(' - ')
@@ -802,51 +761,24 @@ export async function sendOrderStatusEmail(params: {
       trackingNum = parts.slice(1).join(' - ').trim()
     }
     return await sendOrderShippedEmail({
-      toEmail: params.toEmail,
-      customerName: params.customerName,
-      orderNumber: params.orderNumber,
-      totalAmount: params.totalAmount,
-      itemsSummary: params.itemsSummary,
+      ...params,
       trackingNumber: trackingNum,
       carrier,
-      shippingAddress: params.shippingAddress,
     })
   } else if (statusLower.includes('today') || statusLower.includes('out')) {
-    return await sendDeliveryTodayEmail({
-      toEmail: params.toEmail,
-      customerName: params.customerName,
-      orderNumber: params.orderNumber,
-      totalAmount: params.totalAmount,
-      itemsSummary: params.itemsSummary,
-      trackingNumber: params.trackingNumber,
-      shippingAddress: params.shippingAddress,
-    })
+    return await sendDeliveryTodayEmail(params)
   } else if (statusLower.includes('deliver')) {
-    return await sendOrderDeliveredEmail({
-      toEmail: params.toEmail,
-      customerName: params.customerName,
-      orderNumber: params.orderNumber,
-      totalAmount: params.totalAmount,
-      itemsSummary: params.itemsSummary,
-      shippingAddress: params.shippingAddress,
-    })
+    return await sendOrderDeliveredEmail(params)
   } else if (statusLower.includes('paid')) {
-    return await sendPaymentDoneEmail({
-      toEmail: params.toEmail,
-      customerName: params.customerName,
-      orderNumber: params.orderNumber,
-      totalAmount: params.totalAmount,
-      itemsSummary: params.itemsSummary,
-      shippingAddress: params.shippingAddress,
-    })
+    return await sendPaymentDoneEmail(params)
   }
 
-  // Generic Order Status
-  const subject = `Order #${params.orderNumber} Status Updated: ${params.newStatus}`
+  // Fallback update
+  const subject = `Order #${cleanText(params.orderNumber)} Status: ${params.newStatus}`
   const html = buildOrderHtml({
     titleBadge: params.newStatus.toUpperCase(),
     headline: `Status Update: ${params.newStatus}`,
-    messageText: `Your Chembros fragrance order status has transitioned to: ${params.newStatus}.`,
+    messageText: `Your Chembros fragrance order status has been updated to: ${params.newStatus}.`,
     stageNum: 2,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -857,4 +789,3 @@ export async function sendOrderStatusEmail(params: {
   })
   return await sendEmail({ to: params.toEmail, subject, html })
 }
-
