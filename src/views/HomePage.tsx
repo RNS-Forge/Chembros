@@ -1,4 +1,5 @@
 'use client'
+import NavBar from '../components/NavBar'
 import Homehero from '../components/Homehero'
 import HomeProduct from '../components/HomeProduct'
 import HomeCta from '../components/HomeCta'
@@ -16,6 +17,7 @@ export default function HomePage() {
           Atelier Private Tasting Mode Active · Formulations Curated for Direct Studio Delivery
         </div>
       )}
+      <NavBar />
       <Homehero />
       <HomeProduct />
       <HomeCta />

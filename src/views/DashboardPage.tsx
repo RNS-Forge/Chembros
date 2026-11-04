@@ -730,7 +730,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
       <NavBar />
 
       {/* Main Container - Width and padding match Footer exactly */}
-      <main className="w-full max-w-[1583px] px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1">
+      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1">
         
         {/* Not Logged In */}
         {!isAuthenticated || !user ? (

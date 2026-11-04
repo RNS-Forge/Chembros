@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import NavBar from './NavBar'
 
 // Assets
 import angelWaterBg from '../assets/hero.png'
@@ -458,12 +457,8 @@ export default function HomeHero() {
     <section
       ref={containerRef}
       id="home-hero-section"
-      className="w-full min-h-[100dvh] h-auto md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex flex-col items-center z-10"
+      className="w-full min-h-[100dvh] h-auto md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex flex-col items-center"
     >
-      {/* Top Floating Navigation */}
-      <div className="w-full fixed top-0 left-0 right-0 z-[70] pointer-events-auto">
-        <NavBar />
-      </div>
 
       {/* Floating Replay Button for Testing */}
       <button

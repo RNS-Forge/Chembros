@@ -15,7 +15,7 @@ export const Footer = ({
   onOpenPolicy,
 }: FooterProps) => {
   return (
-    <footer className="w-full flex justify-center items-center overflow-hidden select-none bg-white py-6 sm:py-8 lg:py-12 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+    <footer className="w-full flex justify-center items-center overflow-hidden select-none bg-white py-6 sm:py-8 lg:py-12 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
       
       {/* Outer Card Container */}
       <div className="w-full max-w-[1583px] relative rounded-[20px] sm:rounded-[32px] lg:rounded-[44px] xl:rounded-[50px] overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.08)] flex flex-col justify-between p-5 sm:p-7 md:p-8 lg:p-12 xl:p-16 h-auto sm:min-h-[420px] lg:min-h-[520px] xl:h-[660px]">

@@ -203,7 +203,7 @@ export default function CheckoutPage() {
     return (
       <div className="w-full min-h-screen bg-[#FAFAF9] flex flex-col items-center">
         <NavBar />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center pt-28 sm:pt-36">
+        <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex-1 flex flex-col items-center justify-center p-6 text-center pt-28 sm:pt-36">
           <div className="w-16 h-16 rounded-full bg-neutral-200/60 flex items-center justify-center text-black mb-4">
             <Lock className="w-6 h-6 stroke-[1.5]" />
           </div>
@@ -219,7 +219,7 @@ export default function CheckoutPage() {
           >
             Explore Fragrances
           </Link>
-        </div>
+        </main>
         <Footer />
       </div>
     )
@@ -378,7 +378,7 @@ export default function CheckoutPage() {
     <div className="w-full min-h-screen bg-[#FAFAF9] flex flex-col items-center">
       <NavBar />
 
-      <main className="w-full max-w-[1583px] px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1">
+      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1">
         {/* Navigation Breadcrumb Bar */}
         <div className="mb-6 sm:mb-8 flex items-center justify-between">
           <Link

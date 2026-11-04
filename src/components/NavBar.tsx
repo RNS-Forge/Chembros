@@ -143,7 +143,7 @@ export default function NavBar({
       {/* =========================================================================
           MOBILE NAVBAR HEADER (Screens < 768px)
           ========================================================================= */}
-      <header className="md:hidden fixed top-0 left-0 w-full h-[58px] bg-white/95 backdrop-blur-md border-b border-black/5 z-[95] px-4 flex items-center justify-between pointer-events-auto">
+      <header className="md:hidden fixed top-0 left-0 w-full h-[58px] bg-white/95 backdrop-blur-md border-b border-black/5 z-[100] px-4 flex items-center justify-between pointer-events-auto">
         <div className="flex items-center gap-3">
           {/* Hamburger Trigger */}
           <button
@@ -214,14 +214,14 @@ export default function NavBar({
       {/* Backdrop */}
       <div
         onClick={() => setIsMobileMenuOpen(false)}
-        className={`md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-[100] transition-opacity duration-300 ${
+        className={`md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-[110] transition-opacity duration-300 ${
           isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       />
 
       {/* Drawer Panel */}
       <aside
-        className={`md:hidden fixed top-0 left-0 bottom-0 w-[82%] max-w-[340px] bg-white z-[101] shadow-2xl flex flex-col justify-between py-6 px-6 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`md:hidden fixed top-0 left-0 bottom-0 w-[82%] max-w-[340px] bg-white z-[120] shadow-2xl flex flex-col justify-between py-6 px-6 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -424,13 +424,15 @@ export default function NavBar({
           DESKTOP & TABLET NAVBAR PILL (Screens >= 768px)
           ========================================================================= */}
       <header
-        className={`hidden md:block fixed top-4 sm:top-6 lg:top-8 left-4 sm:left-6 md:left-8 lg:left-[clamp(32px,8.95vw,172px)] pointer-events-none z-[100] max-w-[calc(100vw-32px)] transition-all duration-500 ${
+        className={`hidden md:block fixed top-4 sm:top-6 lg:top-8 left-0 right-0 pointer-events-none z-[100] transition-all duration-500 ${
           isAuthModalOpen
             ? 'opacity-20 scale-95 blur-xs pointer-events-none'
             : 'opacity-100 scale-100 blur-none'
         }`}
       >
-        <nav
+        <div className="w-full flex justify-center px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+          <div className="w-full max-w-[1583px] flex items-center justify-start">
+            <nav
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={`pointer-events-auto h-[48px] sm:h-[54px] lg:h-[60px] inline-flex items-center rounded-full bg-white/75 backdrop-blur-2xl border border-white/80 shadow-[0_12px_36px_rgba(0,0,0,0.08),_inset_0_1px_1px_rgba(255,255,255,0.9)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-full ${
@@ -679,6 +681,8 @@ export default function NavBar({
             </div>
           </div>
         </nav>
+          </div>
+        </div>
       </header>
     </>
   )

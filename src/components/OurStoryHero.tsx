@@ -302,7 +302,7 @@ export const OurStoryHero: React.FC = () => {
           >
             <div
               ref={innerWrapperRef}
-              className="w-full pt-[min(260px,28vh)] pb-16 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 bg-white"
+              className="w-full pt-[min(260px,28vh)] pb-16 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 bg-white"
               style={{ willChange: 'transform' }}
             >
               <div

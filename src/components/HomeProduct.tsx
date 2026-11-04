@@ -110,7 +110,7 @@ export default function HomeProduct() {
       flightClone.style.position = 'fixed'
       flightClone.style.top = '0px'
       flightClone.style.left = '0px'
-      flightClone.style.zIndex = '9999'
+      flightClone.style.zIndex = '40'
       flightClone.style.pointerEvents = 'none'
       flightClone.style.willChange = 'transform, opacity'
       flightClone.style.opacity = '0'
@@ -192,7 +192,7 @@ export default function HomeProduct() {
   return (
     <section
       ref={sectionRef}
-      className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center font-sans"
+      className="w-full bg-white relative overflow-hidden select-none py-10 md:py-14 lg:py-18 xl:py-24 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 flex justify-center font-sans"
     >
       <div className="w-full max-w-[1583px] flex flex-col items-center gap-10 sm:gap-14 lg:gap-16 xl:gap-20 relative z-10">
         

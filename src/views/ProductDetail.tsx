@@ -302,7 +302,7 @@ export default function ProductDetail() {
       <NavBar />
 
       {/* Main Container */}
-      <main className="w-full px-4 sm:px-6 md:px-8 lg:px-[clamp(32px,8.95vw,172px)] pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
+      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
 
         {/* =========================================================================
             PART 1: MAIN HERO CARD (16:9 Landscape Left & Product Details Right)
