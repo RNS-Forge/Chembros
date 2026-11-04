@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     if (!isAuthorizedAdmin(req)) {
       return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
     }
-    const settings = getPlatformSettingsServer()
+    const settings = await getPlatformSettingsServer()
     return NextResponse.json(settings, {
       status: 200,
       headers: { 'Cache-Control': 'no-store, max-age=0' },
@@ -41,10 +41,9 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const updated = savePlatformSettingsServer(body)
+    const updated = await savePlatformSettingsServer(body)
     return NextResponse.json(updated, { status: 200 })
   } catch (err: any) {
     return NextResponse.json({ detail: err.message || 'Error updating settings' }, { status: 500 })
   }
 }
-

@@ -1,38 +1,56 @@
-import fs from 'fs'
-import path from 'path'
 import type { PlatformSettings } from '@/types'
 import { DEFAULT_PLATFORM_SETTINGS } from '@/types'
+import { supabaseAdmin } from './supabase-admin'
 
-const SETTINGS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'platform_settings.json')
-
-export function getPlatformSettingsServer(): PlatformSettings {
+/**
+ * Reads platform settings from Supabase `platform_settings` table.
+ * Falls back to DEFAULT_PLATFORM_SETTINGS if table/row doesn't exist.
+ */
+export async function getPlatformSettingsServer(): Promise<PlatformSettings> {
   try {
-    if (fs.existsSync(SETTINGS_FILE_PATH)) {
-      const raw = fs.readFileSync(SETTINGS_FILE_PATH, 'utf8')
-      const parsed = JSON.parse(raw)
-      return { ...DEFAULT_PLATFORM_SETTINGS, ...parsed }
+    const { data, error } = await supabaseAdmin
+      .from('platform_settings')
+      .select('settings')
+      .eq('id', 1)
+      .single()
+
+    if (error || !data) {
+      console.warn('Settings row not found in Supabase, using defaults:', error?.message)
+      return { ...DEFAULT_PLATFORM_SETTINGS }
     }
+
+    const parsed = typeof data.settings === 'string' ? JSON.parse(data.settings) : data.settings
+    return { ...DEFAULT_PLATFORM_SETTINGS, ...parsed }
   } catch (err) {
-    console.warn('Error reading platform_settings.json, falling back to defaults:', err)
+    console.warn('Error reading platform settings from Supabase, falling back to defaults:', err)
+    return { ...DEFAULT_PLATFORM_SETTINGS }
   }
-  return { ...DEFAULT_PLATFORM_SETTINGS }
 }
 
-export function savePlatformSettingsServer(newSettings: Partial<PlatformSettings>): PlatformSettings {
+/**
+ * Saves (upserts) platform settings to Supabase `platform_settings` table.
+ */
+export async function savePlatformSettingsServer(newSettings: Partial<PlatformSettings>): Promise<PlatformSettings> {
   try {
-    const current = getPlatformSettingsServer()
+    const current = await getPlatformSettingsServer()
     const merged: PlatformSettings = { ...current, ...newSettings }
-    
-    const dir = path.dirname(SETTINGS_FILE_PATH)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+
+    const { error } = await supabaseAdmin
+      .from('platform_settings')
+      .upsert({
+        id: 1,
+        settings: merged,
+        updated_at: new Date().toISOString(),
+      })
+
+    if (error) {
+      console.error('Supabase upsert error:', error.message)
+      throw new Error(error.message)
     }
-    
-    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(merged, null, 2), 'utf8')
+
     return merged
   } catch (err) {
-    console.error('Error writing platform_settings.json:', err)
+    console.error('Error writing platform settings to Supabase:', err)
     throw err
   }
 }
-

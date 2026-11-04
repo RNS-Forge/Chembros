@@ -3,7 +3,7 @@ import { getPlatformSettingsServer } from '@/lib/settings-service'
 
 export async function GET() {
   try {
-    const settings = getPlatformSettingsServer()
+    const settings = await getPlatformSettingsServer()
     return NextResponse.json(settings, {
       status: 200,
       headers: {
@@ -14,4 +14,3 @@ export async function GET() {
     return NextResponse.json({ detail: err.message || 'Error fetching settings' }, { status: 500 })
   }
 }
-
