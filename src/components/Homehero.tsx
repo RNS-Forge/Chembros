@@ -14,6 +14,7 @@ import bottle4 from '../assets/bg/4.png'
 import MobileA from '../assets/bg/mobile.png'
 
 const DEFAULT_MOBILE_PORTRAIT = (MobileA as any)?.src || MobileA
+const HERO_BG_SRC = (angelWaterBg as any)?.src || angelWaterBg
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -66,7 +67,7 @@ export default function HomeHero() {
   const rightMetaRef = useRef<HTMLDivElement>(null)
   const bottleRefs = useRef<(HTMLAnchorElement | null)[]>([])
 
-  // Mobile Cinematic Targets
+  // Mobile Targets
   const mobileCardSlotRef = useRef<HTMLDivElement>(null)
   const mobileCardRef = useRef<HTMLDivElement>(null)
   const mobileCardImgRef = useRef<HTMLImageElement>(null)
@@ -95,16 +96,43 @@ export default function HomeHero() {
     setAnimKey((prev) => prev + 1)
   }, [])
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1. ASYNC ASSET PRELOADER (Instant Mobile Image & Cache Decryption)
+  // ─────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Inject high-priority preloader links in document head for instant retrieval
+    const preloadLinks = [DEFAULT_MOBILE_PORTRAIT, HERO_BG_SRC].map((src) => {
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'image'
+      link.href = src
+      document.head.appendChild(link)
+      return link
+    })
+
+    // Parallel GPU decode pass
+    const img = new Image()
+    img.src = DEFAULT_MOBILE_PORTRAIT
+    if ('decode' in img) {
+      img.decode().catch(() => {})
+    }
+
+    return () => {
+      preloadLinks.forEach((link) => link.remove())
+    }
+  }, [])
+
   useEffect(() => {
     const isMobile = window.innerWidth < 768
     const alreadyAnimated =
       typeof window !== 'undefined' &&
       sessionStorage.getItem('chembros_hero_animated') === 'true'
 
-    // Fallback timer: unlock within 2.5s regardless of browser/render quirks
     const watchdogTimer = setTimeout(() => {
       notifyComplete()
-    }, 2500)
+    }, 6000)
 
     // ─────────────────────────────────────────────────────────────────────────────
     // SCENARIO A: Already Animated in Session (Instant Layout)
@@ -147,7 +175,7 @@ export default function HomeHero() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO B: Mobile Cinematic Reveal (< 768px)
+    // SCENARIO B: Mobile Cinematic Reveal (< 768px) with 1.2s Fullscreen Hold
     // ─────────────────────────────────────────────────────────────────────────────
     if (isMobile) {
       const mobileCtx = gsap.context(() => {
@@ -173,9 +201,9 @@ export default function HomeHero() {
         const vh = window.innerHeight
 
         const targetW = rect.width > 50 ? rect.width : 340
-        const targetH = rect.height > 50 ? rect.height : 420
+        const targetH = rect.height > 50 ? rect.height : 360
         const targetLeft = rect.left || (vw - targetW) / 2
-        const targetTop = rect.top || 96
+        const targetTop = rect.top || 88
 
         const scale = Math.max(vw / targetW, vh / targetH)
         const deltaX = vw / 2 - (targetLeft + targetW / 2)
@@ -211,20 +239,20 @@ export default function HomeHero() {
           },
         })
 
-        // Stage 1: Cinematic pause
-        tl.to({}, { duration: 0.85 })
+        // 1. Initial 1.2s delay to take in the fullscreen portrait
+        tl.to({}, { duration: 1.2 })
 
-        // Stage 2: Dual Camera Pull-Back
+        // 2. Parallax camera pull-back
         tl.to(
           card,
           {
             x: 0,
             y: 0,
             scale: 1,
-            borderRadius: '32px',
+            borderRadius: '28px',
             duration: 1.45,
             ease: 'expo.inOut',
-            boxShadow: '0 25px 60px -15px rgba(0,0,0,0.22)',
+            boxShadow: '0 20px 48px -12px rgba(0,0,0,0.22)',
           },
           'zoom'
         )
@@ -247,7 +275,7 @@ export default function HomeHero() {
           'zoom'
         )
 
-        // Stage 3: Card Badges
+        // 3. Badges appear
         tl.to(
           badges,
           {
@@ -258,7 +286,7 @@ export default function HomeHero() {
           '-=0.45'
         )
 
-        // Stage 4: Typography Glide
+        // 4. Kinetic typography reveals
         tl.to(
           [headline, italic],
           {
@@ -312,7 +340,7 @@ export default function HomeHero() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO C: Desktop & Tablet Animation (>= 768px)
+    // SCENARIO C: Desktop & Tablet Animation (1.5s Hold on 4 Centered Bottles)
     // ─────────────────────────────────────────────────────────────────────────────
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia()
@@ -336,6 +364,7 @@ export default function HomeHero() {
           gsap.set(leftTextRef.current, { y: 35, opacity: 0 })
           gsap.set(rightMetaRef.current, { y: 25, opacity: 0 })
 
+          // Center all 4 bottles grouped together initially
           bottleRefs.current.forEach((el, index) => {
             if (!el) return
             gsap.set(el, {
@@ -343,31 +372,37 @@ export default function HomeHero() {
               yPercent: -50,
               left: '50%',
               top: '50%',
-              scale: 0.9 + index * 0.04,
+              scale: 0.88 + index * 0.04,
               zIndex: 160 + index,
               opacity: 0,
             })
           })
 
+          // 1. Bottles fade in centered
           tl.to(bottleRefs.current, {
             opacity: 1,
-            duration: 0.8,
-            stagger: 0.08,
+            duration: 0.9,
+            stagger: 0.1,
             ease: 'power2.out',
           })
 
+          // 2. HOLD FOR 1.5 SECONDS (Appreciable pause on all 4 bottles grouped)
+          tl.to({}, { duration: 1.5 })
+
+          // 3. Background graphic emerges
           tl.to(
             heroBgRef.current,
             {
               opacity: 1,
               y: 0,
               scale: 1,
-              duration: 1.4,
+              duration: 1.5,
               ease: 'power3.out',
             },
-            '-=0.4'
+            '-=0.3'
           )
 
+          // 4. Bottles disperse outward to their resting layout coordinates
           BOTTLES.forEach((bottle, idx) => {
             const el = bottleRefs.current[idx]
             if (!el) return
@@ -385,10 +420,11 @@ export default function HomeHero() {
                 duration: 1.8,
                 ease: 'power4.out',
               },
-              idx === 0 ? '-=1.4' : '-=1.6'
+              idx === 0 ? '-=1.4' : '-=1.65'
             )
           })
 
+          // 5. Typography and Meta Information Reveal
           tl.to(
             leftTextRef.current,
             {
@@ -422,7 +458,7 @@ export default function HomeHero() {
     <section
       ref={containerRef}
       id="home-hero-section"
-      className="w-full h-[100dvh] md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex flex-col items-center overflow-x-hidden"
+      className="w-full min-h-[100dvh] h-auto md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex flex-col items-center z-10"
     >
       {/* Top Floating Navigation */}
       <div className="w-full fixed top-0 left-0 right-0 z-[70] pointer-events-auto">
@@ -449,8 +485,10 @@ export default function HomeHero() {
             className={`w-full h-full object-cover object-top select-none pointer-events-none absolute inset-0 z-0 will-change-transform ${
               loadingFinished ? 'opacity-100' : 'opacity-0'
             }`}
-            src={(angelWaterBg as any)?.src || angelWaterBg}
+            src={HERO_BG_SRC}
             alt="Chembros Hero Graphic"
+            fetchPriority="high"
+            loading="eager"
             draggable={false}
           />
 
@@ -488,6 +526,7 @@ export default function HomeHero() {
                   }`}
                   src={bottle.img}
                   alt={bottle.name}
+                  fetchPriority="high"
                   draggable={false}
                 />
               </Link>
@@ -542,25 +581,27 @@ export default function HomeHero() {
       </div>
 
       {/* =========================================================================
-          MOBILE VIEWPORT (< 768px): ZERO-SNAP UNIFIED ZOOM-OUT
+          MOBILE VIEWPORT (< 768px): ZERO OVERLAP WITH FULLSCREEN PULL-BACK
           ========================================================================= */}
-      <div className="md:hidden w-full h-[100dvh] flex flex-col justify-between items-center px-6 pt-24 pb-6 relative z-10 overflow-hidden">
+      <div className="md:hidden w-full min-h-[100dvh] flex flex-col justify-between items-center px-5 pt-20 pb-8 relative z-20">
         
-        {/* Top: Card Plinth Slot */}
+        {/* Top: Card Plinth Slot with responsive max-height */}
         <div
           ref={mobileCardSlotRef}
-          className="w-full max-w-[340px] aspect-[3/3.75] shrink-0 relative flex items-center justify-center"
+          className="w-full max-w-[330px] h-[340px] max-h-[46vh] shrink-0 relative flex items-center justify-center mt-1"
         >
           <div
             ref={mobileCardRef}
-            className="w-full h-full relative rounded-[32px] overflow-hidden bg-neutral-900 will-change-transform [backface-visibility:hidden]"
+            className="w-full h-full relative rounded-[28px] overflow-hidden bg-neutral-900 will-change-transform [backface-visibility:hidden]"
           >
-            {/* Portrait Image */}
+            {/* Portrait Image (Eager loaded with high fetchPriority) */}
             <img
               ref={mobileCardImgRef}
               src={DEFAULT_MOBILE_PORTRAIT}
               alt="Chembros Molecular Fragrance"
-              className="w-full h-full object-cover object-[center_22%] pointer-events-none select-none will-change-transform [backface-visibility:hidden]"
+              fetchPriority="high"
+              loading="eager"
+              className="w-full h-full object-cover object-[center_20%] pointer-events-none select-none will-change-transform [backface-visibility:hidden]"
               draggable={false}
             />
 
@@ -576,7 +617,7 @@ export default function HomeHero() {
               className="absolute inset-0 pointer-events-none"
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none">
+              <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none">
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
                   ARCHIVE // 2026
@@ -587,11 +628,11 @@ export default function HomeHero() {
           </div>
         </div>
 
-        {/* Middle: Kinetic Typography */}
-        <div className="w-full max-w-[340px] flex flex-col my-auto text-left space-y-2">
+        {/* Middle: Kinetic Typography with snug vertical spacing */}
+        <div className="w-full max-w-[330px] flex flex-col text-left space-y-1.5 my-3">
           
           <div className="overflow-hidden">
-            <div className="text-[9px] font-mono tracking-[0.28em] uppercase text-black/50">
+            <div className="text-[9px] font-mono tracking-[0.25em] uppercase text-black/50">
               4 SCENTS · INFINITE POSSIBILITIES
             </div>
           </div>
@@ -599,7 +640,7 @@ export default function HomeHero() {
           <div className="overflow-hidden">
             <h1
               ref={mobileHeadlineRef}
-              className="text-black text-[clamp(24px,6.8vw,30px)] font-normal font-['Conquera',sans-serif] leading-[1.04] uppercase tracking-wider will-change-transform"
+              className="text-black text-[clamp(22px,6.2vw,27px)] font-normal font-['Conquera',sans-serif] leading-[1.06] uppercase tracking-wider will-change-transform"
             >
               Chemistry captured
             </h1>
@@ -608,7 +649,7 @@ export default function HomeHero() {
           <div className="overflow-hidden">
             <div
               ref={mobileItalicRef}
-              className="text-[clamp(21px,5.8vw,26px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90 leading-[1.1] will-change-transform"
+              className="text-[clamp(19px,5.4vw,23px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90 leading-[1.08] will-change-transform"
             >
               in a bottle.
             </div>
@@ -616,7 +657,7 @@ export default function HomeHero() {
 
           <p
             ref={mobileSubRef}
-            className="text-black/65 text-xs font-thin font-['FONTSPRING_DEMO_-_Lufga_Thin','Poppins',sans-serif] leading-relaxed pt-1"
+            className="text-black/65 text-[11px] leading-relaxed pt-0.5"
           >
             Where science meets scent. Explore our pure extrait molecular series.
           </p>
@@ -624,17 +665,17 @@ export default function HomeHero() {
           <div ref={mobileCtaRef} className="pt-2">
             <Link
               to="/fragrances"
-              className="w-full h-12 bg-black hover:bg-neutral-900 active:scale-[0.98] text-white rounded-full flex items-center justify-center font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-xs font-semibold tracking-[0.22em] uppercase shadow-[0_12px_24px_rgba(0,0,0,0.14)] transition-all duration-300"
+              className="w-full h-11 bg-black hover:bg-neutral-900 active:scale-[0.98] text-white rounded-full flex items-center justify-center font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-xs font-semibold tracking-[0.22em] uppercase shadow-[0_10px_20px_rgba(0,0,0,0.12)] transition-all duration-300"
             >
               Explore Collection
             </Link>
           </div>
         </div>
 
-        {/* Bottom: Minimal Scroll Indicator */}
+        {/* Bottom: Minimal Scroll Indicator with clear buffer above HomeProduct */}
         <div
           ref={mobileMetaRef}
-          className="w-full max-w-[340px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-2 shrink-0"
+          className="w-full max-w-[330px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-1 shrink-0"
         >
           <span>CHEMBROS © 2026</span>
           <span className="flex items-center gap-1 font-semibold text-black/70 animate-bounce">
