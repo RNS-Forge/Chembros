@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Customer name, email, phone, and shipping address are required.' }, { status: 400 })
     }
 
-    const settings = getPlatformSettingsServer()
+    const settings = await getPlatformSettingsServer()
     const currentUser = await getUserFromAuthHeader(req)
 
     // 1. Guest Checkout Enforcement

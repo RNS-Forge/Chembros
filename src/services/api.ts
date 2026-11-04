@@ -2004,7 +2004,7 @@ export async function getPlatformSettingsApi(): Promise<PlatformSettings> {
   } catch {}
 
   try {
-    const res = await fetch(`${API_BASE_URL}/settings`, { cache: 'no-store' })
+    const res = await fetch(`${API_BASE_URL}/api/settings`, { cache: 'no-store' })
     if (res.ok) {
       const serverSettings = await res.json()
       if (serverSettings && typeof serverSettings === 'object') {
@@ -2022,7 +2022,7 @@ export async function updatePlatformSettingsApi(newSettings: Partial<PlatformSet
   const merged: PlatformSettings = { ...current, ...newSettings }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+    const res = await fetch(`${API_BASE_URL}/api/admin/settings`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(merged),
