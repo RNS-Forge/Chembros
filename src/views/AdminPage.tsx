@@ -554,10 +554,10 @@ export default function AdminPage() {
     try {
       if (editingProduct) {
         await updateAdminProductApi(editingProduct.id, productForm)
-        setSaveFeedback(`Fragrance "${productForm.name}" updated successfully.`)
+        setSaveFeedback(`Product "${productForm.name}" updated successfully.`)
       } else {
         await createAdminProductApi(productForm)
-        setSaveFeedback(`Fragrance "${productForm.name}" decanted to catalog.`)
+        setSaveFeedback(`Product "${productForm.name}" added to catalog successfully.`)
       }
       setIsAddModalOpen(false)
       setEditingProduct(null)
@@ -674,7 +674,7 @@ export default function AdminPage() {
       courier: initialCourier,
       tracking_number: initialTrackingNumber,
       status: (order.order_status === 'Delivered' ? 'Delivered' : 'Shipped') as 'Shipped' | 'Delivered',
-      dispatch_notes: 'Packaged in tamper-evident flacon presentation box.',
+      dispatch_notes: 'Packed securely in protective packaging.',
     })
   }
 
@@ -954,18 +954,7 @@ export default function AdminPage() {
               <span>Clients ({adminUsers.length})</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab('logs')}
-              className={`px-5 py-3.5 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                activeTab === 'logs'
-                  ? 'bg-black text-white font-semibold shadow-inner'
-                  : 'text-neutral-700 hover:text-black hover:bg-neutral-100'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Audit Logs</span>
-            </button>
+
 
             <button
               type="button"
@@ -1007,7 +996,7 @@ export default function AdminPage() {
               type="button"
               onClick={logout}
               className="px-5 py-3.5 text-red-600 hover:text-white hover:bg-red-600 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer font-medium"
-              title="Sign Out of Atelier Console"
+              title="Sign Out of Admin Console"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
@@ -1017,7 +1006,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-10 py-6">
         {/* Top Header Information Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-200 mb-8">
           <div>
@@ -1086,11 +1075,11 @@ export default function AdminPage() {
 
               <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-neutral-500">
-                  <span className="text-[11px] uppercase tracking-wider font-semibold">Catalog Formulations</span>
+                  <span className="text-[11px] uppercase tracking-wider font-semibold">Catalog Products</span>
                   <Package className="w-4 h-4 text-neutral-400" />
                 </div>
                 <div className="text-2xl font-bold font-mono text-black">{stats?.total_products || products.length}</div>
-                <p className="text-[10px] text-neutral-500 font-mono">Active Extrait Formulations</p>
+                <p className="text-[10px] text-neutral-500 font-mono">Active Products</p>
               </div>
 
               <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-3xl space-y-2 shadow-xs">
@@ -1101,7 +1090,7 @@ export default function AdminPage() {
                 <div className="text-2xl font-bold font-mono text-amber-600">
                   {stats?.low_stock_count || products.filter((p) => p.stock <= 10).length}
                 </div>
-                <p className="text-[10px] text-neutral-500 font-mono">Units below 10 flacons</p>
+                <p className="text-[10px] text-neutral-500 font-mono">Low Stock Alerts (Under 10 units)</p>
               </div>
             </div>
 
@@ -1195,7 +1184,7 @@ export default function AdminPage() {
                   </span>
                 </h2>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  Manage pricing, client delivery charges, formulation notes, and flacon stock.
+                  Manage pricing, delivery fees, fragrance notes, and stock levels.
                 </p>
               </div>
 
@@ -1319,7 +1308,7 @@ export default function AdminPage() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>
-                      <th className="py-3 px-4 font-semibold">Flacon</th>
+                      <th className="py-3 px-4 font-semibold">Product</th>
                       <th className="py-3 px-4 font-semibold">Fragrance</th>
                       <th className="py-3 px-4 font-semibold">Family / Notes</th>
                       <th className="py-3 px-4 font-semibold">Selling Price (₹)</th>
@@ -1608,7 +1597,7 @@ export default function AdminPage() {
                                   type="button"
                                   onClick={() => handleDeleteProduct(p.id, p.name)}
                                   className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
-                                  title="Delete Formulation"
+                                  title="Delete Product"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1766,19 +1755,19 @@ export default function AdminPage() {
             {/* Table Container */}
             <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs uppercase tracking-wider">
                     <tr>
-                      <th className="py-3 px-4 font-semibold">Order #</th>
-                      <th className="py-3 px-4 font-semibold">Created At</th>
-                      <th className="py-3 px-4 font-semibold">Customer / Contact</th>
-                      <th className="py-3 px-4 font-semibold">Destination Address</th>
-                      <th className="py-3 px-4 font-semibold">Subtotal (₹)</th>
-                      <th className="py-3 px-4 font-semibold">Delivery Fee (₹)</th>
-                      <th className="py-3 px-4 font-semibold">Total Amount (₹)</th>
-                      <th className="py-3 px-4 font-semibold">Payment</th>
-                      <th className="py-3 px-4 font-semibold">Fulfillment Status</th>
-                      <th className="py-3 px-4 font-semibold text-right">Edit</th>
+                      <th className="py-4 px-5 font-bold">Order #</th>
+                      <th className="py-4 px-5 font-bold">Date & Time</th>
+                      <th className="py-4 px-5 font-bold">Customer Details</th>
+                      <th className="py-4 px-5 font-bold">Shipping Address</th>
+                      <th className="py-4 px-5 font-bold">Subtotal</th>
+                      <th className="py-4 px-5 font-bold">Delivery</th>
+                      <th className="py-4 px-5 font-bold">Total</th>
+                      <th className="py-4 px-5 font-bold">Payment</th>
+                      <th className="py-4 px-5 font-bold">Order Status</th>
+                      <th className="py-4 px-5 font-bold text-right">Action</th>
                     </tr>
 
                     {orderColSearch && (
@@ -1926,38 +1915,42 @@ export default function AdminPage() {
                       </tr>
                     ) : (
                       filteredOrders.map((o) => (
-                        <tr key={o.id} className="hover:bg-[#faf8fd] transition-colors">
-                          <td className="py-3 px-4 font-mono font-bold text-xs text-black whitespace-nowrap">
+                        <tr key={o.id} className="hover:bg-[#faf8fd] transition-colors border-b border-neutral-100">
+                          <td className="py-4 px-5 font-mono font-bold text-sm text-black whitespace-nowrap">
                             #{o.order_number}
                           </td>
-                          <td className="py-3 px-4 text-[11px] text-neutral-600 whitespace-nowrap">
-                            {new Date(o.created_at).toLocaleString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                          <td className="py-4 px-5 text-xs text-neutral-600 whitespace-nowrap">
+                            <span className="font-medium text-neutral-800 block">
+                              {new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                            <span className="text-[11px] text-neutral-400">
+                              {new Date(o.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </td>
-                          <td className="py-3 px-4">
-                            <p className="font-semibold text-xs text-black">{o.customer_name}</p>
-                            <p className="text-[10px] text-neutral-500 font-mono">{o.customer_email}</p>
-                            <p className="text-[10px] text-neutral-400 font-mono">{o.customer_phone}</p>
+                          <td className="py-4 px-5">
+                            <p className="font-bold text-sm text-neutral-900">{o.customer_name}</p>
+                            <p className="text-xs text-neutral-500 font-mono">{o.customer_email}</p>
+                            <p className="text-xs text-neutral-500 font-mono">{o.customer_phone}</p>
                           </td>
-                          <td className="py-3 px-4 max-w-xs text-[11px] text-neutral-600 truncate" title={o.shipping_address}>
-                            {o.shipping_address}
+                          <td className="py-4 px-5 max-w-sm text-xs text-neutral-600" title={o.shipping_address}>
+                            <p className="line-clamp-2 leading-relaxed">{o.shipping_address}</p>
                           </td>
-                          <td className="py-3 px-4 font-mono text-xs text-neutral-700">
+                          <td className="py-4 px-5 font-mono text-sm text-neutral-700 whitespace-nowrap">
                             ₹{o.subtotal?.toLocaleString('en-IN') ?? 0}
                           </td>
-                          <td className="py-3 px-4 font-mono text-xs text-[#4a2e70] font-semibold">
-                            {o.shipping_fee === 0 ? 'Complimentary' : `₹${o.shipping_fee}`}
+                          <td className="py-4 px-5 font-mono text-xs font-semibold whitespace-nowrap">
+                            {o.shipping_fee === 0 ? (
+                              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Free</span>
+                            ) : (
+                              <span className="text-[#4a2e70]">₹{o.shipping_fee}</span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 font-mono font-bold text-xs text-black">
+                          <td className="py-4 px-5 font-mono font-bold text-sm text-black whitespace-nowrap">
                             ₹{o.total_amount?.toLocaleString('en-IN') ?? 0}
                           </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
+                          <td className="py-4 px-5 whitespace-nowrap">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              className={`px-2.5 py-1 rounded text-xs font-bold uppercase ${
                                 o.payment_status === 'PAID'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : 'bg-amber-100 text-amber-800'
@@ -1969,7 +1962,7 @@ export default function AdminPage() {
                               {(o as any).payment_method || 'Cashfree'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
+                          <td className="py-4 px-5 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <select
                                 value={o.order_status}
@@ -2015,7 +2008,7 @@ export default function AdminPage() {
                               </div>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <td className="py-4 px-5 text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => openDispatchModal(o)}
@@ -2043,7 +2036,7 @@ export default function AdminPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2">
               <div>
                 <h2 className="text-lg font-bold text-[#3d2757] font-sans flex items-center gap-2">
-                  <span>Specimen Clients & User Accounts</span>
+                  <span>Customers & User Accounts</span>
                   <span className="text-xs px-2 py-0.5 bg-[#f4effc] text-[#4a2e70] rounded-full border border-[#dcd0ee] font-mono">
                     {filteredUsers.length}
                   </span>
@@ -2077,11 +2070,11 @@ export default function AdminPage() {
                   type="button"
                   onClick={() =>
                     exportToPdfPrintable(
-                      'Specimen Clients',
+                      'Registered Customers',
                       ['ID', 'Name', 'Email', 'Main Phone', 'Secondary Phone', 'City', 'Role', 'Status'],
                       filteredUsers.map((u) => [
                         u.id,
-                        u.name || 'Anonymous Specimen',
+                        u.name || 'Customer',
                         u.email,
                         u.phone || '-',
                         u.secondary_phone || '-',
@@ -2176,7 +2169,7 @@ export default function AdminPage() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>
-                      <th className="py-3 px-4 font-semibold">Client / Specimen</th>
+                      <th className="py-3 px-4 font-semibold">Customer</th>
                       <th className="py-3 px-4 font-semibold">Email Address</th>
                       <th className="py-3 px-4 font-semibold">Phone (Main & Alternate)</th>
                       <th className="py-3 px-4 font-semibold">Location / Delivery City</th>
@@ -2323,7 +2316,7 @@ export default function AdminPage() {
                                 )}
                                 <div>
                                   <p className="font-semibold text-black text-xs font-['Cinzel',serif]">
-                                    {u.name || 'Anonymous Specimen'}
+                                    {u.name || 'Customer'}
                                   </p>
                                   <span className="text-[10px] text-neutral-400 font-mono">ID #{u.id}</span>
                                 </div>
@@ -2367,7 +2360,7 @@ export default function AdminPage() {
                                 {isActive ? 'Active' : 'Deactivated'}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <td className="py-4 px-5 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
@@ -2655,9 +2648,9 @@ export default function AdminPage() {
                           <td className="py-3 px-4 font-mono text-[11px] text-neutral-500">
                             {l.user_email || 'System Dispatcher'}
                           </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
+                          <td className="py-4 px-5 whitespace-nowrap">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              className={`px-2.5 py-1 rounded text-xs font-bold uppercase ${
                                 l.status === 'SUCCESS'
                                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                                   : l.status === 'WARNING'
@@ -3601,14 +3594,14 @@ export default function AdminPage() {
            ======================================================== */}
         {dispatchModalOrder && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-neutral-200 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-neutral-200 shadow-2xl space-y-5">
               <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
                 <div>
                   <h3 className="font-['Cinzel',serif] text-lg font-bold text-black uppercase">
                     Dispatch Shipment & Delivery Tracking
                   </h3>
                   <p className="text-xs text-neutral-500 font-mono">
-                    Order #{dispatchModalOrder.order_number} · Subtotal ₹{dispatchModalOrder.subtotal} · Delivery Fee ₹{dispatchModalOrder.shipping_fee}
+                    Order #{dispatchModalOrder.order_number} • Total ₹{dispatchModalOrder.total_amount}
                   </p>
                 </div>
                 <button
@@ -3622,7 +3615,7 @@ export default function AdminPage() {
 
               <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-2 text-xs">
                 <div className="flex justify-between items-center text-neutral-500">
-                  <span>Client:</span>
+                  <span>Customer:</span>
                   <span className="font-semibold text-black">{dispatchModalOrder.customer_name}</span>
                 </div>
                 <div className="flex justify-between items-center text-neutral-500">
@@ -3630,7 +3623,7 @@ export default function AdminPage() {
                   <span className="font-mono text-black">{dispatchModalOrder.customer_phone}</span>
                 </div>
                 <div className="flex justify-between items-start text-neutral-500 pt-1 border-t border-neutral-200">
-                  <span className="shrink-0 mr-2">Destination:</span>
+                  <span className="shrink-0 mr-2">Shipping Address:</span>
                   <span className="text-right text-neutral-800 leading-snug">{dispatchModalOrder.shipping_address}</span>
                 </div>
               </div>
@@ -3762,10 +3755,10 @@ export default function AdminPage() {
            ======================================================== */}
         {isAddModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-neutral-200 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-4xl w-full border border-neutral-200 shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
                 <h3 className="font-['Cinzel',serif] text-xl font-bold text-black">
-                  {editingProduct ? 'Edit Fragrance Formulation' : 'Decant New Fragrance'}
+                  {editingProduct ? 'Edit Product Details' : 'Add New Product'}
                 </h3>
                 <button
                   type="button"
@@ -3779,7 +3772,7 @@ export default function AdminPage() {
               <form onSubmit={handleSaveProduct} className="mt-6 space-y-4 text-xs">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-                    Flacon Artwork *
+                    Product Image *
                   </label>
                   <div className="flex items-center gap-6 p-4 bg-neutral-50 rounded-2xl border border-neutral-300">
                     <div className="w-20 h-24 bg-white rounded-xl border border-neutral-200 flex items-center justify-center p-2 shrink-0 overflow-hidden">
@@ -3802,7 +3795,7 @@ export default function AdminPage() {
                         />
                       </label>
                       <p className="text-[11px] text-neutral-500">
-                        Select any PNG, JPG, or SVG image. Encoded to Base64 and stored directly in database.
+                        Select a JPG, PNG, or WebP image. Will be uploaded and saved to the product catalog.
                       </p>
                     </div>
                   </div>
@@ -3811,7 +3804,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Fragrance Name *
+                      Product Name *
                     </label>
                     <input
                       type="text"
@@ -3825,7 +3818,7 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Subtitle / Origin
+                      Short Description / Tagline
                     </label>
                     <input
                       type="text"
@@ -3881,7 +3874,7 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Stock Units *
+                      Stock (Units) *
                     </label>
                     <input
                       type="number"
@@ -3912,7 +3905,7 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Concentration
+                      Fragrance Type (e.g. Eau de Parfum)
                     </label>
                     <input
                       type="text"
@@ -3938,7 +3931,7 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Top Notes (Opening)
+                    Top Notes
                   </label>
                   <input
                     type="text"
@@ -3951,7 +3944,7 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Heart Notes (Identity)
+                    Heart / Middle Notes
                   </label>
                   <input
                     type="text"
@@ -3964,7 +3957,7 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Base Notes (Longevity)
+                    Base Notes
                   </label>
                   <input
                     type="text"
@@ -3977,13 +3970,13 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Description & Chemistry Narrative
+                    Product Description
                   </label>
                   <textarea
                     rows={2}
                     value={productForm.description}
                     onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                    placeholder="Artisanal olfactory breakdown..."
+                    placeholder="Enter complete product description..."
                     className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                   />
                 </div>
@@ -4000,7 +3993,7 @@ export default function AdminPage() {
                     type="submit"
                     className="flex-1 py-2.5 px-4 rounded-xl bg-[#4a2e70] hover:bg-[#3b245e] text-white font-semibold uppercase tracking-wider cursor-pointer shadow-xs"
                   >
-                    {editingProduct ? 'Save Changes' : 'Decant Product'}
+                    {editingProduct ? 'Save Changes' : 'Add Product'}
                   </button>
                 </div>
               </form>

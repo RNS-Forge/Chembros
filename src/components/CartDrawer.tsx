@@ -68,7 +68,7 @@ export default function CartDrawer() {
                 <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4 text-neutral-400">
                   <ShoppingBag className="w-8 h-8 stroke-1" />
                 </div>
-                <h3 className="font-['Cinzel',serif] text-base font-bold text-neutral-800">Your flacon collection is empty</h3>
+                <h3 className="font-['Cinzel',serif] text-base font-bold text-neutral-800">Your shopping cart is empty</h3>
                 <p className="text-xs text-neutral-500 mt-1 max-w-xs font-['Inter',sans-serif]">
                   Discover the exquisite chemistry of our concentrated extraits.
                 </p>

@@ -141,8 +141,8 @@
   .totals .row span:last-child { color: var(--ink); }
   .totals .total {
     border-top: 2px solid var(--rule);
-    margin-top: 8px;
-    padding-top: 10px;
+    margin-top: 12px;
+    padding-top: 14px;
     color: var(--ink);
     font-weight: 700;
     font-size: 13px;
@@ -217,7 +217,7 @@
     </thead>
     <tbody id="items-tbody">
       <tr>
-        <td class="item">Loading formulation details...</td>
+        <td class="item">Loading order details...</td>
         <td>33030050</td>
         <td>₹0</td>
         <td>1</td>
@@ -345,7 +345,7 @@
       tbody.innerHTML = rowsHtml;
     } else {
       subtotal = Number(order.subtotal) || 1299;
-      tbody.innerHTML = '<tr><td class="item">Extrait de Parfum Formulation</td><td>33030050</td><td>₹' + subtotal.toLocaleString('en-IN') + '</td><td>1</td><td>₹' + subtotal.toLocaleString('en-IN') + '</td></tr><tr class="sub"><td colspan="5">Bespoke Molecular Extrait Formulation</td></tr>';
+      tbody.innerHTML = '<tr><td class="item">Luxury Eau de Parfum</td><td>33030050</td><td>₹' + subtotal.toLocaleString('en-IN') + '</td><td>1</td><td>₹' + subtotal.toLocaleString('en-IN') + '</td></tr><tr class="sub"><td colspan="5">Signature Chembros Perfume</td></tr>';
     }
 
     // Totals with 18% inclusive GST

@@ -48,7 +48,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="w-32 h-44 bg-neutral-100 rounded-lg flex items-center justify-center text-xs text-neutral-400">
-              CHEM BROS FLACON
+              CHEM BROS LUXURY PERFUME
             </div>
           )}
         </div>

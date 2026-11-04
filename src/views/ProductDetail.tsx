@@ -394,7 +394,7 @@ export default function ProductDetail() {
                   Select Bottle Size
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {['30ml Extrait', '50ml Signature', '100ml Luxury Flacon'].map((size) => (
+                  {['30ml Travel', '50ml Signature', '100ml Luxury'].map((size) => (
                     <button
                       key={size}
                       type="button"

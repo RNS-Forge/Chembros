@@ -1549,16 +1549,31 @@ export async function getAdminStatsApi(): Promise<AdminStats> {
 }
 
 export async function createAdminProductApi(product: Partial<Product>): Promise<Product> {
+  const { id: _omitId, ...cleanData } = product as any
+
+  try {
+    const res = await request<Product>('/api/admin/products', {
+      method: 'POST',
+      body: JSON.stringify(cleanData),
+    })
+    const created = attachDeliveryFee(res)
+    upsertCachedProduct(created)
+    return created
+  } catch (backendErr) {
+    console.warn('Backend createAdminProduct error, trying Supabase direct:', backendErr)
+  }
+
   try {
     const insertData = {
       name: product.name,
       subtitle: product.subtitle,
-      price: product.price,
-      original_price: product.original_price,
+      price: Number(product.price) || 0,
+      original_price: Number(product.original_price) || Number(product.price) || 0,
+      delivery_fee: Number(product.delivery_fee) || 0,
       stock: product.stock ?? 50,
-      category: product.category || 'Extrait de Parfum',
+      category: product.category || 'Eau de Parfum',
       fragrance_family: product.fragrance_family || 'Woody',
-      concentration: product.concentration || '30% Extrait de Parfum',
+      concentration: product.concentration || 'Eau de Parfum (EDP)',
       volume_ml: product.volume_ml ?? 50,
       top_notes: product.top_notes,
       heart_notes: product.heart_notes,
@@ -1576,6 +1591,7 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
       is_featured: Boolean(product.is_featured),
       sales_count: product.sales_count ?? 0,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
 
     const { data, error } = await supabase.from('products').insert(insertData).select().single()
@@ -1585,28 +1601,38 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
       upsertCachedProduct(created)
       return created
     }
+    if (error) throw new Error(error.message)
   } catch (err) {
-    console.warn('Supabase createAdminProduct fallback to backend:', err)
+    console.error('Supabase createAdminProduct failed:', err)
+    throw err
   }
 
-  const fbProd = await request<Product>('/api/admin/products', {
-    method: 'POST',
-    body: JSON.stringify(product),
-  })
-  const created = attachDeliveryFee(fbProd)
-  upsertCachedProduct(created)
-  return created
+  throw new Error('Failed to create product')
 }
 
 export async function updateAdminProductApi(
   productId: number | string,
   product: Partial<Product>
 ): Promise<Product> {
+  const { id: _omitId, ...cleanData } = product as any
+
+  try {
+    const res = await request<Product>(`/api/admin/products/${productId}`, {
+      method: 'PUT',
+      body: JSON.stringify(cleanData),
+    })
+    const updated = attachDeliveryFee(res)
+    upsertCachedProduct(updated)
+    return updated
+  } catch (backendErr) {
+    console.warn('Backend updateAdminProduct error, trying Supabase direct:', backendErr)
+  }
+
   try {
     const { data, error } = await supabase
       .from('products')
       .update({
-        ...product,
+        ...cleanData,
         updated_at: new Date().toISOString(),
       })
       .eq('id', Number(productId))
@@ -1618,17 +1644,13 @@ export async function updateAdminProductApi(
       upsertCachedProduct(updated)
       return updated
     }
+    if (error) throw new Error(error.message)
   } catch (err) {
-    console.warn('Supabase updateAdminProduct fallback to backend:', err)
+    console.error('Supabase updateAdminProduct failed:', err)
+    throw err
   }
 
-  const fbProd = await request<Product>(`/api/admin/products/${productId}`, {
-    method: 'PUT',
-    body: JSON.stringify(product),
-  })
-  const updated = attachDeliveryFee(fbProd)
-  upsertCachedProduct(updated)
-  return updated
+  throw new Error('Failed to update product')
 }
 
 export async function updateProductStockApi(productId: number | string, stock: number): Promise<Product> {

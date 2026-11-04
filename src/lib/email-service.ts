@@ -131,7 +131,7 @@ export async function sendOtpEmail(
 ): Promise<boolean> {
   const badge = options?.purpose ? options.purpose.toUpperCase() : 'AUTHENTICATION PASSCODE'
   const headline = options?.headline || 'Sign in to Chembros Parfums'
-  const message = options?.message || 'Enter the one-time verification passcode below to access your bespoke formulations, orders, and laboratory archive.'
+  const message = options?.message || 'Enter the one-time verification passcode below to access your Chembros account, orders, and profile.'
   const subject = options?.purpose ? `Chembros ${options.purpose}: ${otp_code}` : `Chembros Access Passcode: ${otp_code}`
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -494,11 +494,11 @@ function buildOrderHtml(params: {
                             <td style="font-size: 14px; font-weight: 700; color: #000000; text-align: right; padding: 4px 0; font-family: monospace;">#${params.orderNumber}</td>
                         </tr>
                         <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Client Name</td>
+                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Customer Name</td>
                             <td style="font-size: 13px; font-weight: 600; color: #18181b; text-align: right; padding: 4px 0;">${params.customerName}</td>
                         </tr>
                         <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Fulfillment Status</td>
+                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Order Status</td>
                             <td style="font-size: 12px; font-weight: 700; color: #000000; text-align: right; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">${params.titleBadge}</td>
                         </tr>
                     </table>
@@ -508,7 +508,7 @@ function buildOrderHtml(params: {
 
                 <div style="margin-bottom: 24px;">
                     <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #18181b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e4e4e7;">
-                        Curated Formulations
+                        Items Ordered
                     </div>
                     <div style="font-size: 13px; line-height: 1.7; color: #3f3f46; white-space: pre-line;">
                         ${params.itemsSummary}
@@ -516,7 +516,7 @@ function buildOrderHtml(params: {
                 </div>
 
                 <div style="border-top: 2px solid #000000; padding-top: 18px; text-align: right;">
-                    <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #71717a; margin-right: 12px;">Total Acquisition:</span>
+                    <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #71717a; margin-right: 12px;">Total Amount:</span>
                     <span style="font-size: 22px; font-weight: 800; color: #000000;">Rs. ${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
             </td>
@@ -547,9 +547,9 @@ export async function sendOrderPlacedEmail(params: {
   const subject = `Chembros Order #${params.orderNumber} Received & Confirmed`
   const html = buildOrderHtml({
     titleBadge: '1. ORDER PLACED',
-    headline: `Your Flacon Order is Confirmed, ${params.customerName}`,
+    headline: `Your Chembros Order is Confirmed, ${params.customerName}`,
     messageText:
-      'Your luxury fragrance order has been received. Our olfactory chemists have commenced formulating and hand-decanting your selection with white-glove care.',
+      'Thank you for shopping with Chembros! Your luxury perfume order has been confirmed and is being carefully prepared for dispatch.',
     stageNum: 1,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -573,7 +573,7 @@ export async function sendPaymentDoneEmail(params: {
   const html = buildOrderHtml({
     titleBadge: '2. PAYMENT CONFIRMED',
     headline: `Payment Received for Order #${params.orderNumber}`,
-    messageText: `Your transaction of Rs. ${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} has been verified and settled via Cashfree PG. Your formulation order has been locked into the laboratory decanting queue.`,
+    messageText: `Your payment of Rs. ${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} has been received successfully. Your order is confirmed and being packed for delivery.`,
     stageNum: 2,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -598,9 +598,9 @@ export async function sendOrderShippedEmail(params: {
   const subject = `Your Chembros Order #${params.orderNumber} Has Been Shipped`
   const html = buildOrderHtml({
     titleBadge: '3. DISPATCHED & SHIPPED',
-    headline: `Your Bespoke Fragrance Has Shipped, ${params.customerName}`,
+    headline: `Your Chembros Order Has Shipped, ${params.customerName}`,
     messageText:
-      'Your handcrafted extrait flacons have passed our final olfactory inspection and have been handed to our secure courier partner for expedited white-glove transit.',
+      'Your perfumes have been packed securely and handed over to our courier partner for express delivery.',
     stageNum: 3,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -629,7 +629,7 @@ export async function sendDeliveryTodayEmail(params: {
     titleBadge: '4. DELIVERY BY TODAY',
     headline: `Your Package is Arriving Today, ${params.customerName}`,
     messageText:
-      'Your Chembros acquisition is out for delivery today. Our courier representative will arrive at your designated destination to deliver your luxury flacon.',
+      'Your Chembros package is out for delivery today! Our delivery representative will arrive at your shipping address soon.',
     stageNum: 4,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -655,7 +655,7 @@ export async function sendOrderDeliveredEmail(params: {
     titleBadge: '5. SAFELY DELIVERED',
     headline: `Your Chembros Parcel Has Arrived, ${params.customerName}`,
     messageText:
-      'Your handcrafted molecular flacons have arrived safely at your destination. Allow the formulation to rest at room temperature before experiencing its evolving olfactory architecture.',
+      'Your Chembros luxury perfumes have been delivered safely. We hope you enjoy your exquisite new fragrances. Thank you for choosing Chembros!',
     stageNum: 5,
     orderNumber: params.orderNumber,
     customerName: params.customerName,
@@ -724,11 +724,11 @@ export async function sendOrderCancelledEmail(params: {
                             <td style="font-size: 14px; font-weight: 700; color: #000000; text-align: right; padding: 4px 0; font-family: monospace;">#${params.orderNumber}</td>
                         </tr>
                         <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Client Name</td>
+                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Customer Name</td>
                             <td style="font-size: 13px; font-weight: 600; color: #18181b; text-align: right; padding: 4px 0;">${params.customerName}</td>
                         </tr>
                         <tr>
-                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Fulfillment Status</td>
+                            <td style="font-size: 12px; color: #71717a; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">Order Status</td>
                             <td style="font-size: 12px; font-weight: 700; color: #b91c1c; text-align: right; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px;">CANCELLED</td>
                         </tr>
                     </table>
@@ -738,7 +738,7 @@ export async function sendOrderCancelledEmail(params: {
 
                 <div style="margin-bottom: 24px;">
                     <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #18181b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e4e4e7;">
-                        Cancelled Formulations
+                        Cancelled Items
                     </div>
                     <div style="font-size: 13px; line-height: 1.7; color: #3f3f46; white-space: pre-line;">
                         ${params.itemsSummary}

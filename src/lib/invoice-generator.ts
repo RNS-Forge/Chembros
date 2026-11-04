@@ -112,13 +112,13 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false):
         })
         .join('\n')
     : `      <tr>
-        <td class="item">Extrait de Parfum Formulation</td>
+        <td class="item">Luxury Eau de Parfum</td>
         <td>33030050</td>
         <td>₹${subtotal.toLocaleString('en-IN')}</td>
         <td>1</td>
         <td>₹${subtotal.toLocaleString('en-IN')}</td>
       </tr>
-      <tr class="sub"><td colspan="5">Bespoke Molecular Extrait Formulation</td></tr>`
+      <tr class="sub"><td colspan="5">Signature Chembros Perfume</td></tr>`
 
   const statusBadge = isPaid
     ? '<span class="paid">Paid</span>'
@@ -269,8 +269,8 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false):
   .totals .row span:last-child { color: var(--ink); }
   .totals .total {
     border-top: 2px solid var(--rule);
-    margin-top: 8px;
-    padding-top: 10px;
+    margin-top: 12px;
+    padding-top: 14px;
     color: var(--ink);
     font-weight: 700;
     font-size: 13px;
@@ -596,12 +596,12 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   drawSumRow('CGST @ 9%', `Rs. ${cgst.toLocaleString('en-IN')}`)
   drawSumRow('SGST @ 9%', `Rs. ${sgst.toLocaleString('en-IN')}`)
 
-  // Divider line above Total: clean 10pt gap below SGST row
-  const lineY = y + 4
+  // Divider line above Total: clean generous gap below SGST row
+  const lineY = y - 2
   page.drawLine({ start: { x: sumX, y: lineY }, end: { x: rightX, y: lineY }, thickness: 1.5, color: black })
 
-  // Total row: placed 20pt below the line so the line never intersects the text
-  y = lineY - 20
+  // Total row: placed 22pt below the line so the line never intersects the text
+  y = lineY - 22
   page.drawText('Total', { x: sumX, y, size: 12, font: fontBold, color: black })
   const totalValStr = `Rs. ${total.toLocaleString('en-IN')}`
   const totalValW = fontBold.widthOfTextAtSize(totalValStr, 13)
