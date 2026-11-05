@@ -6,10 +6,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 // Assets
 import angelWaterBg from '../assets/hero.png'
-import bottle1 from '../assets/bg/1.png'
-import bottle2 from '../assets/bg/2.png'
-import bottle3 from '../assets/bg/3.png'
-import bottle4 from '../assets/bg/4.png'
+import bottle1 from '../assets/bg/T.png'
+import bottle2 from '../assets/bg/x.png'
+import bottle3 from '../assets/bg/R.png'
+import bottle4 from '../assets/bg/J.png'
 import MobileA from '../assets/bg/mobile.png'
 
 const DEFAULT_MOBILE_PORTRAIT = (MobileA as any)?.src || MobileA

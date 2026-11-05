@@ -8,10 +8,10 @@ import { getProductsApi } from '../services/api'
 import type { Product } from '../types'
 
 import boyImg from '../assets/tonedboy.png'
-import bottle1Raw from '../assets/bg/1.png'
-import bottle2Raw from '../assets/bg/2.png'
-import bottle3Raw from '../assets/bg/4.png' // Molecule J (hero flight target)
-import bottle4Raw from '../assets/bg/3.png'
+import bottle1Raw from '../assets/bg/T.png'
+import bottle2Raw from '../assets/bg/x.png'
+import bottle3Raw from '../assets/bg/j.png' // Molecule J (hero flight target)
+import bottle4Raw from '../assets/bg/R.png'
 import DiscoveryRaw from '../assets/product/discovery.png'
 
 const boySrc = (boyImg as any)?.src || boyImg

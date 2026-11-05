@@ -107,8 +107,14 @@ export default function NavBar({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const isExpanded = !isScrolled || isHovered
-  const displayedCartCount = cartCount !== undefined ? cartCount : totalItems
+  const currentUser = mounted ? user : null
+  const displayedCartCount = mounted ? (cartCount !== undefined ? cartCount : totalItems) : 0
 
   const [cartBump, setCartBump] = useState(false)
   const prevCount = useRef(displayedCartCount)
@@ -135,7 +141,7 @@ export default function NavBar({
   const navLinks = [
     { label: 'Fragrances', path: '/fragrances' },
     { label: 'Our Story', path: '/our-story' },
-    ...(user?.role === 'admin' && !isAdminPage ? [{ label: 'Admin', path: '/admin' }] : []),
+    ...(currentUser?.role === 'admin' && !isAdminPage ? [{ label: 'Admin', path: '/admin' }] : []),
   ]
 
   return (
@@ -172,6 +178,7 @@ export default function NavBar({
             onClick={handleCartClick}
             className="relative p-2 text-black active:scale-90 transition-transform cursor-pointer"
             aria-label={`Shopping bag, ${displayedCartCount} items`}
+            suppressHydrationWarning
           >
             <svg
               className="w-5 h-5"
@@ -201,7 +208,7 @@ export default function NavBar({
                 strokeLinecap="round"
               />
             </svg>
-            <span className={`absolute top-1.5 right-1 min-w-[15px] h-[15px] rounded-full bg-black text-white text-[9px] font-mono flex items-center justify-center font-bold px-0.5 transition-all duration-300 ${cartBump ? 'scale-125 bg-neutral-900 shadow-md ring-2 ring-black/20' : 'scale-100'}`}>
+            <span suppressHydrationWarning className={`absolute top-1.5 right-1 min-w-[15px] h-[15px] rounded-full bg-black text-white text-[9px] font-mono flex items-center justify-center font-bold px-0.5 transition-all duration-300 ${cartBump ? 'scale-125 bg-neutral-900 shadow-md ring-2 ring-black/20' : 'scale-100'}`}>
               {displayedCartCount}
             </span>
           </button>
@@ -241,7 +248,7 @@ export default function NavBar({
           {/* Navigation Links */}
           <nav className="flex flex-col space-y-4 pt-1 font-['Conquera',sans-serif] uppercase tracking-wider text-xs sm:text-[13px]">
             {/* Auth / Account Link */}
-            {user ? (
+            {currentUser ? (
               <div className="flex flex-col border-b border-black/5 pb-3">
                 <div className="flex items-center justify-between">
                   <Link
@@ -250,14 +257,14 @@ export default function NavBar({
                     className="flex items-center gap-2 text-left"
                   >
                     <div className="w-7 h-7 rounded-full bg-black text-white text-[10px] flex items-center justify-center font-bold">
-                      {user.name ? user.name.charAt(0).toUpperCase() : 'C'}
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-black font-semibold tracking-wide text-xs">
-                        {user.name?.split(' ')[0] || 'My Account'}
+                        {currentUser.name?.split(' ')[0] || 'My Account'}
                       </span>
                       <span className="text-[10px] text-black/40 font-mono lowercase">
-                        {user.email}
+                        {currentUser.email}
                       </span>
                     </div>
                   </Link>
@@ -394,7 +401,7 @@ export default function NavBar({
             </Link>
 
             {/* Admin portal if applicable */}
-            {user?.role === 'admin' && !isAdminPage && (
+            {currentUser?.role === 'admin' && !isAdminPage && (
               <Link
                 to="/admin"
                 className="text-black font-semibold flex items-center gap-1.5 hover:text-black/60 transition-colors py-1"
@@ -499,7 +506,7 @@ export default function NavBar({
 
               {/* Auth / Profile Trigger */}
               <div className="relative shrink-0" ref={menuRef}>
-                {user ? (
+                {currentUser ? (
                   <div>
                     <button
                       type="button"
@@ -512,19 +519,19 @@ export default function NavBar({
                       aria-label="User Account Profile Menu"
                       aria-expanded={isUserMenuOpen}
                     >
-                      {user.avatar_url ? (
+                      {currentUser.avatar_url ? (
                         <img
-                          src={user.avatar_url}
-                          alt={user.name || 'Profile'}
+                          src={currentUser.avatar_url}
+                          alt={currentUser.name || 'Profile'}
                           className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-black/15 shadow-xs"
                         />
                       ) : (
                         <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-black text-white text-[10px] sm:text-[11px] font-bold flex items-center justify-center uppercase">
-                          {user.name ? user.name.charAt(0) : 'C'}
+                          {currentUser.name ? currentUser.name.charAt(0) : 'C'}
                         </div>
                       )}
                       <span className="hidden sm:inline max-w-[90px] truncate">
-                        {user.name?.split(' ')[0] || 'Profile'}
+                        {currentUser.name?.split(' ')[0] || 'Profile'}
                       </span>
                       <ChevronDown
                         className={`w-3 h-3 transition-transform duration-300 text-black/60 ${
@@ -540,26 +547,26 @@ export default function NavBar({
                       >
                         <div className="px-4 py-3 border-b border-black/5 bg-neutral-50/70 rounded-t-xl">
                           <div className="flex items-center gap-2.5">
-                            {user.avatar_url ? (
+                            {currentUser.avatar_url ? (
                               <img
-                                src={user.avatar_url}
+                                src={currentUser.avatar_url}
                                 alt=""
                                 className="w-9 h-9 rounded-full object-cover border border-black/10"
                               />
                             ) : (
                               <div className="w-9 h-9 rounded-full bg-black text-white font-bold flex items-center justify-center text-xs">
-                                {user.name ? user.name.charAt(0).toUpperCase() : 'C'}
+                                {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'C'}
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
                               <div className="font-semibold text-black truncate uppercase text-[11px] font-['Cinzel',serif]">
-                                {user.name || 'Client Specimen'}
+                                {currentUser.name || 'Client Specimen'}
                               </div>
                               <div className="text-[10px] text-neutral-400 font-mono truncate">
-                                {user.email}
+                                {currentUser.email}
                               </div>
                               <span className="inline-block mt-0.5 text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-black/5 text-black/70">
-                                {user.role === 'admin' ? 'Master Admin' : 'Member'}
+                                {currentUser.role === 'admin' ? 'Master Admin' : 'Member'}
                               </span>
                             </div>
                           </div>
@@ -596,7 +603,7 @@ export default function NavBar({
                             <span>Dashboard</span>
                           </Link>
 
-                          {user.role === 'admin' && (
+                          {currentUser.role === 'admin' && (
                             <Link
                               to="/admin"
                               onClick={() => setIsUserMenuOpen(false)}
@@ -645,6 +652,7 @@ export default function NavBar({
                     : 'bg-black/5 hover:bg-black text-black hover:text-white border-black/10 hover:border-black'
                 }`}
                 aria-label={`View Shopping Bag, ${displayedCartCount} items`}
+                suppressHydrationWarning
               >
                 <svg
                   className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4 transition-colors"
@@ -674,7 +682,7 @@ export default function NavBar({
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className={`text-[11px] sm:text-xs lg:text-[13px] font-mono font-medium leading-none transition-transform duration-300 ${cartBump ? 'scale-110 font-bold' : ''}`}>
+                <span suppressHydrationWarning className={`text-[11px] sm:text-xs lg:text-[13px] font-mono font-medium leading-none transition-transform duration-300 ${cartBump ? 'scale-110 font-bold' : ''}`}>
                   {displayedCartCount}
                 </span>
               </button>

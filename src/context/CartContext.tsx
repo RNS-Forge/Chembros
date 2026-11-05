@@ -87,20 +87,34 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { settings } = usePlatformSettings()
   const previousUserIdRef = useRef<number | string | null>(null)
   const isInitialMount = useRef(true)
+  const hasLoadedFromStorage = useRef(false)
+  const [items, setItems] = useState<CartItem[]>([])
 
-  const [items, setItems] = useState<CartItem[]>(() => {
+  // Load saved cart from localStorage only after client mounts to prevent SSR hydration mismatch
+  useEffect(() => {
     try {
       const guestSaved = safeStorage.getItem(GUEST_CART_KEY)
       if (guestSaved) {
         const parsed = JSON.parse(guestSaved)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed)
+          hasLoadedFromStorage.current = true
+          return
+        }
       }
       const saved = safeStorage.getItem(CART_STORAGE_KEY)
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          setItems(parsed)
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load cart from storage:', e)
+    } finally {
+      hasLoadedFromStorage.current = true
     }
-  })
+  }, [])
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false)
   const [cartToast, setCartToast] = useState<{
     id: number
@@ -197,8 +211,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // Persist items whenever items change
+  // Persist items whenever items change (only after initial load)
   useEffect(() => {
+    if (!hasLoadedFromStorage.current) return
     try {
       safeStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
       if (isAuthenticated && user?.id) {

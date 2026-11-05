@@ -17,7 +17,10 @@ export default function ClientProviders({ children }: { children: React.ReactNod
         <AuthProvider>
           <CartProvider>
             <SmoothScroll>
-              <div className="w-full min-h-screen bg-white text-black selection:bg-neutral-200 overflow-x-clip font-['Inter',sans-serif]">
+              <div
+                suppressHydrationWarning
+                className="w-full min-h-screen bg-white text-black selection:bg-neutral-200 overflow-x-clip font-['Inter',sans-serif]"
+              >
                 {/* Global Slide-out Bag, Auth & Profile Modals */}
                 <CartDrawer />
                 <AuthModal />
