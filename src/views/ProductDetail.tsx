@@ -110,7 +110,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addToCart } = useCart()
-  const { user, isAuthenticated } = useAuth()
+  const { user } = useAuth()
   const { settings } = usePlatformSettings()
 
   const [product, setProduct] = useState<Product | null>(() => {
@@ -302,104 +302,101 @@ export default function ProductDetail() {
       <NavBar />
 
       {/* Main Container */}
-      <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
+      <main className="w-full max-w-[1583px] px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
 
         {/* =========================================================================
-            PART 1: MAIN HERO CARD (16:9 Landscape Left & Product Details Right)
+            PART 1: MAIN HERO CARD (1:1 Square Frame & Balanced Commercial Details)
             ========================================================================= */}
-        <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[32px] sm:rounded-[40px] lg:rounded-[48px] p-5 sm:p-7 lg:p-9 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col gap-8 sm:gap-10">
+        <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] p-4 sm:p-6 lg:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col gap-6 sm:gap-8">
           
           {/* Top Section: Split Grid */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12 items-center">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 xl:gap-12 items-center">
             
-            {/* Left: 16:9 Landscape Frame (7 Cols) */}
-            <div className="lg:col-span-7 w-full aspect-video rounded-[24px] sm:rounded-[32px] overflow-hidden relative border border-black/5 bg-white shadow-xs group">
+            {/* Left: Square 1:1 Image Frame (Prominent, High-Resolution Product Area) */}
+            <div className="lg:col-span-6 w-full max-w-[540px] mx-auto aspect-square rounded-[22px] sm:rounded-[28px] lg:rounded-[34px] overflow-hidden relative border border-black/5 bg-white shadow-xs group">
               <img
                 src={landscapeBanner}
-                alt={`${product.name} Landscape Artwork`}
-                className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-1000 group-hover:scale-[1.03]"
+                alt={`${product.name} Presentation`}
+                className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 group-hover:scale-[1.03]"
                 draggable={false}
               />
 
               {/* Gradient Veil */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 pointer-events-none" />
 
-              {/* Concentration Tag */}
-              <div className="absolute top-4 left-4 sm:top-5 sm:left-5">
-                <span className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-black text-[10px] sm:text-xs font-mono uppercase tracking-widest shadow-xs">
-                  {product.concentration || '32% Organic Oil Concentration'}
+              {/* Top Concentration Tag */}
+              <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5">
+                <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md text-black text-[9px] sm:text-[11px] font-mono uppercase tracking-wider sm:tracking-widest shadow-xs">
+                  {product.concentration || '32% Organic Concentration'}
                 </span>
               </div>
 
-              {/* Origin Tag */}
-              <div className="absolute bottom-4 left-4 sm:bottom-5 sm:left-5">
-                <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-white/90 uppercase drop-shadow-sm">
-                  MADURAI · INDIA
-                </span>
-              </div>
 
-              {/* Rating Tag */}
-              <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5">
-                <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] sm:text-xs font-mono flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              {/* Bottom Rating Tag */}
+              <div className="absolute bottom-3.5 right-3.5 sm:bottom-5 sm:right-5">
+                <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/65 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-mono flex items-center gap-1.5">
+                  <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
                   <span>{product.rating ? `${product.rating} / 5.0` : '5.0 / 5.0'}</span>
                   <span className="text-white/60">({reviews.length || product.reviews_count || 3})</span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Commercial Details & Purchase Panel (5 Cols) */}
-            <div className="lg:col-span-5 flex flex-col justify-center space-y-6">
+            {/* Right: Commercial Details & Purchase Panel */}
+            <div className="lg:col-span-6 flex flex-col justify-center space-y-4 sm:space-y-5 lg:space-y-6">
+              
+              {/* Product Header */}
               <div>
-                <span className="text-xs font-mono tracking-[0.25em] uppercase text-black/50 block mb-2">
+                <span className="text-[10px] sm:text-xs font-mono tracking-[0.2em] uppercase text-black/50 block mb-1 sm:mb-1.5">
                   {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
                 </span>
 
-                <h1 className="text-2xl sm:text-3xl xl:text-4xl font-normal font-['Conquera',sans-serif] tracking-wide text-black leading-tight">
+                {/* Harmonized Headline: compact, elegant, and readable */}
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] tracking-wide text-black leading-[1.12] uppercase">
                   {product.name}
                 </h1>
 
                 {product.subtitle && (
-                  <p className="mt-2 text-xs sm:text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed">
+                  <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-lg">
                     {product.subtitle}
                   </p>
                 )}
               </div>
 
               {/* Price Details */}
-              <div className="p-4 rounded-2xl bg-white border border-black/5 flex items-baseline justify-between shadow-xs">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-black/5 flex items-baseline justify-between shadow-xs">
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 block mb-0.5">
+                  <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-neutral-400 block mb-0.5">
                     Price
                   </span>
-                  <div className="flex items-baseline gap-2.5">
-                    <span className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] text-black tracking-tight">
+                  <div className="flex items-baseline gap-2 sm:gap-2.5">
+                    <span className="text-xl sm:text-2xl font-normal font-['Conquera',sans-serif] text-black tracking-tight">
                       ₹{product.price.toLocaleString('en-IN')}
                     </span>
                     {product.original_price && product.original_price > product.price && (
-                      <span className="text-sm font-normal font-['Conquera',sans-serif] text-black/40 line-through">
+                      <span className="text-xs sm:text-sm font-normal font-['Conquera',sans-serif] text-black/40 line-through">
                         ₹{product.original_price.toLocaleString('en-IN')}
                       </span>
                     )}
                   </div>
                 </div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase">
+                <span className="text-[9px] sm:text-[10px] font-mono text-neutral-500 uppercase">
                   Inclusive of all taxes (GST)
                 </span>
               </div>
 
               {/* Size Selector */}
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 block mb-2">
+                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-neutral-500 block mb-2">
                   Select Bottle Size
                 </span>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {['30ml Travel', '50ml Signature', '100ml Luxury'].map((size) => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${
+                      className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${
                         selectedSize === size
                           ? 'bg-black text-white shadow-xs font-semibold'
                           : 'bg-white text-black/70 border border-neutral-200 hover:border-black'
@@ -412,11 +409,11 @@ export default function ProductDetail() {
               </div>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-white border border-black text-black text-xs font-mono uppercase tracking-[0.2em] font-semibold hover:bg-neutral-50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-xs"
+                  className="w-full sm:flex-1 py-3.5 sm:py-4 px-6 rounded-2xl bg-white border border-black text-black text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] font-semibold hover:bg-neutral-50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-xs"
                 >
                   {isAdded ? 'Added to Bag [Confirmed]' : 'Add to Bag'}
                 </button>
@@ -424,19 +421,19 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   onClick={handleBuyNow}
-                  className="w-full sm:flex-1 py-4 px-6 rounded-2xl bg-black text-white text-xs font-mono uppercase tracking-[0.2em] font-semibold hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-md"
+                  className="w-full sm:flex-1 py-3.5 sm:py-4 px-6 rounded-2xl bg-black text-white text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] font-semibold hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center shadow-md"
                 >
                   Buy Now
                 </button>
               </div>
 
               {/* Trust Badges */}
-              <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500 uppercase pt-2">
+              <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-neutral-500 uppercase pt-1">
                 <span className="flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5" /> {product.price >= 1500 ? 'Free Dispatch Across India' : 'Standard Shipping ₹100 (Free above ₹1,500)'}
+                  <Truck className="w-3.5 h-3.5" /> {product.price >= 1500 ? 'Free Dispatch Across India' : 'Standard Shipping ₹100'}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> 10+ Hours Wear Time
+                 10+ Hours Wear Time
                 </span>
               </div>
             </div>
@@ -444,9 +441,9 @@ export default function ProductDetail() {
           </div>
 
           {/* Bottom Section: Notes & Crafting Details */}
-          <div className="w-full pt-8 border-t border-black/5 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="p-5 rounded-2xl bg-white border border-black/5 space-y-1.5 shadow-xs">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
+          <div className="w-full pt-6 border-t border-black/5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/5 space-y-1 shadow-xs">
+              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
                 TOP NOTES (FIRST 15 MINS)
               </span>
               <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
@@ -454,8 +451,8 @@ export default function ProductDetail() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-black/5 space-y-1.5 shadow-xs">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/5 space-y-1 shadow-xs">
+              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
                 HEART NOTES (2 TO 6 HOURS)
               </span>
               <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
@@ -463,8 +460,8 @@ export default function ProductDetail() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-black/5 space-y-1.5 shadow-xs">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/5 space-y-1 shadow-xs">
+              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
                 BASE NOTES (ALL-DAY DRYDOWN)
               </span>
               <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
@@ -478,13 +475,13 @@ export default function ProductDetail() {
         {/* =========================================================================
             PART 2: CUSTOMER REVIEWS
             ========================================================================= */}
-        <section className="w-full mt-16 sm:mt-20 lg:mt-24 pt-10 border-t border-black/10">
+        <section className="w-full mt-12 sm:mt-16 lg:mt-20 pt-8 border-t border-black/10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
             <div>
               <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                 COMMUNITY FEEDBACK
               </span>
-              <h2 className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
                 Customer Reviews
               </h2>
             </div>
@@ -516,7 +513,7 @@ export default function ProductDetail() {
           </div>
 
           {reviews.length === 0 ? (
-            <div className="w-full p-12 text-center bg-[#FAF9F6] rounded-3xl border border-black/5">
+            <div className="w-full p-10 text-center bg-[#FAF9F6] rounded-3xl border border-black/5">
               <p className="text-xs font-mono tracking-widest text-neutral-500 uppercase">
                 No customer reviews published yet for this formulation.
               </p>
@@ -557,7 +554,7 @@ export default function ProductDetail() {
                           ))}
                         </div>
 
-                        <h3 className="text-sm sm:text-base font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black leading-snug">
+                        <h3 className="text-xs sm:text-sm font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black leading-snug">
                           "{rev.title}"
                         </h3>
                         <p className="mt-2 text-xs sm:text-[13px] text-neutral-600 leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -587,13 +584,13 @@ export default function ProductDetail() {
             PART 3: MORE FROM THE COLLECTION
             ========================================================================= */}
         {relatedProducts.length > 0 && (
-          <section className="w-full mt-16 sm:mt-20 lg:mt-24 pt-10 border-t border-black/10">
+          <section className="w-full mt-12 sm:mt-16 lg:mt-20 pt-8 border-t border-black/10">
             <div className="flex items-center justify-between gap-4 mb-8">
               <div>
                 <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                   EXPLORE OTHER SCENTS
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
                   More From the Collection
                 </h2>
               </div>

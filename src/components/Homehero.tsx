@@ -613,11 +613,6 @@ export default function HomeHero() {
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
-                  ARCHIVE // 2026
-                </span>
-                <span>MADURAI · PARIS</span>
               </div>
             </div>
           </div>
@@ -628,7 +623,7 @@ export default function HomeHero() {
           
           <div className="overflow-hidden">
             <div className="text-[9px] font-mono tracking-[0.25em] uppercase text-black/50">
-              4 SCENTS · INFINITE POSSIBILITIES
+              4 SCENTS INFINITE POSSIBILITIES
             </div>
           </div>
 
@@ -672,7 +667,6 @@ export default function HomeHero() {
           ref={mobileMetaRef}
           className="w-full max-w-[330px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-1 shrink-0"
         >
-          <span>CHEMBROS © 2026</span>
           <span className="flex items-center gap-1 font-semibold text-black/70 animate-bounce">
             <span>SCROLL</span>
             <span>↓</span>

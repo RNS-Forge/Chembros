@@ -1019,7 +1019,7 @@ export default function AdminPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold font-['Cinzel',serif] tracking-tight mt-2 text-black">
-              Chembros Atelier Control Panel
+              Chembros Admin Panel
             </h1>
           </div>
           <div className="text-xs font-mono text-neutral-500">

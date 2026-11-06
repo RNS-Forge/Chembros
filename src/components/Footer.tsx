@@ -160,9 +160,10 @@ export const Footer = ({
           </div>
 
           {/* Compact Copyright & Telemetry */}
-          <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-black/60 font-mono text-[8.5px] sm:text-[10px] lg:text-xs tracking-wider uppercase pt-2 border-t border-black/10">
-            <span>Â© 2026 CHEMBROS ARCHIVE. ALL RIGHTS RESERVED.</span>
-            <span>MADURAI [9.9252Â° N, 78.1198Â° E]</span>
+          <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-black/60 font-mono text-[8.5px] sm:text-[10px] lg:text-xs tracking-wider pt-2">
+            <span>@ 2026 CHEMBROS ARCHIVE. ALL RIGHTS RESERVED.
+              Designed and developed by BehindBrief
+            </span>
           </div>
         </div>
 
