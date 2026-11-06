@@ -40,8 +40,11 @@ export async function POST(req: Request) {
     // Optional user authorization check if bearer token is present
     const currentUser = await getUserFromAuthHeader(req)
     const isAdmin = currentUser?.role === 'admin'
-    if (currentUser && !isAdmin && order.user_id && order.user_id !== currentUser.id && order.customer_email.toLowerCase() !== currentUser.email.toLowerCase()) {
-      return NextResponse.json({ detail: 'You are not authorized to cancel this order.' }, { status: 403 })
+    if (!isAdmin) {
+      return NextResponse.json(
+        { detail: 'Orders cannot be cancelled once placed. All sales are final with no return or refund policy.' },
+        { status: 403 }
+      )
     }
 
     const currentStatusUpper = (order.order_status || '').toUpperCase()

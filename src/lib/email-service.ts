@@ -464,6 +464,16 @@ function buildOrderHtml(params: {
         <span style="font-size: 18px; font-weight: 800; color: #000000;">₹${Number(params.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
     </div>
 
+    <!-- Final Sale Notice -->
+    <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 12px 16px; margin: 20px 0; text-align: left;">
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #92400e; margin-bottom: 4px;">
+            FINAL SALE &amp; NO CANCELLATION POLICY
+        </div>
+        <div style="font-size: 12px; color: #78350f; line-height: 1.5;">
+            Due to the hygienic and exclusive nature of our luxury fragrances, all orders are final upon placement. Orders cannot be cancelled or refunded once confirmed.
+        </div>
+    </div>
+
     ${reviewCard}
   `
 

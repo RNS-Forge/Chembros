@@ -445,7 +445,7 @@ export default function CheckoutPage() {
                   <span className="font-mono text-black">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Shipping ({selectedDeliveryMethod === 'EXPRESS' ? 'Express Air' : 'Standard'})</span>
+                  <span>Shipping (Standard)</span>
                   <span className="text-emerald-700 font-medium">{finalShippingFee === 0 ? 'Complimentary Free' : `₹${finalShippingFee}`}</span>
                 </div>
                 {isCodSelected && codHandlingFee > 0 && (
@@ -787,267 +787,58 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* STEP 2: DELIVERY METHOD SELECTION (Controlled by Admin Permission) */}
+                {/* STEP 2: PAYMENT METHOD (PREPAID ONLY) */}
                 <div className="pt-4 border-t border-black/5">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-['Cinzel',serif] text-sm font-bold tracking-wider uppercase text-black">
-                      2. Delivery Method
+                      2. Payment Method
                     </h3>
-                    <span className="text-[10px] font-mono text-neutral-400 uppercase">
-                      Carrier: {settings.default_courier || 'Blue Dart Express'}
-                    </span>
-                  </div>
-
-                  {deliveryMethodsEnabled ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Option A: Standard Courier Dispatch */}
-                      <div
-                        onClick={() => setSelectedDeliveryMethod('STANDARD')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                          selectedDeliveryMethod === 'STANDARD'
-                            ? 'border-black bg-neutral-50 ring-1 ring-black'
-                            : 'border-neutral-200 bg-white hover:border-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-black">
-                              <Truck className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-black uppercase tracking-wider">
-                                Standard Courier
-                              </p>
-                              <p className="text-[10px] font-mono text-neutral-500">
-                                {settings.estimated_delivery_days || '2-4 Business Days'}
-                              </p>
-                            </div>
-                          </div>
-                          <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${
-                              selectedDeliveryMethod === 'STANDARD'
-                                ? 'border-black bg-black text-white'
-                                : 'border-neutral-300 bg-white'
-                            }`}
-                          >
-                            {selectedDeliveryMethod === 'STANDARD' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          </div>
-                        </div>
-
-                        <div className="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-xs">
-                          <span className="text-[10px] font-mono text-neutral-400 uppercase truncate">
-                            {settings.default_courier || 'Blue Dart Express'}
-                          </span>
-                          <span className="font-mono font-bold text-black">
-                            {standardShippingCost === 0 ? 'FREE' : `₹${standardShippingCost}`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Option B: Express Priority Air Dispatch (if enabled by admin) */}
-                      {expressEnabled ? (
-                        <div
-                          onClick={() => setSelectedDeliveryMethod('EXPRESS')}
-                          className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                            selectedDeliveryMethod === 'EXPRESS'
-                              ? 'border-black bg-neutral-50 ring-1 ring-black'
-                              : 'border-neutral-200 bg-white hover:border-neutral-300'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-[#4a2e70]/10 flex items-center justify-center text-[#4a2e70]">
-                                <Zap className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <p className="text-xs font-bold text-black uppercase tracking-wider">
-                                    Express Priority
-                                  </p>
-                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#4a2e70] text-white uppercase">
-                                    Air
-                                  </span>
-                                </div>
-                                <p className="text-[10px] font-mono text-neutral-500">
-                                  1–2 Business Days
-                                </p>
-                              </div>
-                            </div>
-                            <div
-                              className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${
-                                selectedDeliveryMethod === 'EXPRESS'
-                                  ? 'border-black bg-black text-white'
-                                  : 'border-neutral-300 bg-white'
-                              }`}
-                            >
-                              {selectedDeliveryMethod === 'EXPRESS' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                            </div>
-                          </div>
-
-                          <div className="mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-xs">
-                            <span className="text-[10px] font-mono text-neutral-400 uppercase truncate">
-                              Priority Air Transit
-                            </span>
-                            <span className="font-mono font-bold text-black">
-                              {expressShippingCost === 0 ? 'FREE' : `₹${expressShippingCost}`}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-4 rounded-2xl border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between opacity-60">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-400">
-                              <Zap className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                                Express Air Dispatch
-                              </p>
-                              <p className="text-[10px] font-mono text-neutral-400">
-                                Currently Unavailable
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-neutral-400 mt-3 pt-2 border-t border-neutral-200">
-                            Standard courier active for this route
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* When delivery methods selection is disabled by admin */
-                    <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
-                          <Truck className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-black uppercase tracking-wider">
-                              Standard Dispatch: {settings.default_courier || 'Blue Dart Express'}
-                            </span>
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 uppercase">
-                              Standard
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-neutral-500 mt-0.5">
-                            Estimated transit: {settings.estimated_delivery_days || '2-4 Business Days'}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-black">
-                        {standardShippingCost === 0 ? 'FREE' : `₹${standardShippingCost}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* STEP 3: PAYMENT METHOD PERMISSIONS */}
-                <div className="pt-4 border-t border-black/5">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-['Cinzel',serif] text-sm font-bold tracking-wider uppercase text-black">
-                      3. Payment Method
-                    </h3>
-                    <span className="text-[10px] font-mono text-neutral-400 uppercase">INSTANT VERIFICATION</span>
+                    <span className="text-[10px] font-mono text-neutral-400 uppercase">ONLINE PREPAID ONLY</span>
                   </div>
 
                   <div className="space-y-3">
-                    {/* Method 1: Online Pre-Payment via Cashfree */}
-                    {settings.enable_online_payment !== false && (
-                      <div
-                        onClick={() => setSelectedPaymentMethod('ONLINE')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                          selectedPaymentMethod === 'ONLINE'
-                            ? 'border-black bg-neutral-50 ring-1 ring-black'
-                            : 'border-neutral-200 bg-white hover:border-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
-                            <CreditCard className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">
-                                Online Pre-Payment (Cashfree Gateway)
-                              </h4>
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase font-semibold">
-                                Recommended
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-neutral-500 mt-0.5">
-                              UPI (GPay, PhonePe, Paytm), Credit & Debit Cards, NetBanking
-                            </p>
-                          </div>
+                    {/* Method: Online Pre-Payment via Cashfree */}
+                    <div className="p-4 rounded-2xl border border-black bg-neutral-50 ring-1 ring-black flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
+                          <CreditCard className="w-4 h-4" />
                         </div>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            selectedPaymentMethod === 'ONLINE'
-                              ? 'border-black bg-black text-white'
-                              : 'border-neutral-300 bg-white'
-                          }`}
-                        >
-                          {selectedPaymentMethod === 'ONLINE' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-black uppercase tracking-wider">
+                              Online Pre-Payment (Cashfree Gateway)
+                            </h4>
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase font-semibold">
+                              100% Secure
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-500 mt-0.5">
+                            UPI (GPay, PhonePe, Paytm), Credit & Debit Cards, NetBanking
+                          </p>
                         </div>
                       </div>
-                    )}
+                      <div className="w-4 h-4 rounded-full border border-black bg-black text-white flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                    </div>
 
-                    {/* Method 2: Cash on Delivery (COD) */}
-                    {settings.enable_cod && (
-                      <div
-                        onClick={() => setSelectedPaymentMethod('COD')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                          selectedPaymentMethod === 'COD'
-                            ? 'border-black bg-neutral-50 ring-1 ring-black'
-                            : 'border-neutral-200 bg-white hover:border-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-black border border-neutral-200 shadow-2xs">
-                            <Banknote className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-xs font-bold text-black uppercase tracking-wider">
-                                Cash on Delivery (COD)
-                              </h4>
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase font-semibold">
-                                Doorstep
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-neutral-500 mt-0.5">
-                              Pay in cash or UPI at the doorstep upon courier arrival.
-                              {settings.cod_handling_fee ? ` (Includes ₹${settings.cod_handling_fee} handling fee)` : ''}
-                            </p>
-                          </div>
-                        </div>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            selectedPaymentMethod === 'COD'
-                              ? 'border-black bg-black text-white'
-                              : 'border-neutral-300 bg-white'
-                          }`}
-                        >
-                          {selectedPaymentMethod === 'COD' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                        </div>
+                    {/* Notice: No Cancellation & No Refund */}
+                    <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-950 space-y-1">
+                      <div className="flex items-center gap-2 font-semibold text-xs text-amber-900 tracking-wider font-mono">
+                        <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                        <span>IMPORTANT: NON-CANCELLABLE & NON-REFUNDABLE ORDER</span>
                       </div>
-                    )}
-
-                    {isCodLimitExceeded && (
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2 animate-in fade-in">
-                        <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
-                        <span>
-                          Cash on Delivery is limited to orders up to ₹{codLimit.toLocaleString('en-IN')}. Please select Online Pre-Payment.
-                        </span>
-                      </div>
-                    )}
+                      <p className="text-[11px] text-amber-900/90 leading-relaxed pl-6">
+                        Due to the bespoke, hygienic, and exclusive formulation of Chembros luxury fragrances, orders cannot be cancelled or refunded once confirmed. All sales are final.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* CTA Placement */}
                 <button
                   type="submit"
-                  disabled={loading || isMaxCartExceeded || isCodLimitExceeded}
+                  disabled={loading || isMaxCartExceeded}
                   className="w-full py-4 px-6 bg-black hover:bg-neutral-800 text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {loading ? (
@@ -1055,18 +846,17 @@ export default function CheckoutPage() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Processing Order...</span>
                     </>
-                  ) : selectedPaymentMethod === 'COD' ? (
-                    <>
-                      <Banknote className="w-3.5 h-3.5" />
-                      <span>Confirm COD Order (₹{finalTotal.toLocaleString('en-IN')})</span>
-                    </>
                   ) : (
                     <>
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Pay ₹{finalTotal.toLocaleString('en-IN')} & Place Order</span>
+                      <span>Pay ₹{finalTotal.toLocaleString('en-IN')} & Confirm Order</span>
                     </>
                   )}
                 </button>
+
+                <p className="text-[10px] text-center text-neutral-400 font-mono -mt-1">
+                  By completing payment, you confirm that all sales are final with no return, cancellation, or refund option.
+                </p>
 
                 <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-neutral-400 uppercase tracking-widest pt-2">
                   <span className="flex items-center gap-1">
@@ -1167,7 +957,7 @@ export default function CheckoutPage() {
                 <span className="font-mono text-black font-semibold">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Delivery ({selectedDeliveryMethod === 'EXPRESS' ? 'Express Air' : 'Standard'})</span>
+                <span>Delivery (Standard)</span>
                 <span className="font-medium text-emerald-700">
                   {finalShippingFee === 0 ? 'Complimentary Free' : `₹${finalShippingFee}`}
                 </span>

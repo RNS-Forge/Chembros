@@ -205,8 +205,8 @@ export interface PlatformSettings {
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   // Payment
   enable_online_payment: true,
-  enable_cod: true,
-  enforce_online_only: false,
+  enable_cod: false,
+  enforce_online_only: true,
   cod_handling_fee: 0,
   cod_max_order_limit: 15000,
 
@@ -214,7 +214,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   max_cart_value: 50000,
 
   // Shipping Dispatch
-  enable_delivery_methods: true,
+  enable_delivery_methods: false,
   default_delivery_fee: 100,
   enable_free_shipping: true,
   free_shipping_threshold: 1500,
@@ -234,7 +234,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   // Checkout & Accounts
   allow_guest_checkout: true,
   enable_coupons: true,
-  allow_client_cancellation: true,
+  allow_client_cancellation: false,
 
   // Storefront & Catalog
   enable_customer_reviews: true,

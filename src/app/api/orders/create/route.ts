@@ -77,30 +77,14 @@ export async function POST(req: Request) {
     }
 
     const isCod = body.payment_method === 'COD' || body.payment_method === 'Cash on Delivery'
-    const codSurcharge = isCod && settings.cod_handling_fee ? Number(settings.cod_handling_fee) : 0
-
-    // 3. Payment Method Permissions Enforcement
     if (isCod) {
-      if (!settings.enable_cod || settings.enforce_online_only) {
-        return NextResponse.json(
-          { detail: 'Cash on Delivery is currently disabled by administrator. Please select Online Payment.' },
-          { status: 400 }
-        )
-      }
-      if (settings.cod_max_order_limit > 0 && subtotal > settings.cod_max_order_limit) {
-        return NextResponse.json(
-          { detail: `Cash on Delivery is limited to orders up to Rs. ${settings.cod_max_order_limit.toLocaleString('en-IN')}.` },
-          { status: 400 }
-        )
-      }
-    } else {
-      if (!settings.enable_online_payment) {
-        return NextResponse.json(
-          { detail: 'Online pre-payment is currently undergoing maintenance. Please select Cash on Delivery.' },
-          { status: 400 }
-        )
-      }
+      return NextResponse.json(
+        { detail: 'Cash on Delivery is not available. Please complete your order using Online Pre-Payment.' },
+        { status: 400 }
+      )
     }
+
+    const codSurcharge = 0
 
     const baseShipping = body.shipping_fee !== undefined ? Number(body.shipping_fee) : (settings.enable_free_shipping && subtotal >= settings.free_shipping_threshold ? 0 : settings.default_delivery_fee)
     const shippingFee = baseShipping + codSurcharge

@@ -77,7 +77,7 @@ export default function OrderConfirmationPage() {
       <main className="w-full max-w-[1583px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
         
         {/* Success Announcement Header */}
-        <div className="text-center space-y-3 mb-10 max-w-xl">
+        <div className="text-center space-y-3 mb-6 max-w-xl">
           <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
             <CheckCircle2 className="w-8 h-8 stroke-[1.75]" />
           </div>
@@ -96,6 +96,16 @@ export default function OrderConfirmationPage() {
               </strong>.
             </p>
           </div>
+        </div>
+
+        {/* Final Sale / No Cancellation Notice */}
+        <div className="w-full max-w-xl mb-8 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-center space-y-1">
+          <span className="text-[10px] font-mono tracking-widest uppercase text-amber-800 font-bold block">
+            Non-Cancellable & Non-Refundable
+          </span>
+          <p className="text-xs text-amber-900/90 leading-relaxed font-sans">
+            Your order is locked for packaging and dispatch immediately. As per our luxury fragrance hygiene policy, all sales are final with no cancellation or refund option.
+          </p>
         </div>
 
         {order ? (
