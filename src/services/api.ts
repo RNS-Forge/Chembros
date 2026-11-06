@@ -935,16 +935,24 @@ export function attachDeliveryFees(products: Product[]): Product[] {
 }
 
 // ----------------- Products SWR Caching Architecture -----------------
-const PRODUCTS_CACHE_KEY = 'chembros_products_cache_v3'
-const PRODUCTS_CACHE_TS_KEY = 'chembros_products_cache_ts_v3'
+const PRODUCTS_CACHE_KEY = 'chembros_products_cache_v4'
+const PRODUCTS_CACHE_TS_KEY = 'chembros_products_cache_ts_v4'
 const CACHE_TTL_MS = 60 * 1000 // 60 seconds fresh TTL before silent background revalidation
+
+// Automatically clear legacy corrupted v3 cache if present
+if (typeof window !== 'undefined') {
+  try {
+    safeStorage.removeItem('chembros_products_cache_v3')
+    safeStorage.removeItem('chembros_products_cache_ts_v3')
+  } catch {}
+}
 
 let _cachedProducts: Product[] | null = null
 let _lastProductsFetchTime = 0
 let _productsInFlightPromise: Promise<Product[]> | null = null
 
 export function initProductsCache(): Product[] | null {
-  if (_cachedProducts && _cachedProducts.length > 0) return _cachedProducts
+  if (_cachedProducts && _cachedProducts.length >= 4) return _cachedProducts
   if (typeof window === 'undefined') return null
 
   try {
@@ -952,7 +960,8 @@ export function initProductsCache(): Product[] | null {
     const ts = safeStorage.getItem(PRODUCTS_CACHE_TS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      // Must contain complete catalog (at least 4 formulas), discard single-item partial caches
+      if (Array.isArray(parsed) && parsed.length >= 4) {
         _cachedProducts = attachDeliveryFees(parsed)
         _lastProductsFetchTime = ts ? Number(ts) || 0 : 0
         return _cachedProducts
@@ -969,21 +978,39 @@ export function getCachedProductsSync(): Product[] | null {
 export function setCachedProducts(products: Product[]): Product[] {
   if (!Array.isArray(products) || products.length === 0) return products || []
   const enriched = attachDeliveryFees(products)
-  _cachedProducts = enriched
-  _lastProductsFetchTime = Date.now()
-  try {
-    safeStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(enriched))
-    safeStorage.setItem(PRODUCTS_CACHE_TS_KEY, String(_lastProductsFetchTime))
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('chembros:products-updated', { detail: enriched }))
+
+  // Only update global catalog cache if it represents a complete catalog or equals/exceeds current size
+  if (enriched.length >= 4 || !_cachedProducts || _cachedProducts.length <= enriched.length) {
+    _cachedProducts = enriched
+    _lastProductsFetchTime = Date.now()
+    try {
+      // Strip oversized image_base64 payloads (> 50KB) so we never exceed browser localStorage 5MB quota
+      const lightweightForStorage = enriched.map((p) => {
+        if (p.image_base64 && p.image_base64.length > 50000) {
+          const { image_base64, ...rest } = p
+          return rest as Product
+        }
+        return p
+      })
+      safeStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(lightweightForStorage))
+      safeStorage.setItem(PRODUCTS_CACHE_TS_KEY, String(_lastProductsFetchTime))
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chembros:products-updated', { detail: enriched }))
+      }
+    } catch (e) {
+      console.warn('Failed to persist products cache to localStorage:', e)
     }
-  } catch {}
+  }
   return enriched
 }
 
 export function upsertCachedProduct(product: Product): void {
   if (!product || !product.id) return
-  const current = initProductsCache() || []
+  const current = initProductsCache()
+  // Do NOT write a 1-item partial catalog into localStorage if catalog hasn't loaded yet
+  if (!current || current.length < 4) {
+    return
+  }
   const idx = current.findIndex((p) => String(p.id) === String(product.id))
   let nextList: Product[]
   if (idx >= 0) {
@@ -1038,7 +1065,8 @@ export async function getProductsApi(params: ProductQueryParams = {}): Promise<P
   let allProducts = initProductsCache()
   const isStale = !_lastProductsFetchTime || Date.now() - _lastProductsFetchTime > CACHE_TTL_MS
 
-  if (!allProducts || allProducts.length === 0) {
+  // Force live fetch if cache is missing OR incomplete (< 4 products)
+  if (!allProducts || allProducts.length < 4) {
     // Cold start with empty cache: fetch once with in-flight deduplication
     if (!_productsInFlightPromise) {
       notifyApiStart('/api/products')

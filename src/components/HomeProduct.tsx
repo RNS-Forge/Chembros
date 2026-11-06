@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCart } from '../context/CartContext'
-import { getProductsApi } from '../services/api'
+import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
 
 import boyImg from '../assets/bg/archbg1.png'
@@ -26,45 +26,61 @@ gsap.registerPlugin(ScrollTrigger)
 export default function HomeProduct() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const { addToCart } = useCart()
-  const [moleculeProducts, setMoleculeProducts] = useState<Product[]>([])
-  const [discoveryArchive, setDiscoveryArchive] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
+
+  // Helper to sort and partition products
+  const resolveProductsState = (list: Product[] | null) => {
+    if (!Array.isArray(list) || list.length === 0) return { molecules: [], archive: null }
+    const molecules = list.filter((p) => !p.is_archive)
+    const archive = list.find(
+      (p) =>
+        p.is_archive ||
+        p.slug === 'the-discovery-archive' ||
+        p.name.toLowerCase().includes('discovery')
+    )
+    const orderMap: Record<string, number> = {
+      'molecule-j': 0,
+      'molecule-x': 1,
+      'molecule-t': 2,
+      'molecule-k': 3,
+      'molecule-r': 3,
+    }
+    const sortedMolecules = [...molecules].sort((a, b) => {
+      const posA = a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99
+      const posB = b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99
+      return posA - posB
+    })
+    return {
+      molecules: sortedMolecules.slice(0, 4),
+      archive: archive || null,
+    }
+  }
+
+  // Initialize with immediate cached products if available (0ms instant render)
+  const initialData = resolveProductsState(getCachedProductsSync())
+  const [moleculeProducts, setMoleculeProducts] = useState<Product[]>(initialData.molecules)
+  const [discoveryArchive, setDiscoveryArchive] = useState<Product | null>(initialData.archive)
+  const [loading, setLoading] = useState(initialData.molecules.length === 0)
 
   // Fetch dynamic products from live database
   useEffect(() => {
     let isMounted = true
+
+    function applyProducts(liveProducts: Product[]) {
+      if (!Array.isArray(liveProducts) || liveProducts.length === 0) return
+      const { molecules, archive } = resolveProductsState(liveProducts)
+      if (molecules.length > 0) {
+        setMoleculeProducts(molecules)
+      }
+      if (archive) {
+        setDiscoveryArchive(archive)
+      }
+    }
+
     async function loadProducts() {
       try {
         const liveProducts = await getProductsApi()
         if (!isMounted || !Array.isArray(liveProducts)) return
-
-        const molecules = liveProducts.filter((p) => !p.is_archive)
-        const archive = liveProducts.find(
-          (p) =>
-            p.is_archive ||
-            p.slug === 'the-discovery-archive' ||
-            p.name.toLowerCase().includes('discovery')
-        )
-
-        if (molecules.length > 0) {
-          const orderMap: Record<string, number> = {
-            'molecule-j': 0,
-            'molecule-x': 1,
-            'molecule-t': 2,
-            'molecule-k': 3,
-            'molecule-r': 3,
-          }
-          const sortedMolecules = [...molecules].sort((a, b) => {
-            const posA = a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99
-            const posB = b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99
-            return posA - posB
-          })
-          setMoleculeProducts(sortedMolecules.slice(0, 4))
-        }
-
-        if (archive) {
-          setDiscoveryArchive(archive)
-        }
+        applyProducts(liveProducts)
       } catch (err) {
         console.error('Failed to load products from database:', err)
       } finally {
@@ -72,9 +88,21 @@ export default function HomeProduct() {
       }
     }
 
+    // Auto-update if background SWR revalidation returns fresh catalog
+    const handleProductsUpdated = (e: any) => {
+      if (!isMounted) return
+      const updated = e.detail
+      if (Array.isArray(updated) && updated.length >= 4) {
+        applyProducts(updated)
+      }
+    }
+
+    window.addEventListener('chembros:products-updated', handleProductsUpdated)
     loadProducts()
+
     return () => {
       isMounted = false
+      window.removeEventListener('chembros:products-updated', handleProductsUpdated)
     }
   }, [])
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getProductsApi } from '../services/api'
+import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
@@ -9,21 +9,40 @@ import bottleImg from '../assets/bottle.png'
 
 export default function Fragrances() {
   const [filter, setFilter] = useState<'all' | 'bottles' | 'sets'>('all')
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const initialProducts = getCachedProductsSync() || []
+  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [loading, setLoading] = useState(initialProducts.length === 0)
 
   useEffect(() => {
+    let isMounted = true
     async function fetchProducts() {
       try {
         const data = await getProductsApi()
-        setProducts(data)
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setProducts(data)
+        }
       } catch (err) {
         console.error('Failed to fetch live fragrances from DB:', err)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
+
+    const handleProductsUpdated = (e: any) => {
+      if (!isMounted) return
+      const updated = e.detail
+      if (Array.isArray(updated) && updated.length > 0) {
+        setProducts(updated)
+      }
+    }
+
+    window.addEventListener('chembros:products-updated', handleProductsUpdated)
     fetchProducts()
+
+    return () => {
+      isMounted = false
+      window.removeEventListener('chembros:products-updated', handleProductsUpdated)
+    }
   }, [])
 
   const displayedProducts = products.filter((item) => {
