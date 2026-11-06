@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext'
 import { getProductsApi } from '../services/api'
 import type { Product } from '../types'
 
-import boyImg from '../assets/tonedboy.png'
+import boyImg from '../assets/bg/archbg1.png'
 import bottle1Raw from '../assets/bg/x.png'
 import bottle2Raw from '../assets/bg/T.png'
 import bottle3Raw from '../assets/bg/J.png' // Molecule J (hero flight target)
@@ -282,7 +282,7 @@ export default function HomeProduct() {
         <div className="w-full relative flex flex-col items-center pt-12 sm:pt-16 lg:pt-20 xl:pt-24">
           <div className="w-[88%] sm:w-[74%] md:w-[65%] lg:w-[940px] xl:w-[1080px] max-w-[1080px] absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none z-0 flex items-end justify-center">
             <img
-              className="w-full h-auto max-h-[600px] lg:max-h-[660px] xl:max-h-[820px] object-contain object-bottom select-none pointer-events-none"
+              className="w-full h-auto max-h-[800px] lg:max-h-800px] xl:max-h-[1040px] object-contain object-bottom select-none pointer-events-none"
               src={boySrc}
               alt="Chembros Model Graphic"
               draggable={false}
