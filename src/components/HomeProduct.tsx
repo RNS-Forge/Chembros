@@ -10,7 +10,7 @@ import type { Product } from '../types'
 import boyImg from '../assets/tonedboy.png'
 import bottle1Raw from '../assets/bg/T.png'
 import bottle2Raw from '../assets/bg/x.png'
-import bottle3Raw from '../assets/bg/j.png' // Molecule J (hero flight target)
+import bottle3Raw from '../assets/bg/J.png' // Molecule J (hero flight target)
 import bottle4Raw from '../assets/bg/R.png'
 import DiscoveryRaw from '../assets/product/discovery.png'
 
