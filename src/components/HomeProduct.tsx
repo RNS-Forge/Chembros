@@ -12,7 +12,7 @@ import bottle1Raw from '../assets/bg/x.png'
 import bottle2Raw from '../assets/bg/T.png'
 import bottle3Raw from '../assets/bg/J.png' // Molecule J (hero flight target)
 import bottle4Raw from '../assets/bg/R.png'
-import DiscoveryRaw from '../assets/product/discovery.png'
+import DiscoveryRaw from '../assets/product/archive.png'
 
 const boySrc = (boyImg as any)?.src || boyImg
 const bottle1Src = (bottle1Raw as any)?.src || bottle1Raw
@@ -175,7 +175,6 @@ export default function HomeProduct() {
       })
     }
 
-    // Direct, reliable execution with automatic fallback
     const timer = setTimeout(createFlight, 800)
     window.addEventListener('hero-animation-complete', createFlight)
     window.addEventListener('resize', createFlight)
@@ -205,32 +204,32 @@ export default function HomeProduct() {
           </h2>
 
           {loading && moleculeProducts.length === 0 ? (
-            <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
+            <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 2xl:gap-8 justify-items-center">
               {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
-                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[320px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black/90 rounded-[20px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden p-3 sm:p-6 flex flex-col justify-between items-center animate-pulse"
+                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[340px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-[#FAFAFA] border border-black/5 rounded-[22px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden p-4 sm:p-6 flex flex-col justify-between items-center animate-pulse"
                 >
-                  <div className="w-16 sm:w-28 h-3 sm:h-4 bg-white/10 rounded-full" />
-                  <div className="w-14 sm:w-20 h-28 sm:h-44 bg-white/5 rounded-xl sm:rounded-2xl" />
+                  <div className="w-20 sm:w-28 h-3.5 sm:h-4 bg-neutral-200 rounded-full" />
+                  <div className="w-16 sm:w-24 h-28 sm:h-44 bg-neutral-100 rounded-2xl" />
                   <div className="w-full flex flex-col items-center gap-2 sm:gap-3">
-                    <div className="w-12 sm:w-16 h-3 sm:h-5 bg-white/10 rounded" />
-                    <div className="w-full max-w-[120px] sm:max-w-[200px] h-7 sm:h-10 bg-white/10 rounded-xl sm:rounded-2xl" />
+                    <div className="w-16 sm:w-20 h-4 sm:h-5 bg-neutral-200 rounded" />
+                    <div className="w-full max-w-[130px] sm:max-w-[200px] h-8 sm:h-11 bg-neutral-200 rounded-full" />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
+            <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 2xl:gap-8 justify-items-center">
               {moleculeProducts.map((prod, idx) => (
                 <div
                   key={prod.id}
-                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[330px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-black rounded-[20px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_12px_28px_rgba(0,0,0,0.18)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] flex flex-col justify-between items-center p-3 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
+                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[340px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-white border border-black/[0.08] rounded-[22px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 flex flex-col justify-between items-center p-3.5 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
                 >
                   {/* Title */}
                   <Link
                     to={`/fragrances/${prod.slug || prod.id}`}
-                    className="w-full text-center text-white text-[10px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-xl font-normal font-['Conquera',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-80 transition-opacity cursor-pointer truncate px-1"
+                    className="w-full text-center text-black text-[11px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Conquera',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-70 transition-opacity cursor-pointer truncate px-1"
                   >
                     {prod.name}
                   </Link>
@@ -242,7 +241,7 @@ export default function HomeProduct() {
                   >
                     <img
                       id={idx === 0 ? 'target-product-slot-1' : undefined}
-                      className="w-auto h-full max-h-[130px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_10px_22px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                      className="w-auto h-full max-h-[130px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
                       src={getProductImage(prod, idx)}
                       alt={`${prod.name} Bottle`}
                       draggable={false}
@@ -250,12 +249,12 @@ export default function HomeProduct() {
                   </Link>
 
                   {/* Price and CTA */}
-                  <div className="w-full flex flex-col items-center gap-1.5 sm:gap-2.5 lg:gap-2 xl:gap-3 pb-0.5 sm:pb-1">
+                  <div className="w-full flex flex-col items-center gap-2 sm:gap-2.5 lg:gap-2.5 xl:gap-3 pb-0.5 sm:pb-1">
                     <div className="flex flex-col items-center">
-                      <div className="text-white text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
+                      <div className="text-black text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
                         ₹{prod.price.toLocaleString('en-IN')}
                       </div>
-                      <span className="text-[9px] sm:text-[10px] text-white/60 tracking-wider uppercase font-sans">
+                      <span className="text-[9px] sm:text-[10px] text-black/45 tracking-wider uppercase font-sans mt-0.5">
                         Inclusive of GST
                       </span>
                     </div>
@@ -263,7 +262,7 @@ export default function HomeProduct() {
                     <button
                       type="button"
                       onClick={() => addToCart(prod)}
-                      className="w-full max-w-[130px] sm:max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-7 sm:h-9 md:h-10 lg:h-9 xl:h-12 2xl:h-14 bg-neutral-600/40 hover:bg-neutral-600/60 active:scale-95 rounded-xl sm:rounded-2xl xl:rounded-3xl overflow-hidden border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-sm"
+                      className="w-full max-w-[135px] sm:max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-8 sm:h-10 md:h-10 lg:h-10 xl:h-12 2xl:h-13 bg-black hover:bg-neutral-800 active:scale-[0.98] rounded-full overflow-hidden transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.25)]"
                       aria-label={`Add ${prod.name} to Cart`}
                     >
                       <span className="text-white text-[9px] sm:text-[11px] md:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-sans tracking-wide transition-transform group-hover/btn:scale-105">

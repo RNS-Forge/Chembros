@@ -5,7 +5,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 // Assets
-import angelWaterBg from '../assets/hero.png'
+import angelWaterBg from '../assets/bg/bg123.png'
 import bottle1 from '../assets/bg/T.png'
 import bottle2 from '../assets/bg/x.png'
 import bottle3 from '../assets/bg/R.png'
@@ -461,14 +461,14 @@ export default function HomeHero() {
     >
 
       {/* Floating Replay Button for Testing */}
-      <button
+      {/* <button
         type="button"
         onClick={handleReplayAnimation}
         className="fixed bottom-4 right-4 z-[999] px-3.5 py-2 rounded-full bg-black/90 hover:bg-black text-white text-[11px] font-mono tracking-wider shadow-2xl backdrop-blur-md border border-white/20 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
       >
         <span>⟲</span>
         <span>Replay Hero Animation</span>
-      </button>
+      </button> */}
 
       {/* =========================================================================
           DESKTOP & TABLET ARTBOARD (>= 768px)

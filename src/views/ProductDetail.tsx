@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   getProductDetailApi,
@@ -19,10 +19,15 @@ import Footer from '../components/Footer'
 import bottleImg from '../assets/bottle.png'
 import heroBg from '../assets/hero.png'
 
-// Dynamic / safe import helpers to avoid crash if asset is missing or bundled as { default: string }
+// Molecule J Imports
+import J1 from '../assets/product/molj/J1.png'
+import J2 from '../assets/product/molj/J2.png'
+import J3 from '../assets/product/molj/J3.png'
+import J4 from '../assets/product/molj/J4.png'
+
+// Dynamic / safe import helpers to avoid crash if asset is missing
 let landscapeX: any = null
 let landscapeT: any = null
-let landscapeJ: any = null
 let landscapeDiscovery: any = null
 
 try {
@@ -32,13 +37,9 @@ try {
   landscapeT = require('../assets/product/landscape-t.jpg')
 } catch {}
 try {
-  landscapeJ = require('../assets/product/landscape-j.jpg')
-} catch {}
-try {
   landscapeDiscovery = require('../assets/product/landscape-discovery.jpg')
 } catch {}
 
-// Helper to safely resolve URL string from any bundler format
 const resolveAssetSrc = (asset: any, fallback: string = ''): string => {
   if (!asset) return fallback
   if (typeof asset === 'string') return asset
@@ -58,6 +59,11 @@ const defaultHeroBg = resolveAssetSrc(
   'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85'
 )
 
+const j1Src = resolveAssetSrc(J1, defaultBottle)
+const j2Src = resolveAssetSrc(J2, defaultBottle)
+const j3Src = resolveAssetSrc(J3, defaultBottle)
+const j4Src = resolveAssetSrc(J4, defaultBottle)
+
 const landscapeXSrc = resolveAssetSrc(
   landscapeX,
   'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85'
@@ -66,32 +72,46 @@ const landscapeTSrc = resolveAssetSrc(
   landscapeT,
   'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1920&q=85'
 )
-const landscapeJSrc = resolveAssetSrc(
-  landscapeJ,
-  'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=1920&q=85'
-)
 const landscapeDiscoverySrc = resolveAssetSrc(
   landscapeDiscovery,
   'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85'
 )
 
-// Map of static landscape imagery for each product
-const PRODUCT_LANDSCAPE_ASSETS: Record<string, string> = {
-  'molecule-x': landscapeXSrc,
-  'molecule-r': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
-  '12': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
-  '1': landscapeXSrc,
-  'molecule-t': landscapeTSrc,
-  '2': landscapeTSrc,
-  'molecule-j': landscapeJSrc,
-  '3': landscapeJSrc,
-  'molecule-k': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
-  '4': 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85',
-  'the-discovery-archive': landscapeDiscoverySrc,
-  'the-discovery-set': landscapeDiscoverySrc,
-  'discovery': landscapeDiscoverySrc,
-  'discovery-set': landscapeDiscoverySrc,
-  '5': landscapeDiscoverySrc,
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT GALLERY MAP
+// Map slugs and database IDs to image arrays. You can add 3, 4, or more images.
+// ─────────────────────────────────────────────────────────────────────────────
+const PRODUCT_GALLERY_MAP: Record<string, string[]> = {
+  // Molecule J (using your 4 imported images)
+  'molecule-j': [j1Src, j2Src, j3Src, j4Src],
+  '3': [j1Src, j2Src, j3Src, j4Src],
+
+  // Molecule X
+  'molecule-x': [
+    landscapeXSrc,
+    'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85',
+    'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1200&q=85',
+  ],
+  '1': [
+    landscapeXSrc,
+    'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85',
+  ],
+
+  // Molecule T
+  'molecule-t': [
+    landscapeTSrc,
+    'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1200&q=85',
+  ],
+  '2': [
+    landscapeTSrc,
+    'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1200&q=85',
+  ],
+
+  // Discovery Archive
+  'the-discovery-archive': [
+    landscapeDiscoverySrc,
+    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
+  ],
 }
 
 // Lucide Icons
@@ -103,7 +123,8 @@ import {
   AlertCircle,
   Star,
   Truck,
-  Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 export default function ProductDetail() {
@@ -132,6 +153,10 @@ export default function ProductDetail() {
   })
   const [selectedSize, setSelectedSize] = useState<string>('30ml Extrait')
   const [isAdded, setIsAdded] = useState(false)
+
+  // Carousel State
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0)
+  const touchStartXRef = useRef<number | null>(null)
 
   // Review Form States
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
@@ -173,6 +198,7 @@ export default function ProductDetail() {
       }
     }
     loadData()
+    setActiveImageIndex(0)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [id])
 
@@ -284,17 +310,40 @@ export default function ProductDetail() {
 
   const lookupSlug = (product.slug || '').toLowerCase()
   const lookupId = String(product.id || '').toLowerCase()
-  const lookupName = (product.name || '').toLowerCase()
 
-  const landscapeBanner =
-    PRODUCT_LANDSCAPE_ASSETS[lookupSlug] ||
-    PRODUCT_LANDSCAPE_ASSETS[lookupId] ||
-    (lookupName.includes('molecule t') ? landscapeTSrc : null) ||
-    (lookupName.includes('molecule j') ? landscapeJSrc : null) ||
-    (lookupName.includes('molecule x') || lookupName.includes('molecule r') ? landscapeXSrc : null) ||
-    (lookupName.includes('discovery') ? landscapeDiscoverySrc : null) ||
-    product.image_base64 ||
-    defaultHeroBg
+  // Resolve array of images (supports 4 for Molecule J, 3 for others)
+  const galleryImages: string[] =
+    PRODUCT_GALLERY_MAP[lookupSlug] ||
+    PRODUCT_GALLERY_MAP[lookupId] ||
+    (lookupSlug.includes('molecule-j') ? PRODUCT_GALLERY_MAP['molecule-j'] : null) || [
+      product.image_base64 || defaultBottle,
+      defaultHeroBg,
+    ]
+
+  const nextImage = () => {
+    setActiveImageIndex((prev) => (prev + 1) % galleryImages.length)
+  }
+
+  const prevImage = () => {
+    setActiveImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartXRef.current - touchEndX
+
+    if (diff > 45) {
+      nextImage()
+    } else if (diff < -45) {
+      prevImage()
+    }
+    touchStartXRef.current = null
+  }
 
   return (
     <div className="w-full min-h-screen bg-white flex flex-col items-center select-none font-['Inter',sans-serif]">
@@ -305,44 +354,129 @@ export default function ProductDetail() {
       <main className="w-full max-w-[1583px] px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
 
         {/* =========================================================================
-            PART 1: MAIN HERO CARD (1:1 Square Frame & Balanced Commercial Details)
+            PART 1: MAIN HERO CARD (1:1 Carousel Showcase & Balanced Purchase Panel)
             ========================================================================= */}
         <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] p-4 sm:p-6 lg:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col gap-6 sm:gap-8">
           
           {/* Top Section: Split Grid */}
           <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 xl:gap-12 items-center">
             
-            {/* Left: Square 1:1 Image Frame (Prominent, High-Resolution Product Area) */}
-            <div className="lg:col-span-6 w-full max-w-[540px] mx-auto aspect-square rounded-[22px] sm:rounded-[28px] lg:rounded-[34px] overflow-hidden relative border border-black/5 bg-white shadow-xs group">
-              <img
-                src={landscapeBanner}
-                alt={`${product.name} Presentation`}
-                className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 group-hover:scale-[1.03]"
-                draggable={false}
-              />
+            {/* Left Column: 1:1 Square Carousel with Thumbnail Bar */}
+            <div className="lg:col-span-6 w-full max-w-[540px] mx-auto flex flex-col gap-3">
+              
+              {/* Main 1:1 Image Carousel Viewport */}
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="w-full aspect-square rounded-[22px] sm:rounded-[28px] lg:rounded-[34px] overflow-hidden relative border border-black/5 bg-white shadow-xs group"
+              >
+                {/* Image Slide Track */}
+                <div
+                  className="w-full h-full flex transition-transform duration-500 ease-out will-change-transform"
+                  style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
+                >
+                  {galleryImages.map((src, idx) => (
+                    <div key={idx} className="w-full h-full shrink-0 relative bg-neutral-100 flex items-center justify-center">
+                      <img
+                        src={src}
+                        alt={`${product.name} View ${idx + 1}`}
+                        className="w-full h-full object-cover object-center select-none pointer-events-none"
+                        draggable={false}
+                      />
+                    </div>
+                  ))}
+                </div>
 
-              {/* Gradient Veil */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 pointer-events-none" />
+                {/* Top Concentration Tag */}
+                <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5 pointer-events-none">
+                  <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md text-black text-[9px] sm:text-[11px] font-mono uppercase tracking-wider sm:tracking-widest shadow-xs">
+                    {product.concentration || '32% Organic Concentration'}
+                  </span>
+                </div>
 
-              {/* Top Concentration Tag */}
-              <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5">
-                <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md text-black text-[9px] sm:text-[11px] font-mono uppercase tracking-wider sm:tracking-widest shadow-xs">
-                  {product.concentration || '32% Organic Concentration'}
-                </span>
-              </div>
+                {/* Left/Right Navigation Arrows */}
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={prevImage}
+                      aria-label="Previous Image"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white active:scale-95 text-black shadow-md backdrop-blur-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5 -ml-0.5" />
+                    </button>
 
+                    <button
+                      type="button"
+                      onClick={nextImage}
+                      aria-label="Next Image"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white active:scale-95 text-black shadow-md backdrop-blur-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                    >
+                      <ChevronRight className="w-5 h-5 -mr-0.5" />
+                    </button>
+                  </>
+                )}
 
-              {/* Bottom Rating Tag */}
-              <div className="absolute bottom-3.5 right-3.5 sm:bottom-5 sm:right-5">
-                <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/65 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-mono flex items-center gap-1.5">
-                  <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{product.rating ? `${product.rating} / 5.0` : '5.0 / 5.0'}</span>
-                  <span className="text-white/60">({reviews.length || product.reviews_count || 3})</span>
+                {/* Bottom Center Indicator Dots */}
+                {galleryImages.length > 1 && (
+                  <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md">
+                    {galleryImages.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        onClick={() => setActiveImageIndex(dotIdx)}
+                        aria-label={`Go to image ${dotIdx + 1}`}
+                        className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                          activeImageIndex === dotIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Bottom Rating Tag */}
+                <div className="absolute bottom-3.5 right-3.5 sm:bottom-5 sm:right-5 pointer-events-none">
+                  <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/65 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-mono flex items-center gap-1.5">
+                    <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{product.rating ? `${product.rating} / 5.0` : '5.0 / 5.0'}</span>
+                    <span className="text-white/60">({reviews.length || product.reviews_count || 3})</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Dynamic Thumbnail Strip (Automatically fits 3, 4, or more images) */}
+              <div
+                className="w-full grid gap-2 sm:gap-2.5 pt-0.5"
+                style={{
+                  gridTemplateColumns: `repeat(${galleryImages.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {galleryImages.map((src, thumbIdx) => {
+                  const isSelected = activeImageIndex === thumbIdx
+                  return (
+                    <button
+                      key={thumbIdx}
+                      type="button"
+                      onClick={() => setActiveImageIndex(thumbIdx)}
+                      className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white ${
+                        isSelected
+                          ? 'border-black ring-2 ring-black/20 shadow-xs scale-[1.02]'
+                          : 'border-black/10 opacity-70 hover:opacity-100 hover:border-black/30'
+                      }`}
+                    >
+                      <img
+                        src={src}
+                        alt={`Thumbnail ${thumbIdx + 1}`}
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+
             </div>
 
-            {/* Right: Commercial Details & Purchase Panel */}
+            {/* Right Column: Commercial Details & Purchase Panel */}
             <div className="lg:col-span-6 flex flex-col justify-center space-y-4 sm:space-y-5 lg:space-y-6">
               
               {/* Product Header */}
@@ -351,7 +485,6 @@ export default function ProductDetail() {
                   {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
                 </span>
 
-                {/* Harmonized Headline: compact, elegant, and readable */}
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] tracking-wide text-black leading-[1.12] uppercase">
                   {product.name}
                 </h1>
@@ -433,7 +566,7 @@ export default function ProductDetail() {
                   <Truck className="w-3.5 h-3.5" /> {product.price >= 1500 ? 'Free Dispatch Across India' : 'Standard Shipping ₹100'}
                 </span>
                 <span className="flex items-center gap-1.5">
-                 10+ Hours Wear Time
+                  10+ Hours Wear Time
                 </span>
               </div>
             </div>
