@@ -363,7 +363,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <div className="text-[8px] text-white tracking-wide font-['Conquera',sans-serif]">
+                <div className="text-[8px] text-white tracking-wide font-['Montserrat',sans-serif]">
                   Added to cart
                 </div>
               </div>

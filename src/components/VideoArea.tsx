@@ -182,7 +182,7 @@ export default function BrandStoryProtocol({
               <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.25em] uppercase text-black/45 block mb-1">
                 COMMUNITY IMPRESSIONS
               </span>
-              <h3 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wider text-black">
                 WEAR EXPERIENCES
               </h3>
             </div>

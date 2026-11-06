@@ -43,7 +43,7 @@ export default function HomeCta({ className = '', style, onCtaClick }: HomeCtaPr
           
           {/* Left Text Column */}
           <div className="flex flex-col justify-center space-y-1.5 sm:space-y-2 max-w-2xl">
-            <h2 className="text-white text-[clamp(20px,2.2vw,34px)] font-normal font-['Conquera',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+            <h2 className="text-white text-[clamp(20px,2.2vw,34px)] font-semibold font-['Montserrat',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
               FIND YOUR MOLECULE
             </h2>
             <p className="text-white/90 text-[clamp(13px,1.0vw,16px)] font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.15)]">

@@ -739,7 +739,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
               <User className="w-7 h-7 stroke-[1.5]" />
             </div>
             <div>
-              <h2 className="font-['Conquera',sans-serif] text-xl font-normal tracking-wider uppercase text-black">
+              <h2 className="font-['Montserrat',sans-serif] text-xl font-normal tracking-wider uppercase text-black">
                 My Account
               </h2>
               <p className="text-xs text-neutral-500 mt-2 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
@@ -767,7 +767,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                   {avatarPreview ? (
                     <img src={avatarPreview} alt={user.name || 'Avatar'} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-xl sm:text-2xl font-bold text-black font-['Conquera',sans-serif]">
+                    <span className="text-xl sm:text-2xl font-bold text-black font-['Montserrat',sans-serif]">
                       {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                     </span>
                   )}
@@ -778,7 +778,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
 
                 <div>
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <h1 className="text-lg sm:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                    <h1 className="text-lg sm:text-2xl font-normal font-['Montserrat',sans-serif] tracking-wider uppercase text-black">
                       {user.name || 'My Profile'}
                     </h1>
                     <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono uppercase bg-black text-white tracking-widest">
@@ -961,7 +961,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                     {/* Recent Order Card */}
                     <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-5">
                       <div className="flex items-center justify-between pb-4 border-b border-black/5">
-                        <h2 className="font-['Conquera',sans-serif] text-base font-normal tracking-wider uppercase text-black">
+                        <h2 className="font-['Montserrat',sans-serif] text-base font-normal tracking-wider uppercase text-black">
                           Recent Order
                         </h2>
                         <button
@@ -1036,7 +1036,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                   <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-black/5">
                       <div>
-                        <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                        <h2 className="font-['Montserrat',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
                           My Orders
                         </h2>
                         <p className="text-xs text-neutral-500 mt-0.5 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1054,7 +1054,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                     ) : orders.length === 0 ? (
                       <div className="py-12 text-center max-w-sm mx-auto space-y-3">
                         <Package className="w-10 h-10 text-neutral-300 mx-auto stroke-1" />
-                        <h4 className="font-['Conquera',sans-serif] text-sm uppercase text-black">No Orders Found</h4>
+                        <h4 className="font-['Montserrat',sans-serif] text-sm uppercase text-black">No Orders Found</h4>
                         <p className="text-xs text-neutral-500">You haven't ordered anything yet.</p>
                         <Link to="/fragrances" className="inline-block mt-2 px-6 py-2.5 bg-black text-white rounded-full text-xs font-semibold uppercase tracking-wider">
                           Start Shopping
@@ -1208,7 +1208,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                   <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-black/5">
                       <div>
-                        <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                        <h2 className="font-['Montserrat',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
                           Purchase Again
                         </h2>
                         <p className="text-xs text-neutral-500 mt-0.5 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1274,7 +1274,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                     ) : (
                       <div className="py-8 text-center max-w-sm mx-auto space-y-3">
                         <Package className="w-10 h-10 text-neutral-300 mx-auto stroke-1" />
-                        <h4 className="font-['Conquera',sans-serif] text-sm uppercase text-black">
+                        <h4 className="font-['Montserrat',sans-serif] text-sm uppercase text-black">
                           No Past Orders Yet
                         </h4>
                         <p className="text-xs text-neutral-500">
@@ -1300,7 +1300,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                         {/* Header with Title & + New Address button */}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-black/5">
                           <div>
-                            <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                            <h2 className="font-['Montserrat',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
                               Manage Addresses
                             </h2>
                             <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1324,7 +1324,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                             <div className="w-12 h-12 rounded-full bg-neutral-200/60 flex items-center justify-center text-neutral-500 mx-auto mb-3">
                               <MapPin className="w-6 h-6 stroke-[1.5]" />
                             </div>
-                            <h4 className="font-['Conquera',sans-serif] text-sm uppercase tracking-wider text-black">
+                            <h4 className="font-['Montserrat',sans-serif] text-sm uppercase tracking-wider text-black">
                               No Delivery Addresses Saved
                             </h4>
                             <p className="text-xs text-neutral-500 mt-1 mb-4 max-w-sm mx-auto">
@@ -1463,7 +1463,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between pb-4 border-b border-black/5">
                           <div>
-                            <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                            <h2 className="font-['Montserrat',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
                               {editingAddressId ? 'Edit Delivery Address' : 'New Delivery Address'}
                             </h2>
                             <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1765,7 +1765,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                 {activeTab === 'security' && (
                   <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 max-w-2xl">
                     <div>
-                      <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                      <h2 className="font-['Montserrat',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
                         Change Password
                       </h2>
                       <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1849,7 +1849,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                 {activeTab === 'help' && (
                   <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
                     <div>
-                      <h2 className="font-['Conquera',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
+                      <h2 className="font-['Montserrat',sans-serif] text-base sm:text-lg font-normal tracking-wider uppercase text-black">
                         Help and Support
                       </h2>
                       <p className="text-xs text-neutral-500 mt-1 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1860,7 +1860,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="p-5 rounded-2xl bg-neutral-50 border border-black/5 space-y-2">
                         <Mail className="w-5 h-5 text-black" />
-                        <h4 className="font-['Conquera',sans-serif] text-xs font-normal tracking-wider uppercase text-black">
+                        <h4 className="font-['Montserrat',sans-serif] text-xs font-normal tracking-wider uppercase text-black">
                           Email Support
                         </h4>
                         <p className="text-xs text-neutral-500 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1873,7 +1873,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
 
                       <div className="p-5 rounded-2xl bg-neutral-50 border border-black/5 space-y-2">
                         <Truck className="w-5 h-5 text-black" />
-                        <h4 className="font-['Conquera',sans-serif] text-xs font-normal tracking-wider uppercase text-black">
+                        <h4 className="font-['Montserrat',sans-serif] text-xs font-normal tracking-wider uppercase text-black">
                           Shipping and Delivery
                         </h4>
                         <p className="text-xs text-neutral-500 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1904,7 +1904,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
             </div>
 
             <div>
-              <h3 className="text-lg font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black">
+              <h3 className="text-lg font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black">
                 {cancelOtpStep === 'request' ? 'Cancel Order?' : 'Verify Cancellation'}
               </h3>
               <p className="text-xs text-neutral-500 mt-1">

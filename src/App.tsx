@@ -14,8 +14,11 @@ import MyOrdersPage from './views/MyOrdersPage'
 import DashboardPage from './views/DashboardPage'
 import AdminPage from './views/AdminPage'
 import OurStoryPage from './views/OurStoryPage'
+import FaqsPage from './views/FaqsPage'
+import PrivacyPolicy from './views/PrivacyPolicy'
 import AuthPage from './views/AuthPage'
 import SmoothScroll from './components/SmoothScroll'
+import PrivacyPolicyPage from './views/PrivacyPolicy'
 
 export default function App() {
   return (
@@ -42,6 +45,9 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/our-story" element={<OurStoryPage />} />
+                <Route path="/faqs" element={<FaqsPage />} />
+                <Route path="/faq" element={<FaqsPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/register" element={<AuthPage />} />

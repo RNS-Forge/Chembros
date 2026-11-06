@@ -4,10 +4,13 @@ import { Link } from 'react-router-dom'
 import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
 import NavBar from '../components/NavBar'
+import VideoArea from '../components/VideoArea'
 import Footer from '../components/Footer'
 import bottleImg from '../assets/bottle.png'
+import { usePlatformSettings } from '../context/PlatformSettingsContext'
 
 export default function Fragrances() {
+  const { settings } = usePlatformSettings()
   const [filter, setFilter] = useState<'all' | 'bottles' | 'sets'>('all')
   const initialProducts = getCachedProductsSync() || []
   const [products, setProducts] = useState<Product[]>(initialProducts)
@@ -62,7 +65,7 @@ export default function Fragrances() {
             ========================================================================= */}
         <div className="w-full max-w-[1583px] flex flex-col md:flex-row md:items-end justify-between border-b border-black/10 pb-6 sm:pb-8 mb-8 sm:mb-12 gap-6">
           <div>
-            <h1 className="text-[clamp(26px,4vw,56px)] font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black leading-tight">
+            <h1 className="text-[clamp(26px,4vw,56px)] font-normal font-['Montserrat',sans-serif] uppercase tracking-wider text-black leading-tight">
               ALL FORMULATIONS
             </h1>
           </div>
@@ -148,7 +151,7 @@ export default function Fragrances() {
                     </div>
 
                     {/* Unclipped Full Title with Proper Tracking & Wrapping */}
-                    <h3 className="text-xs sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Conquera',sans-serif] tracking-wider uppercase text-white leading-snug">
+                    <h3 className="text-xs sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Montserrat',sans-serif] tracking-wider uppercase text-white leading-snug">
                       {prod.name}
                     </h3>
                   </div>
@@ -169,7 +172,7 @@ export default function Fragrances() {
                       <div className="text-[10px] sm:text-[11px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-white/60 truncate max-w-[180px] sm:max-w-[220px]">
                         {prod.subtitle || 'Extrait de Parfum'}
                       </div>
-                      <div className="text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider text-white mt-0.5">
+                      <div className="text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Montserrat',sans-serif] tracking-wider text-white mt-0.5">
                         ₹{prod.price.toLocaleString('en-IN')}
                       </div>
                     </div>
@@ -188,6 +191,8 @@ export default function Fragrances() {
         )}
 
       </main>
+
+      {(settings?.enable_video_stories ?? true) && <VideoArea />}
 
       <Footer />
     </div>

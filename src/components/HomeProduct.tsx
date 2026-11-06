@@ -227,7 +227,7 @@ export default function HomeProduct() {
             PART 1: FOUR FORMULAS
             ========================================================================= */}
         <div className="w-full flex flex-col items-center gap-6 sm:gap-8 lg:gap-9 relative z-10">
-          <h2 className="text-center text-black text-[clamp(22px,2.4vw,46px)] font-normal font-['Conquera',sans-serif] leading-tight tracking-wider uppercase">
+          <h2 className="text-center text-black text-[clamp(22px,2.4vw,46px)] font-normal font-['Montserrat',sans-serif] leading-tight tracking-wider uppercase">
             FOUR FORMULAS
           </h2>
 
@@ -257,7 +257,7 @@ export default function HomeProduct() {
                   {/* Title */}
                   <Link
                     to={`/fragrances/${prod.slug || prod.id}`}
-                    className="w-full text-center text-black text-[11px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Conquera',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-70 transition-opacity cursor-pointer truncate px-1"
+                    className="w-full text-center text-black text-[11px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Montserrat',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-70 transition-opacity cursor-pointer truncate px-1"
                   >
                     {prod.name}
                   </Link>
@@ -279,7 +279,7 @@ export default function HomeProduct() {
                   {/* Price and CTA */}
                   <div className="w-full flex flex-col items-center gap-2 sm:gap-2.5 lg:gap-2.5 xl:gap-3 pb-0.5 sm:pb-1">
                     <div className="flex flex-col items-center">
-                      <div className="text-black text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Conquera',sans-serif] tracking-wider">
+                      <div className="text-black text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Montserrat',sans-serif] tracking-wider">
                         ₹{prod.price.toLocaleString('en-IN')}
                       </div>
                       <span className="text-[9px] sm:text-[10px] text-black/45 tracking-wider uppercase font-sans mt-0.5">
@@ -343,7 +343,7 @@ export default function HomeProduct() {
                 <div className="lg:col-span-6 flex flex-col justify-center space-y-3 lg:space-y-3 xl:space-y-5">
                   <Link
                     to={`/fragrances/${discoveryArchive.slug || discoveryArchive.id}`}
-                    className="text-white text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-normal font-['Conquera',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity cursor-pointer block"
+                    className="text-white text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-normal font-['Montserrat',sans-serif] leading-tight tracking-wider uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity cursor-pointer block"
                   >
                     {discoveryArchive.name.toUpperCase().includes('DISCOVERY') ? (
                       <>
@@ -368,7 +368,7 @@ export default function HomeProduct() {
 
                   <div className="pt-1.5 lg:pt-1 xl:pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 xl:gap-6">
                     <div className="flex flex-col">
-                      <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
+                      <div className="text-white text-xl sm:text-2xl lg:text-xl xl:text-2xl 2xl:text-3xl font-normal font-['Montserrat',sans-serif] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">
                         ₹{discoveryArchive.price.toLocaleString('en-IN')}
                       </div>
                       <span className="text-[10px] text-white/70 tracking-widest uppercase font-sans">

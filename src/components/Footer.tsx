@@ -32,7 +32,7 @@ export const Footer = ({
           
           {/* Top Left: Bold Brand Wordmark */}
           <div className="flex flex-col items-start max-w-sm">
-            <h2 className="text-black text-3xl sm:text-4xl lg:text-5xl font-normal font-['Conquera',sans-serif] tracking-wider uppercase leading-none">
+            <h2 className="text-black text-3xl sm:text-4xl lg:text-5xl font-semibold font-['Montserrat',sans-serif] tracking-wider uppercase leading-none">
               CHEMBROS
             </h2>
             <p className="mt-3 text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-xs">
@@ -45,7 +45,7 @@ export const Footer = ({
             
             {/* Column 1: THE BRAND */}
             <div className="flex flex-col items-start gap-2.5 sm:gap-3">
-              <span className="text-black text-[11px] sm:text-xs font-semibold font-['Conquera',sans-serif] tracking-widest uppercase">
+              <span className="text-black text-[11px] sm:text-xs font-semibold font-['Montserrat',sans-serif] tracking-widest uppercase">
                 THE BRAND
               </span>
               <div className="flex flex-col items-start gap-1.5 sm:gap-2">
@@ -69,12 +69,18 @@ export const Footer = ({
                 >
                   Fragrances
                 </Link>
+                <Link
+                  to="/faqs"
+                  className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors"
+                >
+                  FAQs
+                </Link>
               </div>
             </div>
 
             {/* Column 2: DISCOVER */}
             <div className="flex flex-col items-start gap-2.5 sm:gap-3">
-              <span className="text-black text-[11px] sm:text-xs font-semibold font-['Conquera',sans-serif] tracking-widest uppercase">
+              <span className="text-black text-[11px] sm:text-xs font-semibold font-['Montserrat',sans-serif] tracking-widest uppercase">
                 DISCOVER
               </span>
               <div className="flex flex-col items-start gap-1.5 sm:gap-2">
@@ -107,7 +113,7 @@ export const Footer = ({
 
             {/* Column 3: CONNECT */}
             <div className="flex flex-col items-start gap-2.5 sm:gap-3 col-span-2 sm:col-span-1">
-              <span className="text-black text-[11px] sm:text-xs font-semibold font-['Conquera',sans-serif] tracking-widest uppercase">
+              <span className="text-black text-[11px] sm:text-xs font-semibold font-['Montserrat',sans-serif] tracking-widest uppercase">
                 CONNECT
               </span>
               <div className="flex flex-col items-start gap-1.5 sm:gap-2">
@@ -121,18 +127,26 @@ export const Footer = ({
                 </a>
                 <button
                   type="button"
-                  onClick={() => onOpenPolicy?.('shipping')}
+                  onClick={() => {
+                    if (onOpenPolicy) onOpenPolicy('shipping')
+                    else window.location.href = '/faqs'
+                  }}
                   className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors cursor-pointer text-left whitespace-nowrap"
                 >
                   Shipping & Returns
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onOpenPolicy?.('privacy')}
+                <Link
+                  to="/privacy-policy"
+                  onClick={(e) => {
+                    if (onOpenPolicy) {
+                      e.preventDefault()
+                      onOpenPolicy('privacy')
+                    }
+                  }}
                   className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors cursor-pointer text-left whitespace-nowrap"
                 >
                   Privacy Policy
-                </button>
+                </Link>
               </div>
             </div>
 

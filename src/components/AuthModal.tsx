@@ -404,7 +404,7 @@ export default function AuthModal() {
             <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
             <span>LABORATORY ACCESS // CLIENT ARCHIVE</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-normal font-['Conquera',sans-serif] tracking-wider uppercase text-black leading-tight">
+          <h2 className="text-2xl sm:text-3xl font-normal font-['Montserrat',sans-serif] tracking-wider uppercase text-black leading-tight">
             {tab === 'signin'
               ? signInStep === 'otp'
                 ? 'SECURITY PASSCODE'
@@ -555,7 +555,7 @@ export default function AuthModal() {
                   <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
                     <KeyRound className="w-5 h-5 stroke-[1.5]" />
                   </div>
-                  <h3 className="text-sm font-semibold font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                  <h3 className="text-sm font-semibold font-['Montserrat',sans-serif] tracking-wider uppercase text-black">
                     ENTER PASSCODE
                   </h3>
                   <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -631,7 +631,7 @@ export default function AuthModal() {
                   <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
                     <KeyRound className="w-5 h-5 stroke-[1.5]" />
                   </div>
-                  <h3 className="text-sm font-semibold font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                  <h3 className="text-sm font-semibold font-['Montserrat',sans-serif] tracking-wider uppercase text-black">
                     VERIFY EMAIL ADDRESS
                   </h3>
                   <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -698,7 +698,7 @@ export default function AuthModal() {
                   <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
                     <ShieldCheck className="w-5 h-5 stroke-[1.5]" />
                   </div>
-                  <h3 className="text-sm font-semibold font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                  <h3 className="text-sm font-semibold font-['Montserrat',sans-serif] tracking-wider uppercase text-black">
                     ENTER CODE & NEW PASSWORD
                   </h3>
                   <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -1137,7 +1137,7 @@ export default function AuthModal() {
                   <div className="w-12 h-12 bg-[#F5F5F7] rounded-full flex items-center justify-center mx-auto text-black border border-black/5">
                     <KeyRound className="w-5 h-5 stroke-[1.5]" />
                   </div>
-                  <h3 className="text-sm font-semibold font-['Conquera',sans-serif] tracking-wider uppercase text-black">
+                  <h3 className="text-sm font-semibold font-['Montserrat',sans-serif] tracking-wider uppercase text-black">
                     VERIFY LABORATORY REGISTRATION
                   </h3>
                   <p className="text-xs text-black/60 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">

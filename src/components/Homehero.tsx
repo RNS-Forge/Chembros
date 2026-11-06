@@ -101,7 +101,6 @@ export default function HomeHero() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Inject high-priority preloader links in document head for instant retrieval
     const preloadLinks = [DEFAULT_MOBILE_PORTRAIT, HERO_BG_SRC].map((src) => {
       const link = document.createElement('link')
       link.rel = 'preload'
@@ -111,7 +110,6 @@ export default function HomeHero() {
       return link
     })
 
-    // Parallel GPU decode pass
     const img = new Image()
     img.src = DEFAULT_MOBILE_PORTRAIT
     if ('decode' in img) {
@@ -238,10 +236,8 @@ export default function HomeHero() {
           },
         })
 
-        // 1. Initial 1.2s delay to take in the fullscreen portrait
         tl.to({}, { duration: 1.2 })
 
-        // 2. Parallax camera pull-back
         tl.to(
           card,
           {
@@ -274,7 +270,6 @@ export default function HomeHero() {
           'zoom'
         )
 
-        // 3. Badges appear
         tl.to(
           badges,
           {
@@ -285,7 +280,6 @@ export default function HomeHero() {
           '-=0.45'
         )
 
-        // 4. Kinetic typography reveals
         tl.to(
           [headline, italic],
           {
@@ -363,7 +357,6 @@ export default function HomeHero() {
           gsap.set(leftTextRef.current, { y: 35, opacity: 0 })
           gsap.set(rightMetaRef.current, { y: 25, opacity: 0 })
 
-          // Center all 4 bottles grouped together initially
           bottleRefs.current.forEach((el, index) => {
             if (!el) return
             gsap.set(el, {
@@ -377,7 +370,6 @@ export default function HomeHero() {
             })
           })
 
-          // 1. Bottles fade in centered
           tl.to(bottleRefs.current, {
             opacity: 1,
             duration: 0.9,
@@ -385,10 +377,8 @@ export default function HomeHero() {
             ease: 'power2.out',
           })
 
-          // 2. HOLD FOR 1.5 SECONDS (Appreciable pause on all 4 bottles grouped)
           tl.to({}, { duration: 1.5 })
 
-          // 3. Background graphic emerges
           tl.to(
             heroBgRef.current,
             {
@@ -401,7 +391,6 @@ export default function HomeHero() {
             '-=0.3'
           )
 
-          // 4. Bottles disperse outward to their resting layout coordinates
           BOTTLES.forEach((bottle, idx) => {
             const el = bottleRefs.current[idx]
             if (!el) return
@@ -423,7 +412,6 @@ export default function HomeHero() {
             )
           })
 
-          // 5. Typography and Meta Information Reveal
           tl.to(
             leftTextRef.current,
             {
@@ -459,17 +447,6 @@ export default function HomeHero() {
       id="home-hero-section"
       className="w-full min-h-[100dvh] h-auto md:h-[75vh] md:min-h-[640px] md:max-h-[820px] lg:h-screen lg:max-h-none bg-white relative select-none flex flex-col items-center"
     >
-
-      {/* Floating Replay Button for Testing */}
-      {/* <button
-        type="button"
-        onClick={handleReplayAnimation}
-        className="fixed bottom-4 right-4 z-[999] px-3.5 py-2 rounded-full bg-black/90 hover:bg-black text-white text-[11px] font-mono tracking-wider shadow-2xl backdrop-blur-md border border-white/20 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-      >
-        <span>⟲</span>
-        <span>Replay Hero Animation</span>
-      </button> */}
-
       {/* =========================================================================
           DESKTOP & TABLET ARTBOARD (>= 768px)
           ========================================================================= */}
@@ -535,7 +512,8 @@ export default function HomeHero() {
               loadingFinished ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <h1 className="text-black text-[clamp(22px,2.5vw,46px)] font-normal font-['Conquera',sans-serif] leading-[1.08] uppercase tracking-wider">
+            {/* Bold Montserrat with tight tracking */}
+            <h1 className="text-black text-[clamp(22px,2.4vw,44px)] font-semibold font-['Montserrat',sans-serif] leading-[1.05] uppercase tracking-tight">
               Chemistry captured
             </h1>
             <div className="text-black text-[clamp(20px,2.3vw,42px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] leading-[1.15] italic mt-0.5">
@@ -589,7 +567,6 @@ export default function HomeHero() {
             ref={mobileCardRef}
             className="w-full h-full relative rounded-[28px] overflow-hidden bg-neutral-900 will-change-transform [backface-visibility:hidden]"
           >
-            {/* Portrait Image (Eager loaded with high fetchPriority) */}
             <img
               ref={mobileCardImgRef}
               src={DEFAULT_MOBILE_PORTRAIT}
@@ -600,25 +577,22 @@ export default function HomeHero() {
               draggable={false}
             />
 
-            {/* Atmosphere Mood Darkener */}
             <div
               ref={mobileCurtainRef}
               className="absolute inset-0 bg-black pointer-events-none"
             />
 
-            {/* Overlay Vignette */}
             <div
               ref={mobileBadgesRef}
               className="absolute inset-0 pointer-events-none"
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none">
-              </div>
+              <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* Middle: Kinetic Typography with snug vertical spacing */}
+        {/* Middle: Kinetic Typography */}
         <div className="w-full max-w-[330px] flex flex-col text-left space-y-1.5 my-3">
           
           <div className="overflow-hidden">
@@ -630,7 +604,7 @@ export default function HomeHero() {
           <div className="overflow-hidden">
             <h1
               ref={mobileHeadlineRef}
-              className="text-black text-[clamp(22px,6.2vw,27px)] font-normal font-['Conquera',sans-serif] leading-[1.06] uppercase tracking-wider will-change-transform"
+              className="text-black text-[clamp(21px,5.8vw,26px)] font-semibold font-['Montserrat',sans-serif] leading-[1.06] uppercase tracking-tight will-change-transform"
             >
               Chemistry captured
             </h1>
@@ -647,7 +621,7 @@ export default function HomeHero() {
 
           <p
             ref={mobileSubRef}
-            className="text-black/65 text-[11px] leading-relaxed pt-0.5"
+            className="text-black/85 text-[11px] leading-relaxed pt-0.5"
           >
             Where science meets scent. Explore our pure extrait molecular series.
           </p>
@@ -662,7 +636,7 @@ export default function HomeHero() {
           </div>
         </div>
 
-        {/* Bottom: Minimal Scroll Indicator with clear buffer above HomeProduct */}
+        {/* Bottom: Minimal Scroll Indicator */}
         <div
           ref={mobileMetaRef}
           className="w-full max-w-[330px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-1 shrink-0"

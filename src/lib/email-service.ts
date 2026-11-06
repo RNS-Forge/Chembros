@@ -1,5 +1,14 @@
 import nodemailer from 'nodemailer'
+import fs from 'fs'
+import path from 'path'
 import { serverConfig } from './server-config'
+
+const DEFAULT_SITE_URL = 'https://thechemicalbrothers.in'
+const SITE_URL = (serverConfig.FRONTEND_URL && !serverConfig.FRONTEND_URL.includes('localhost'))
+  ? serverConfig.FRONTEND_URL.replace(/\/+$/, '')
+  : DEFAULT_SITE_URL
+
+const PUBLIC_LOGO_URL = `${SITE_URL}/assets/email-logo.png`
 
 function cleanText(text?: string): string {
   if (!text) return ''
@@ -21,17 +30,20 @@ export async function sendEmail({
   html: string
   attachments?: Array<{
     filename: string
-    content: Buffer | string
+    content?: Buffer | string
+    path?: string
     contentType?: string
+    cid?: string
   }>
 }): Promise<boolean> {
   // 1. HTTPS Webhook Gateway
   if (serverConfig.EMAIL_WEBHOOK_URL) {
     try {
+      const webhookHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
       const res = await fetch(serverConfig.EMAIL_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, subject, html }),
+        body: JSON.stringify({ to, subject, html: webhookHtml }),
       })
       if (res.ok) return true
     } catch (err) {
@@ -42,6 +54,7 @@ export async function sendEmail({
   // 2. Brevo HTTPS API
   if (serverConfig.BREVO_API_KEY) {
     try {
+      const brevoHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
       const res = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -49,10 +62,10 @@ export async function sendEmail({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sender: { name: 'Chembros Parfums', email: serverConfig.SMTP_FROM },
+          sender: { name: 'Chembros', email: serverConfig.SMTP_FROM },
           to: [{ email: to }],
           subject,
-          htmlContent: html,
+          htmlContent: brevoHtml,
         }),
       })
       if (res.ok) return true
@@ -64,6 +77,7 @@ export async function sendEmail({
   // 3. Resend HTTPS API
   if (serverConfig.RESEND_API_KEY) {
     try {
+      const resendHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -71,10 +85,10 @@ export async function sendEmail({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'Chembros Parfums <onboarding@resend.dev>',
+          from: 'Chembros <onboarding@resend.dev>',
           to: [to],
           subject,
-          html,
+          html: resendHtml,
         }),
       })
       if (res.ok) return true
@@ -98,12 +112,28 @@ export async function sendEmail({
       },
     })
 
+    const finalAttachments: any[] = attachments ? [...attachments] : []
+    let finalHtml = html
+
+    if (html.includes('cid:chembros-logo')) {
+      const localLogoPath = path.join(process.cwd(), 'public/assets/email-logo.png')
+      if (fs.existsSync(localLogoPath)) {
+        finalAttachments.push({
+          filename: 'chembros-logo.png',
+          path: localLogoPath,
+          cid: 'chembros-logo',
+        })
+      } else {
+        finalHtml = finalHtml.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
+      }
+    }
+
     await transporter.sendMail({
-      from: `"Chembros Parfums" <${serverConfig.SMTP_FROM}>`,
+      from: `"Chembros" <${serverConfig.SMTP_FROM}>`,
       to,
       subject,
-      html,
-      attachments: attachments || undefined,
+      html: finalHtml,
+      attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
     })
     return true
   } catch (smtpErr) {
@@ -138,15 +168,16 @@ function wrapEmailHtml(content: string): string {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chembros Parfums</title>
+    <title>Chembros</title>
 </head>
 <body style="margin: 0; padding: 32px 12px; background-color: #f7f7f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; -webkit-font-smoothing: antialiased;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);">
-        <!-- Minimal Header -->
+        <!-- Minimal Header with Brand Logo -->
         <tr>
             <td style="padding: 28px 24px 20px; text-align: center; border-bottom: 1px solid #f3f4f6;">
-                <div style="font-size: 20px; font-weight: 800; letter-spacing: 5px; color: #000000; text-transform: uppercase;">CHEM BROS</div>
-                <div style="font-size: 10px; font-weight: 600; letter-spacing: 2.5px; color: #6b7280; text-transform: uppercase; margin-top: 4px;">HAUTE PARFUMERIE</div>
+                <a href="${SITE_URL}" target="_blank" style="text-decoration: none; display: inline-block;">
+                    <img src="cid:chembros-logo" alt="CHEM BROS" width="96" style="display: block; margin: 0 auto; width: 96px; max-width: 96px; height: auto; border: 0; outline: none; text-decoration: none;" />
+                </a>
             </td>
         </tr>
 
@@ -161,7 +192,7 @@ function wrapEmailHtml(content: string): string {
         <tr>
             <td style="background-color: #fafafa; border-top: 1px solid #f3f4f6; padding: 24px 24px; text-align: center;">
                 <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #4b5563; text-transform: uppercase;">
-                    Chembros Parfums Private Limited
+                    Chembros Private Limited
                 </div>
                 <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
                     Madurai, Tamil Nadu, India
@@ -551,7 +582,7 @@ export async function sendOrderPlacedEmail(params: {
   itemsSummary: string
   shippingAddress?: string
 }): Promise<boolean> {
-  const subject = `Order Confirmed #${cleanText(params.orderNumber)} - Chembros Parfums`
+  const subject = `Order Confirmed #${cleanText(params.orderNumber)} - Chembros`
   const html = buildOrderHtml({
     titleBadge: 'Order Confirmed',
     headline: `Thank You, ${cleanText(params.customerName)}!`,

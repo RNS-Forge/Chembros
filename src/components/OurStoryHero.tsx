@@ -12,11 +12,13 @@ import Image2 from '../assets/ourstory/2.webp';
 import Image3 from '../assets/ourstory/3.webp';
 import Image4 from '../assets/ourstory/4.webp';
 import Image5 from '../assets/ourstory/5.webp';
+import provenanceRaw from '../assets/bg/ctabg2.webp';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const DEFAULT_STORY_BG = (Herobg as any)?.src || Herobg;
 const defaultBottle = (bottleImg as any)?.src || bottleImg;
+const provenanceSrc = (provenanceRaw as any)?.src || provenanceRaw;
 
 interface StoryCardItem {
   id: number;
@@ -282,7 +284,7 @@ export const OurStoryHero: React.FC = () => {
               <span className="text-[10px] font-mono tracking-[0.3em] uppercase text-black/50 mb-3 block">
                 CHEMBROS HERITAGE ARCHIVE
               </span>
-              <h1 className="font-['Conquera',sans-serif] text-3xl sm:text-5xl lg:text-7xl font-normal text-black tracking-wider uppercase leading-[1.12]">
+              <h1 className="font-['Montserrat',sans-serif] text-3xl sm:text-5xl lg:text-7xl font-normal text-black tracking-wider uppercase leading-[1.12]">
                 Two Brothers. <br />
                 <span className="italic font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] lowercase text-black/90">
                   a bigger purpose.
@@ -306,9 +308,8 @@ export const OurStoryHero: React.FC = () => {
               style={{ willChange: 'transform' }}
             >
               <div
-                className={`grid gap-5 sm:gap-7 lg:gap-8 w-full max-w-[1583px] mx-auto ${
-                  cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'
-                }`}
+                className={`grid gap-5 sm:gap-7 lg:gap-8 w-full max-w-[1583px] mx-auto ${cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'
+                  }`}
               >
                 {gridRows.map((row, rowIdx) =>
                   row.map((itemIdx, colIdx) => {
@@ -400,7 +401,7 @@ export const OurStoryHero: React.FC = () => {
                           </div>
 
                           <div>
-                            <h3 className="text-sm sm:text-lg font-normal font-['Conquera',sans-serif] tracking-wider uppercase text-white leading-tight">
+                            <h3 className="text-sm sm:text-lg font-normal font-['Montserrat',sans-serif] tracking-wider uppercase text-white leading-tight">
                               {item.title}
                             </h3>
                             <p className="mt-2 text-[11px] sm:text-xs text-white/85 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed line-clamp-4">
@@ -433,7 +434,7 @@ export const OurStoryHero: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <span className="text-[10px] font-mono tracking-widest text-black/50 uppercase">PILLAR 01</span>
-                <h3 className="font-['Conquera',sans-serif] text-lg uppercase tracking-wider text-black">
+                <h3 className="font-['Montserrat',sans-serif] text-lg uppercase tracking-wider text-black">
                   Botanical Lineage
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
@@ -448,7 +449,7 @@ export const OurStoryHero: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <span className="text-[10px] font-mono tracking-widest text-black/50 uppercase">PILLAR 02</span>
-                <h3 className="font-['Conquera',sans-serif] text-lg uppercase tracking-wider text-black">
+                <h3 className="font-['Montserrat',sans-serif] text-lg uppercase tracking-wider text-black">
                   Molecular Isolation
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
@@ -463,7 +464,7 @@ export const OurStoryHero: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <span className="text-[10px] font-mono tracking-widest text-black/50 uppercase">PILLAR 03</span>
-                <h3 className="font-['Conquera',sans-serif] text-lg uppercase tracking-wider text-black">
+                <h3 className="font-['Montserrat',sans-serif] text-lg uppercase tracking-wider text-black">
                   Extrait Concentration
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
@@ -474,34 +475,41 @@ export const OurStoryHero: React.FC = () => {
           </div>
 
           {/* Part B: Provenance Sequence */}
-          <div className="w-full bg-white border border-black/10 rounded-[32px] p-6 sm:p-12 lg:p-16 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-10">
-            <div className="max-w-xl space-y-5">
-              <div className="inline-flex items-center gap-2 text-[10px] font-mono tracking-widest text-black/60 uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                <span>INTEGRATED SUPPLY SYSTEM</span>
-              </div>
-              <h2 className="font-['Conquera',sans-serif] text-2xl sm:text-4xl uppercase tracking-wider text-black leading-tight">
+          <div className="w-full relative rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] overflow-hidden border border-black/10 shadow-xs p-6 sm:p-10 lg:p-14 xl:p-16 min-h-[460px] sm:min-h-[500px] lg:min-h-[540px] flex items-center justify-start">
+
+            {/* Full Card Background Image */}
+            <img
+              src={provenanceSrc}
+              alt="Chembros Extraction & Flacon Craftsmanship"
+              className="absolute inset-0 w-full h-full object-cover object-[75%_center] sm:object-[68%_center] lg:object-center select-none pointer-events-none"
+              draggable={false}
+            />
+
+            {/* Soft Light Diffuser (Protects text legibility on the left without a heavy dark overlay) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/60 to-transparent sm:w-[65%] lg:w-[55%] pointer-events-none" />
+
+            {/* Content Layer (Aligned Left) */}
+            <div className="relative z-10 max-w-lg sm:max-w-md lg:max-w-lg space-y-4 sm:space-y-5 text-left">
+
+              {/* Title - Montserrat Semibold with Tight Tracking */}
+              <h2 className="font-['Montserrat',sans-serif] text-2xl sm:text-3xl lg:text-4xl font-semibold uppercase tracking-tight text-black leading-[1.08]">
                 From Southern Flora to Global Extraits
               </h2>
-              <p className="text-xs sm:text-sm text-neutral-600 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
-                Most luxury perfume labels license third-party formulas and re-bottle them. Chembros controls the synthesis chain: botanical cultivation, laboratory separation, maturation, and climate-controlled packaging in Madurai.
-              </p>
-              <div className="pt-2 flex items-center gap-6 text-xs font-mono tracking-wider text-black/80 uppercase">
-                <span>01 HARVEST</span>
-                <span>&rarr;</span>
-                <span>02 FRACTIONATE</span>
-                <span>&rarr;</span>
-                <span>03 BOTTLE</span>
-              </div>
-            </div>
 
-            <div className="w-full lg:w-[420px] aspect-square rounded-3xl bg-neutral-50 overflow-hidden relative flex items-center justify-center p-8 border border-black/5">
-              <div className="absolute inset-0 bg-radial from-white/80 to-transparent pointer-events-none" />
-              <img
-                src={defaultBottle}
-                alt="Chembros Flacon"
-                className="h-full w-auto object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.14)] select-none pointer-events-none"
-              />
+              {/* Description Copy */}
+              <p className="text-xs sm:text-[13px] text-neutral-700 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed max-w-sm sm:max-w-none">
+                Most luxury perfume labels license third-party formulas and re-bottle them. Chembros controls the entire synthesis chain: botanical cultivation, laboratory fractional separation, maturation, and climate-controlled packaging in Madurai.
+              </p>
+
+              {/* Stepper Flow */}
+              <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] sm:text-[11px] font-mono tracking-wider text-black/85 uppercase font-medium">
+                <span className="px-2.5 py-1 rounded-full bg-black/5 border border-black/10">01 HARVEST</span>
+                <span className="text-black/40">&rarr;</span>
+                <span className="px-2.5 py-1 rounded-full bg-black/5 border border-black/10">02 FRACTIONATE</span>
+                <span className="text-black/40">&rarr;</span>
+                <span className="px-2.5 py-1 rounded-full bg-black/5 border border-black/10">03 BOTTLE</span>
+              </div>
+
             </div>
           </div>
 

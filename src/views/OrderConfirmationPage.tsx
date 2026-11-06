@@ -86,7 +86,7 @@ export default function OrderConfirmationPage() {
             <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-neutral-400 block mb-1">
               PAYMENT VERIFIED
             </span>
-            <h1 className="text-2xl sm:text-4xl font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black">
+            <h1 className="text-2xl sm:text-4xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black">
               Order Confirmed
             </h1>
             <p className="text-xs sm:text-sm text-neutral-600 mt-2 font-sans leading-relaxed">
@@ -226,7 +226,7 @@ export default function OrderConfirmationPage() {
                 {order.items.map((item, idx) => (
                   <div key={idx} className="py-4 flex justify-between items-center text-xs">
                     <div>
-                      <p className="font-['Conquera',sans-serif] text-sm uppercase text-black tracking-wide">
+                      <p className="font-['Montserrat',sans-serif] text-sm uppercase text-black tracking-wide">
                         {cleanText(item.name)}
                       </p>
                       <p className="text-neutral-500 font-mono text-[11px] mt-0.5">

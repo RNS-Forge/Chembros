@@ -246,7 +246,7 @@ export default function NavBar({
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex flex-col space-y-4 pt-1 font-['Conquera',sans-serif] uppercase tracking-wider text-xs sm:text-[13px]">
+          <nav className="flex flex-col space-y-4 pt-1 font-['Montserrat',sans-serif] uppercase tracking-wider text-xs sm:text-[13px]">
             {/* Auth / Account Link */}
             {currentUser ? (
               <div className="flex flex-col border-b border-black/5 pb-3">

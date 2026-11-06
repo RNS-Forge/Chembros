@@ -566,7 +566,7 @@ export default function AuthPage() {
             {signInStep === 'otp' && (
               <form onSubmit={handleSignInVerifyOtp} className="space-y-4 text-center">
                 <div>
-                  <h3 className="font-['Conquera',sans-serif] text-sm uppercase tracking-wider text-black">
+                  <h3 className="font-['Montserrat',sans-serif] text-sm uppercase tracking-wider text-black">
                     Enter Verification Code
                   </h3>
                   <p className="text-xs text-neutral-500 mt-1">
@@ -610,7 +610,7 @@ export default function AuthPage() {
             {signInStep === 'forgot_request' && (
               <form onSubmit={handleForgotPasswordRequest} className="space-y-4">
                 <div>
-                  <h3 className="font-['Conquera',sans-serif] text-sm uppercase tracking-wider text-black">
+                  <h3 className="font-['Montserrat',sans-serif] text-sm uppercase tracking-wider text-black">
                     Reset Password
                   </h3>
                   <p className="text-xs text-neutral-500 mt-1">
@@ -655,7 +655,7 @@ export default function AuthPage() {
             {signInStep === 'forgot_verify' && (
               <form onSubmit={handleResetPassword} className="space-y-3.5">
                 <div>
-                  <h3 className="font-['Conquera',sans-serif] text-sm uppercase tracking-wider text-black">
+                  <h3 className="font-['Montserrat',sans-serif] text-sm uppercase tracking-wider text-black">
                     New Password
                   </h3>
                   <p className="text-xs text-neutral-500 mt-0.5">
@@ -963,7 +963,7 @@ export default function AuthPage() {
             {registerStep === 'otp' && (
               <form onSubmit={handleRegisterVerifyOtp} className="space-y-4 text-center">
                 <div>
-                  <h3 className="font-['Conquera',sans-serif] text-sm uppercase tracking-wider text-black">
+                  <h3 className="font-['Montserrat',sans-serif] text-sm uppercase tracking-wider text-black">
                     Verify Your Email
                   </h3>
                   <p className="text-xs text-neutral-500 mt-1">

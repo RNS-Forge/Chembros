@@ -294,7 +294,7 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-2xl font-normal font-['Conquera',sans-serif] uppercase mb-2">Formulation Not Found</h2>
+        <h2 className="text-2xl font-normal font-['Montserrat',sans-serif] uppercase mb-2">Formulation Not Found</h2>
         <p className="text-sm text-neutral-500 mb-6 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
           The fragrance you are searching for is unavailable.
         </p>
@@ -485,7 +485,7 @@ export default function ProductDetail() {
                   {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
                 </span>
 
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] tracking-wide text-black leading-[1.12] uppercase">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] tracking-wide text-black leading-[1.12] uppercase">
                   {product.name}
                 </h1>
 
@@ -503,11 +503,11 @@ export default function ProductDetail() {
                     Price
                   </span>
                   <div className="flex items-baseline gap-2 sm:gap-2.5">
-                    <span className="text-xl sm:text-2xl font-normal font-['Conquera',sans-serif] text-black tracking-tight">
+                    <span className="text-xl sm:text-2xl font-normal font-['Montserrat',sans-serif] text-black tracking-tight">
                       ₹{product.price.toLocaleString('en-IN')}
                     </span>
                     {product.original_price && product.original_price > product.price && (
-                      <span className="text-xs sm:text-sm font-normal font-['Conquera',sans-serif] text-black/40 line-through">
+                      <span className="text-xs sm:text-sm font-normal font-['Montserrat',sans-serif] text-black/40 line-through">
                         ₹{product.original_price.toLocaleString('en-IN')}
                       </span>
                     )}
@@ -614,7 +614,7 @@ export default function ProductDetail() {
               <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                 COMMUNITY FEEDBACK
               </span>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wider text-black">
                 Customer Reviews
               </h2>
             </div>
@@ -687,7 +687,7 @@ export default function ProductDetail() {
                           ))}
                         </div>
 
-                        <h3 className="text-xs sm:text-sm font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black leading-snug">
+                        <h3 className="text-xs sm:text-sm font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black leading-snug">
                           "{rev.title}"
                         </h3>
                         <p className="mt-2 text-xs sm:text-[13px] text-neutral-600 leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -723,7 +723,7 @@ export default function ProductDetail() {
                 <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                   EXPLORE OTHER SCENTS
                 </span>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Conquera',sans-serif] uppercase tracking-wider text-black">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wider text-black">
                   More From the Collection
                 </h2>
               </div>
@@ -742,7 +742,7 @@ export default function ProductDetail() {
                   to={`/fragrances/${other.slug || other.id}`}
                   className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[280px] sm:h-[380px] md:h-[440px] lg:h-[470px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-black text-white overflow-hidden flex flex-col justify-between p-3 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] group"
                 >
-                  <div className="w-full text-center text-white text-[10px] sm:text-xs md:text-sm font-normal font-['Conquera',sans-serif] tracking-wider uppercase pt-0.5 truncate">
+                  <div className="w-full text-center text-white text-[10px] sm:text-xs md:text-sm font-normal font-['Montserrat',sans-serif] tracking-wider uppercase pt-0.5 truncate">
                     {other.name}
                   </div>
 
@@ -756,7 +756,7 @@ export default function ProductDetail() {
                   </div>
 
                   <div className="w-full flex items-center justify-between border-t border-white/10 pt-2 pb-0.5">
-                    <div className="text-white text-xs sm:text-base font-normal font-['Conquera',sans-serif] tracking-wider">
+                    <div className="text-white text-xs sm:text-base font-normal font-['Montserrat',sans-serif] tracking-wider">
                       ₹{other.price.toLocaleString('en-IN')}
                     </div>
                     <span className="text-[9px] sm:text-[10px] font-mono uppercase text-white/60 tracking-wider">
@@ -787,7 +787,7 @@ export default function ProductDetail() {
               <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                 CHEMBROS FRAGRANCE REVIEW
               </span>
-              <h3 className="text-xl sm:text-2xl font-normal font-['Conquera',sans-serif] uppercase tracking-wide text-black">
+              <h3 className="text-xl sm:text-2xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black">
                 Review Fragrance
               </h3>
               <p className="text-xs text-neutral-500 mt-1">
