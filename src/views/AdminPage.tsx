@@ -1453,7 +1453,11 @@ export default function AdminPage() {
 
             {/* Table Container */}
             <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => e.preventDefault()}
+              >
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>
@@ -1601,18 +1605,26 @@ export default function AdminPage() {
                         return (
                           <tr
                             key={p.id}
-                            draggable
-                            onDragStart={() => setDraggedProductIndex(idx)}
                             onDragOver={(e) => {
                               e.preventDefault()
+                              e.stopPropagation()
+                              e.dataTransfer.dropEffect = 'move'
                               if (dragOverProductIndex !== idx) setDragOverProductIndex(idx)
                             }}
-                            onDrop={() => handleProductDrop(idx)}
-                            onDragEnd={() => {
-                              setDraggedProductIndex(null)
-                              setDragOverProductIndex(null)
+                            onDragEnter={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
                             }}
-                            className={`transition-all select-none ${
+                            onDragLeave={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleProductDrop(idx)
+                            }}
+                            className={`transition-all ${
                               dragOverProductIndex === idx
                                 ? 'bg-[#f4effc] border-t-2 border-[#4a2e70]'
                                 : draggedProductIndex === idx
@@ -1620,8 +1632,23 @@ export default function AdminPage() {
                                 : 'hover:bg-[#faf8fd]'
                             }`}
                           >
-                            <td className="py-3 px-3 text-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-black">
-                              <div className="flex items-center justify-center gap-1.5" title="Drag row to rearrange sequence">
+                            <td
+                              className="py-3 px-3 text-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-black select-none"
+                              draggable
+                              onDragStart={(e) => {
+                                e.stopPropagation()
+                                e.dataTransfer.effectAllowed = 'move'
+                                e.dataTransfer.setData('text/plain', String(idx))
+                                setDraggedProductIndex(idx)
+                              }}
+                              onDragEnd={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setDraggedProductIndex(null)
+                                setDragOverProductIndex(null)
+                              }}
+                            >
+                              <div className="flex items-center justify-center gap-1.5 pointer-events-none" title="Drag handle to rearrange sequence">
                                 <GripVertical className="w-4 h-4 text-neutral-400 hover:text-black shrink-0" />
                                 <span className="font-mono text-[11px] font-bold text-neutral-600">
                                   #{idx + 1}
@@ -1659,6 +1686,8 @@ export default function AdminPage() {
                                 <span className="text-neutral-500 font-mono text-xs">₹</span>
                                 <input
                                   type="number"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   value={curPrice}
                                   onChange={(e) =>
                                     setPriceEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
@@ -1673,6 +1702,8 @@ export default function AdminPage() {
                                 <span className="text-neutral-500 font-mono text-xs">₹</span>
                                 <input
                                   type="number"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   value={curOrig}
                                   onChange={(e) =>
                                     setOrigPriceEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
@@ -1688,6 +1719,8 @@ export default function AdminPage() {
                                 <input
                                   type="number"
                                   min="0"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   value={curDeliveryFee}
                                   onChange={(e) =>
                                     setDeliveryFeeEdits((prev) => ({
@@ -1718,6 +1751,8 @@ export default function AdminPage() {
                               <div className="flex items-center gap-1">
                                 <input
                                   type="number"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   defaultValue={p.stock}
                                   onChange={(e) =>
                                     setStockEdits((prev) => ({ ...prev, [String(p.id)]: Number(e.target.value) }))
@@ -2344,7 +2379,11 @@ export default function AdminPage() {
 
             {/* Table Container */}
             <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => e.preventDefault()}
+              >
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>
@@ -2707,7 +2746,11 @@ export default function AdminPage() {
 
             {/* Table Container */}
             <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
+              <div
+                className="overflow-x-auto"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => e.preventDefault()}
+              >
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>

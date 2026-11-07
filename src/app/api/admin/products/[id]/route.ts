@@ -29,10 +29,11 @@ export async function GET(
     }
 
     const { id } = await params
+    const targetId = isNaN(Number(id)) ? id : Number(id)
     const { data, error } = await supabaseAdmin
       .from('products')
       .select('*')
-      .eq('id', id)
+      .eq('id', targetId)
       .single()
 
     if (error || !data) {
@@ -70,6 +71,7 @@ async function handleUpdate(
     }
 
     const { id } = await paramsPromise
+    const targetId = isNaN(Number(id)) ? id : Number(id)
     const body = await req.json()
 
     const updatePayload: Record<string, any> = {
@@ -102,7 +104,7 @@ async function handleUpdate(
     let { data, error } = await supabaseAdmin
       .from('products')
       .update(updatePayload)
-      .eq('id', id)
+      .eq('id', targetId)
       .select()
       .single()
 
@@ -112,7 +114,7 @@ async function handleUpdate(
       const retry = await supabaseAdmin
         .from('products')
         .update(payloadWithoutSort)
-        .eq('id', id)
+        .eq('id', targetId)
         .select()
         .single()
       data = retry.data
@@ -141,10 +143,11 @@ export async function DELETE(
     }
 
     const { id } = await params
+    const targetId = isNaN(Number(id)) ? id : Number(id)
     const { error } = await supabaseAdmin
       .from('products')
       .delete()
-      .eq('id', id)
+      .eq('id', targetId)
 
     if (error) {
       console.error('Delete product error:', error)
