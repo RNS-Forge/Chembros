@@ -132,8 +132,9 @@ export default function Fragrances() {
           </div>
         ) : (
           <div className="w-full max-w-[1583px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-4 xl:gap-6 2xl:gap-8 justify-items-center">
-            {displayedProducts.map((prod) => {
+            {displayedProducts.map((prod, idx) => {
               const isArchive = Boolean(prod.is_archive)
+              const specimenCode = String(idx + 1).padStart(2, '0')
 
               return (
                 <Link
@@ -145,7 +146,7 @@ export default function Fragrances() {
                   <div className="w-full space-y-1.5">
                     <div className="flex items-center justify-between text-black/50">
                       <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">
-                        SPECIMEN {prod.code || `0${prod.id}`}
+                        SPECIMEN {specimenCode}
                       </span>
 
                       <span className="text-[9px] sm:text-[10px] font-mono text-black/70 bg-black/5 px-2 py-0.5 rounded-full border border-black/10">

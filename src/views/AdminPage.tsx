@@ -28,6 +28,7 @@ import { useAuth } from '../context/AuthContext'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import {
   ShieldCheck,
+  GripVertical,
   Truck,
   Check,
   Copy,
@@ -91,6 +92,10 @@ export default function AdminPage() {
   // Feedback notifications
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
 
+  // Drag and Drop arrangement state
+  const [draggedProductIndex, setDraggedProductIndex] = useState<number | null>(null)
+  const [dragOverProductIndex, setDragOverProductIndex] = useState<number | null>(null)
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
   // Column Search toggles (matching Image 2)
   const [productColSearch, setProductColSearch] = useState(false)
   const [orderColSearch, setOrderColSearch] = useState(false)
@@ -708,6 +713,46 @@ export default function AdminPage() {
     }
   }
 
+  // Handle drag and drop row reordering
+  const handleProductDrop = async (dropIndex: number) => {
+    if (draggedProductIndex === null || draggedProductIndex === dropIndex) {
+      setDraggedProductIndex(null)
+      setDragOverProductIndex(null)
+      return
+    }
+
+    const reordered = [...filteredProducts]
+    const [movedItem] = reordered.splice(draggedProductIndex, 1)
+    reordered.splice(dropIndex, 0, movedItem)
+
+    const updatedWithSort = reordered.map((item, idx) => ({
+      ...item,
+      sort_order: idx + 1,
+    }))
+
+    setProducts((prev) => {
+      const sortMap = new Map(updatedWithSort.map((p) => [String(p.id), p.sort_order]))
+      return prev
+        .map((p) => (sortMap.has(String(p.id)) ? { ...p, sort_order: sortMap.get(String(p.id))! } : p))
+        .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+    })
+
+    setDraggedProductIndex(null)
+    setDragOverProductIndex(null)
+    setIsSavingOrder(true)
+
+    try {
+      await Promise.all(
+        updatedWithSort.map((p) => updateProductSortOrderApi(p.id, p.sort_order!))
+      )
+      setSaveFeedback('Catalog arrangement updated and saved.')
+    } catch (err) {
+      console.error('Failed to update arrangement:', err)
+    } finally {
+      setIsSavingOrder(false)
+    }
+  }
+
   // Quick Sort Order Save per product
   const handleQuickSortOrderSave = async (id: number | string) => {
     const newOrder = sortOrderEdits[String(id)]
@@ -1282,8 +1327,13 @@ export default function AdminPage() {
                     {filteredProducts.length}
                   </span>
                 </h2>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Manage pricing, delivery fees, descriptions, and stock levels.
+                <p className="text-xs text-neutral-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                  <span>Manage pricing, delivery fees, and stock. Drag rows to reorder sequence.</span>
+                  {isSavingOrder && (
+                    <span className="text-[11px] font-mono text-[#4a2e70] font-bold animate-pulse">
+                      Saving order...
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -1407,6 +1457,7 @@ export default function AdminPage() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#f4effc] border-b border-[#e2dcee] text-[#3d2757] font-semibold text-xs">
                     <tr>
+                      <th className="py-3 px-3 w-14 text-center font-semibold" title="Drag and drop rows to reorder">Order</th>
                       <th className="py-3 px-4 font-semibold">Product</th>
                       <th className="py-3 px-4 font-semibold">Fragrance</th>
                       <th className="py-3 px-4 font-semibold">Description</th>
@@ -1415,12 +1466,12 @@ export default function AdminPage() {
                       <th className="py-3 px-4 font-semibold">Delivery Fee (₹)</th>
                       <th className="py-3 px-4 font-semibold">Stock</th>
                       <th className="py-3 px-4 font-semibold">Margin</th>
-                      <th className="py-3 px-4 font-semibold text-center" title="Display order on storefront (1 = first)">Sort #</th>
                       <th className="py-3 px-4 font-semibold text-right">Edit</th>
                     </tr>
 
                     {productColSearch && (
                       <tr className="bg-[#faf8fd] border-b border-neutral-200 text-neutral-700 font-normal">
+                        <th className="py-2 px-3"></th>
                         <th className="py-2 px-4"></th>
                         <th className="py-2 px-4">
                           <div className="relative flex items-center">
@@ -1526,7 +1577,7 @@ export default function AdminPage() {
                         </td>
                       </tr>
                     ) : (
-                      filteredProducts.map((p) => {
+                      filteredProducts.map((p, idx) => {
                         const curPrice = priceEdits[String(p.id)] !== undefined ? priceEdits[String(p.id)] : p.price
                         const curOrig =
                           origPriceEdits[String(p.id)] !== undefined
@@ -1548,7 +1599,35 @@ export default function AdminPage() {
                           curOrig > curPrice ? Math.round(((curOrig - curPrice) / curOrig) * 100) : 0
 
                         return (
-                          <tr key={p.id} className="hover:bg-[#faf8fd] transition-colors">
+                          <tr
+                            key={p.id}
+                            draggable
+                            onDragStart={() => setDraggedProductIndex(idx)}
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              if (dragOverProductIndex !== idx) setDragOverProductIndex(idx)
+                            }}
+                            onDrop={() => handleProductDrop(idx)}
+                            onDragEnd={() => {
+                              setDraggedProductIndex(null)
+                              setDragOverProductIndex(null)
+                            }}
+                            className={`transition-all select-none ${
+                              dragOverProductIndex === idx
+                                ? 'bg-[#f4effc] border-t-2 border-[#4a2e70]'
+                                : draggedProductIndex === idx
+                                ? 'opacity-40 bg-neutral-100'
+                                : 'hover:bg-[#faf8fd]'
+                            }`}
+                          >
+                            <td className="py-3 px-3 text-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-black">
+                              <div className="flex items-center justify-center gap-1.5" title="Drag row to rearrange sequence">
+                                <GripVertical className="w-4 h-4 text-neutral-400 hover:text-black shrink-0" />
+                                <span className="font-mono text-[11px] font-bold text-neutral-600">
+                                  #{idx + 1}
+                                </span>
+                              </div>
+                            </td>
                             <td className="py-3 px-4">
                               <div className="w-12 h-14 bg-neutral-100 rounded-lg border border-neutral-200 p-1 flex items-center justify-center overflow-hidden">
                                 {p.image_base64 ? (
@@ -1672,37 +1751,6 @@ export default function AdminPage() {
                                   Standard
                                 </span>
                               )}
-                            </td>
-
-                            {/* Sort Order Cell */}
-                            <td className="py-3 px-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  title="Display order on storefront (1 = first)"
-                                  defaultValue={p.sort_order ?? ''}
-                                  placeholder="—"
-                                  onChange={(e) =>
-                                    setSortOrderEdits((prev) => ({
-                                      ...prev,
-                                      [String(p.id)]: Number(e.target.value),
-                                    }))
-                                  }
-                                  className="w-12 px-1.5 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-center text-black focus:outline-none focus:border-[#4a2e70]"
-                                />
-                                {sortOrderEdits[String(p.id)] !== undefined &&
-                                  sortOrderEdits[String(p.id)] !== (p.sort_order ?? 0) && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleQuickSortOrderSave(p.id)}
-                                      className="p-1 bg-[#4a2e70] text-white rounded hover:bg-[#3b245e] cursor-pointer shadow-2xs"
-                                      title="Save Display Order"
-                                    >
-                                      <Save className="w-3 h-3" />
-                                    </button>
-                                  )}
-                              </div>
                             </td>
 
                             <td className="py-3 px-4 text-right">
