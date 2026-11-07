@@ -45,6 +45,13 @@ export async function GET(req: Request) {
 
     let query = supabaseAdmin.from('orders').select('*')
 
+    // Exclude abandoned checkouts: rows created at order time but never paid.
+    // An order only "exists" for the business once payment succeeds (PAID) or it has
+    // been manually advanced past the awaiting-payment stage. We hide orders that are
+    // still unpaid AND never moved beyond 'Awaiting Payment'.
+    query = query
+      .not('order_status', 'ilike', 'Awaiting Payment')
+
     if (statusFilter && statusFilter !== 'all') {
       query = query.ilike('order_status', `%${statusFilter}%`)
     }
