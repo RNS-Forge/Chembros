@@ -37,16 +37,9 @@ export default function HomeProduct() {
         p.slug === 'the-discovery-archive' ||
         p.name.toLowerCase().includes('discovery')
     )
-    const orderMap: Record<string, number> = {
-      'molecule-j': 0,
-      'molecule-x': 1,
-      'molecule-t': 2,
-      'molecule-k': 3,
-      'molecule-r': 3,
-    }
     const sortedMolecules = [...molecules].sort((a, b) => {
-      const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : (a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99)
-      const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : (b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99)
+      const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
+      const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
       if (orderA !== orderB) return orderA - orderB
       return Number(a.id) - Number(b.id)
     })

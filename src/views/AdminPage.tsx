@@ -1776,7 +1776,6 @@ export default function AdminPage() {
                   <option value="Processing">Processing</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
                 </select>
 
                 <button
@@ -2106,8 +2105,7 @@ export default function AdminPage() {
                                 <option value="Processing">Processing</option>
                                 <option value="Shipped">Shipped</option>
                                 <option value="Delivered">Delivered</option>
-                                <option value="Cancelled">Cancelled</option>
-                              </select>
+                                            </select>
 
                               <button
                                 type="button"

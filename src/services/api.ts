@@ -1074,6 +1074,7 @@ async function fetchProductsDirect(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .order('sort_order', { ascending: true })
       .order('id', { ascending: true })
     if (!error && data && data.length > 0) {
       return setCachedProducts(data as Product[])
@@ -1642,6 +1643,7 @@ export async function getAdminProductsApi(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .order('sort_order', { ascending: true })
       .order('id', { ascending: true })
 
     if (!error && data && data.length > 0) {
