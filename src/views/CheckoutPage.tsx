@@ -79,17 +79,8 @@ export default function CheckoutPage() {
   // Delivery Method Selection (Standard vs Express Priority)
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD')
 
-  // Payment Method Selection (ONLINE vs COD)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'ONLINE' | 'COD'>('ONLINE')
-
-  // Synchronize payment method based on platform permissions
-  useEffect(() => {
-    if (settings.enable_online_payment !== false) {
-      setSelectedPaymentMethod('ONLINE')
-    } else if (settings.enable_cod) {
-      setSelectedPaymentMethod('COD')
-    }
-  }, [settings.enable_online_payment, settings.enable_cod])
+  // Payment Method: 100% Online Pre-Payment via Cashfree
+  const selectedPaymentMethod = 'ONLINE'
 
   // Populate user profile address if signed in
   useEffect(() => {
@@ -171,10 +162,7 @@ export default function CheckoutPage() {
     ? expressShippingCost
     : standardShippingCost
 
-  const isCodSelected = selectedPaymentMethod === 'COD' && settings.enable_cod
-  const codHandlingFee = isCodSelected ? (settings.cod_handling_fee || 0) : 0
-
-  const finalTotal = subtotal + finalShippingFee + codHandlingFee
+  const finalTotal = subtotal + finalShippingFee
 
   // 18% GST (9% CGST + 9% SGST) breakdown included in formulation prices
   const totalGst = subtotal > 0 ? subtotal - subtotal / 1.18 : 0
@@ -184,10 +172,6 @@ export default function CheckoutPage() {
   // Max Cart Value Limit enforcement
   const maxCartLimit = settings.max_cart_value || 0
   const isMaxCartExceeded = maxCartLimit > 0 && subtotal > maxCartLimit
-
-  // COD Max Order Limit enforcement
-  const codLimit = settings.cod_max_order_limit || 15000
-  const isCodLimitExceeded = isCodSelected && subtotal > codLimit
 
   // Guest checkout permission enforcement
   const allowGuestCheckout = settings.allow_guest_checkout !== false
@@ -230,11 +214,6 @@ export default function CheckoutPage() {
 
     if (isMaxCartExceeded) {
       setError(`Your cart subtotal (₹${subtotal.toLocaleString('en-IN')}) exceeds the maximum allowed order limit of ₹${maxCartLimit.toLocaleString('en-IN')}. Please adjust quantities.`)
-      return
-    }
-
-    if (isCodLimitExceeded) {
-      setError(`Cash on Delivery is limited to orders up to ₹${codLimit.toLocaleString('en-IN')}. Please choose Online Pre-Payment.`)
       return
     }
 
@@ -296,13 +275,6 @@ export default function CheckoutPage() {
           volume_ml: i.product.volume_ml,
         })),
       })
-
-      // COD Direct Fulfillment
-      if (selectedPaymentMethod === 'COD') {
-        clearCart()
-        navigate(`/order-confirmation?order_number=${orderRes.order_number}&status=Placed`)
-        return
-      }
 
       // Online Cashfree Gateway Processing
       let cashfreeLoaded = false
@@ -448,12 +420,6 @@ export default function CheckoutPage() {
                   <span>Shipping (Standard)</span>
                   <span className="text-emerald-700 font-medium">{finalShippingFee === 0 ? 'Complimentary Free' : `₹${finalShippingFee}`}</span>
                 </div>
-                {isCodSelected && codHandlingFee > 0 && (
-                  <div className="flex justify-between">
-                    <span>COD Handling Fee</span>
-                    <span className="font-mono text-black">₹{codHandlingFee}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span>CGST @ 9%</span>
                   <span className="font-mono text-black">₹{cgst.toLocaleString('en-IN')}</span>
@@ -962,12 +928,6 @@ export default function CheckoutPage() {
                   {finalShippingFee === 0 ? 'Complimentary Free' : `₹${finalShippingFee}`}
                 </span>
               </div>
-              {isCodSelected && codHandlingFee > 0 && (
-                <div className="flex justify-between">
-                  <span>COD Handling Surcharge</span>
-                  <span className="font-mono text-black">₹{codHandlingFee}</span>
-                </div>
-              )}
               <div className="flex justify-between">
                 <span>CGST @ 9%</span>
                 <span className="font-mono text-black">₹{cgst.toLocaleString('en-IN')}</span>

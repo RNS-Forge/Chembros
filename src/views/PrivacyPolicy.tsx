@@ -39,7 +39,7 @@ const POLICY_SECTIONS: PolicyClause[] = [
     id: 'prepaid',
     num: '02',
     title: 'Prepaid Protocol & Payment Security',
-    summary: 'Chembros operates on a 100% prepaid basis. To ensure temperature-controlled transit speed and prevent delivery bottlenecks, Cash on Delivery (COD) is permanently disabled.',
+    summary: 'Chembros operates on a 100% online prepaid basis to ensure express transit speed, quality verification, and seamless order fulfillment.',
     points: [
       'All transactions are routed through RBI-licensed, PCI-DSS Level 1 compliant payment gateways (Razorpay / Stripe).',
       'Chembros servers never view, capture, or store your credit/debit card numbers, CVVs, or UPI MPINs.',

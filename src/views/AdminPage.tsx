@@ -2988,7 +2988,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="max-w-xl text-xs">
                   {/* Toggle 1: Online Pre-Payment */}
                   <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
                     <div className="space-y-1">
@@ -2996,12 +2996,12 @@ export default function AdminPage() {
                         <span className="font-bold text-black uppercase tracking-wider text-[11px]">
                           Online Pre-Payment (Cashfree PG)
                         </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase font-semibold">
                           UPI / Cards
                         </span>
                       </div>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Accept instant client payments via UPI (GPay, PhonePe, Paytm), Credit & Debit cards, and NetBanking.
+                        Accept instant client payments via UPI (GPay, PhonePe, Paytm), Credit & Debit cards, and NetBanking. 100% prepaid model.
                       </p>
                     </div>
                     <button
@@ -3022,80 +3022,6 @@ export default function AdminPage() {
                       />
                     </button>
                   </div>
-
-                  {/* Toggle 2: Cash on Delivery */}
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-black uppercase tracking-wider text-[11px]">
-                          Cash on Delivery (Doorstep Collection)
-                        </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase">
-                          COD
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Allow customers to place orders without upfront charge and pay cash or UPI directly upon courier delivery.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settingsForm.enable_cod}
-                      onClick={() => setSettingsForm({ ...settingsForm, enable_cod: !settingsForm.enable_cod })}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer shrink-0 ${
-                        settingsForm.enable_cod ? 'bg-[#4a2e70]' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          settingsForm.enable_cod ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* COD Sub-settings if enabled */}
-                  {settingsForm.enable_cod && (
-                    <>
-                      <div>
-                        <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                          COD Handling Surcharge (₹)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={settingsForm.cod_handling_fee}
-                          onChange={(e) =>
-                            setSettingsForm({ ...settingsForm, cod_handling_fee: Math.max(0, Number(e.target.value)) })
-                          }
-                          className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
-                        />
-                        <p className="text-[10px] text-neutral-400 mt-1">
-                          Optional handling fee added to COD orders (default ₹0).
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
-                          COD Maximum Order Limit (₹)
-                        </label>
-                        <input
-                          type="number"
-                          min="1000"
-                          step="500"
-                          value={settingsForm.cod_max_order_limit}
-                          onChange={(e) =>
-                            setSettingsForm({ ...settingsForm, cod_max_order_limit: Math.max(1000, Number(e.target.value)) })
-                          }
-                          className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl font-mono text-black focus:outline-none focus:border-[#4a2e70]"
-                        />
-                        <p className="text-[10px] text-neutral-400 mt-1">
-                          Orders exceeding this amount require online payment (default ₹15,000).
-                        </p>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
 

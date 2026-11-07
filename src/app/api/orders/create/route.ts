@@ -79,72 +79,17 @@ export async function POST(req: Request) {
     const isCod = body.payment_method === 'COD' || body.payment_method === 'Cash on Delivery'
     if (isCod) {
       return NextResponse.json(
-        { detail: 'Cash on Delivery is not available. Please complete your order using Online Pre-Payment.' },
+        { detail: 'Cash on Delivery is permanently disabled. Please complete your order using Online Pre-Payment.' },
         { status: 400 }
       )
     }
 
-    const codSurcharge = 0
-
-    const baseShipping = body.shipping_fee !== undefined ? Number(body.shipping_fee) : (settings.enable_free_shipping && subtotal >= settings.free_shipping_threshold ? 0 : settings.default_delivery_fee)
-    const shippingFee = baseShipping + codSurcharge
+    const shippingFee = body.shipping_fee !== undefined ? Number(body.shipping_fee) : (settings.enable_free_shipping && subtotal >= settings.free_shipping_threshold ? 0 : settings.default_delivery_fee)
     const totalAmount = Math.round((subtotal + shippingFee) * 100) / 100
 
     const orderNumber = generateOrderNumber()
     const cfOrderId = `cf_${orderNumber}`
     const customerId = currentUser?.id ? `cust_${currentUser.id}` : `guest_${orderNumber}`
-
-    // Handle Cash on Delivery (Doorstep settlement)
-    if (isCod) {
-      const { data: newOrder, error: dbErr } = await supabaseAdmin
-        .from('orders')
-        .insert({
-          order_number: orderNumber,
-          user_id: currentUser?.id || body.user_id || null,
-          customer_name: cleanName,
-          customer_email: cleanEmail,
-          customer_phone: cleanPhone,
-          shipping_address: cleanAddress,
-          items: JSON.stringify(itemsJsonList),
-          subtotal,
-          shipping_fee: shippingFee,
-          total_amount: totalAmount,
-          payment_status: 'PENDING_COD',
-          order_status: 'Placed',
-          cashfree_order_id: null,
-          cashfree_payment_session_id: null,
-          payment_method: 'Cash on Delivery',
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single()
-
-      if (dbErr) {
-        console.error('Error persisting COD order in Supabase:', dbErr)
-        return NextResponse.json({ detail: 'Failed to record order: ' + dbErr.message }, { status: 500 })
-      }
-
-      // Dispatch Order Placed confirmation email immediately
-      try {
-        await sendOrderPlacedEmail({
-          toEmail: cleanEmail,
-          customerName: cleanName,
-          orderNumber: orderNumber,
-          totalAmount: totalAmount,
-          itemsSummary: formatItemsSummary(itemsJsonList),
-          shippingAddress: cleanAddress,
-        })
-      } catch (emailErr) {
-        console.warn('Order placed email dispatch note:', emailErr)
-      }
-
-      return NextResponse.json({
-        order_number: orderNumber,
-        status: 'success',
-        payment_method: 'Cash on Delivery',
-        total_amount: totalAmount,
-      })
-    }
 
     // Handle Online Pre-Payment via Cashfree PG
     const baseUrl = (serverConfig.FRONTEND_URL || 'https://chembros.vercel.app').replace(/\/+$/, '')

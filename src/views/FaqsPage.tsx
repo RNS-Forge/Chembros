@@ -41,11 +41,11 @@ const FAQ_DATA: FaqItem[] = [
     id: 'prepaid-payments',
     num: '02',
     category: 'orders',
-    question: 'Payment Gateways & Cash on Delivery (COD)',
-    summary: 'Chembros operates on a 100% prepaid model. Cash on Delivery is permanently disabled across all pin codes.',
+    question: 'Payment Gateways & Online Payment Policy',
+    summary: 'Chembros operates on a 100% online prepaid model. All orders are processed securely via verified payment gateways.',
     highlights: [
-      'Prepaid Only: Orders must be settled at checkout via UPI, Net Banking, or Credit/Debit Cards.',
-      'Why No COD: Eliminating cash logistics guarantees temperature-controlled transit speeds and prevents warehousing delays for volatile perfume oils.',
+      'Prepaid Orders: Orders are settled at checkout via UPI, Net Banking, or Credit/Debit Cards.',
+      'Express Dispatch: Seamless digital payments guarantee expedited warehouse packaging and temperature-monitored transit for perfume extracts.',
       'Payment Encryption: All checkout sessions are processed through bank-grade, PCI-DSS Level 1 compliant gateways.'
     ]
   },
@@ -192,7 +192,7 @@ export default function FaqPage() {
                 100% Prepaid Only
               </h2>
               <p className="text-xs text-neutral-600 font-normal leading-relaxed pt-1">
-                No Cash on Delivery. All consignments are routed via encrypted UPI and card gateways to ensure express transit.
+                All consignments are processed via encrypted UPI and card gateways to ensure immediate express transit.
               </p>
             </div>
           </div>
