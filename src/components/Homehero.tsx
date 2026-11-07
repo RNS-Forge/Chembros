@@ -10,7 +10,7 @@ import bottle1 from '../assets/product/t.webp'
 import bottle2 from '../assets/product/x.webp'
 import bottle3 from '../assets/product/r.webp'
 import bottle4 from '../assets/product/j.webp'
-import MobileA from '../assets/bg/webmonile.webp'
+import MobileA from '../assets/bg/webmobile.webp'
 
 const DEFAULT_MOBILE_PORTRAIT = (MobileA as any)?.src || MobileA
 const HERO_BG_SRC = (angelWaterBg as any)?.src || angelWaterBg
