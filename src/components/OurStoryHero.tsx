@@ -7,12 +7,17 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Herobg from '../assets/footerbg.png';
 import bottleImg from '../assets/bottle.png';
 import { ArrowRight, Flower2, Atom, Droplets } from 'lucide-react';
-import Image1 from '../assets/ourstory/1.webp';
-import Image2 from '../assets/ourstory/2.webp';
+import Image1 from '../assets/ourstory/1.jpg';
+import Image2 from '../assets/ourstory/pranav.jpg';
 import Image3 from '../assets/ourstory/3.webp';
 import Image4 from '../assets/ourstory/4.webp';
 import Image5 from '../assets/ourstory/5.webp';
+import Botanical from '../assets/ourstory/botanical.jpg';
+import Research from '../assets/ourstory/research.jpg';
 import provenanceRaw from '../assets/bg/ctabg2.webp';
+import Chemistry from '../assets/product/J/J2.png'
+import Method from '../assets/product/tetra/t2.png'
+import Ten from '../assets/product/T/T2.png'
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -31,73 +36,73 @@ interface StoryCardItem {
 const STORY_ITEMS: StoryCardItem[] = [
   {
     id: 1,
-    tag: '01 ORIGIN',
+    tag: '01 THE BEGINNING',
     title: 'WHERE IT BEGAN',
-    body: 'We grew up surrounded by flowers, natural jasmine blossoms, and the rhythmic hum of extraction stills in Tamil Nadu.',
+    body: 'In 2024, our journey began in Kannauj, Indias fragrance capital, where an unexpected meeting would shape the future of fine perfumery.',
     img: Image1,
   },
   {
     id: 2,
     tag: '02 HERITAGE',
-    title: 'THE FIRST SPARK',
-    body: 'Our father devoted four decades to natural botanical floral extraction at Chennai Bio Flora, mastering raw scent yields.',
+    title: 'EIGHT GENERATIONS OF KNOWLEDGE',
+    body: 'We crossed paths with Pranav Kapoor, an eighth-generation perfumer carrying generations of ancestral knowledge and an instinctive understanding of fragrance.',
     img: Image2,
   },
   {
     id: 3,
     tag: '03 DISCIPLINE',
     title: 'TWO BROTHERS',
-    body: 'Sriram and Srinivas. Chemical engineers redesigning perfume architecture by looking through the lens of volatile molecules.',
+    body: 'Our background in chemical engineering brought a scientific perspective to the centuries-old art of perfumery.',
     img: Image3,
   },
   {
     id: 4,
-    tag: '04 CRAFT',
+    tag: '04 THE ENCOUNTER',
     title: 'MEETING PRANAV',
-    body: 'Generational perfumery intuition collided with clinical engineering, creating a unified obsession with molecular longevity.',
+    body: 'When modern chemical engineering met Pranavs ancestral intuition, two different worlds of fragrance came together to imagine something entirely new.',
     img: Image4,
   },
   {
     id: 5,
-    tag: '05 PHILOSOPHY',
-    title: 'WHY CHEM BROS?',
-    body: 'We wanted fragrances that do not simply smell luxurious on first spray, but develop an unforgettable signature on skin.',
-    img: Image5,
+    tag: '06 RESEARCH',
+    title: 'TWO YEARS OF EXPLORATION',
+    body: 'What began as an ambitious vision became two years of intensive research, experimentation and a deeper exploration of fragrance at the molecular level.',
+    img: Research,
   },
   {
     id: 6,
-    tag: '06 PROVENANCE',
-    title: 'SOIL TO BOTTLE',
-    body: 'Flowers sourced across southern India, extracted with scientific rigour, and given structure through clean modern chemistry.',
-    img: 'https://images.unsplash.com/photo-1616949755610-8c9bbc08f138?auto=format&fit=crop&w=900&q=80',
+    tag: '05 THE VISION',
+    title: 'A NEW OLFACTIVE ARCHITECTURE',
+    body: 'Together, we envisioned a new way of approaching fine fragrance, bringing together ancestral perfumery and the precision of chemical engineering.',
+    img: Image5,
   },
   {
     id: 7,
     tag: '07 BOTANICALS',
-    title: 'THE FOUNDATION',
-    body: 'Nature yields the complex organic oils and aromatic building blocks that form the heart of every formulation.',
-    img: 'https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?auto=format&fit=crop&w=900&q=80',
+    title: 'THE PURITY OF NATURE',
+    body: 'Pure botanical extractions became a central part of our journey, exploring the natural foundations that shape the character of fine fragrance.',
+    img: Botanical,
   },
   {
     id: 8,
     tag: '08 CHEMISTRY',
-    title: 'MOLECULAR LOCK',
-    body: 'Isolated synthetic compounds fix delicate natural accords in place, providing clean wear that lasts through the day.',
-    img: 'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=900&q=80',
+    title: 'BEYOND THE FIRST IMPRESSION',
+    body: 'We explored fragrance at a molecular level, studying how science and botanical ingredients could come together to create a new olfactive architecture.',
+    img: Chemistry,
   },
   {
     id: 9,
-    tag: '09 REACTION',
-    title: 'SKIN ADAPTIVE',
-    body: 'Our extraits are formulated to adapt to natural skin temperature, projecting uniquely on whoever wears them.',
-    img: 'https://images.unsplash.com/photo-1615397349754-cfa2066a298e?auto=format&fit=crop&w=900&q=80',
+    tag: '09 METHODOLOGY',
+    title: 'A UNIFIED APPROACH',
+    body: 'Two years of research, molecular exploration and botanical extraction came together to form a unified methodology for creating fine fragrance.',
+    img: Method,
   },
   {
     id: 10,
-    tag: '10 HORIZON',
-    title: 'MADURAI TO WORLD',
-    body: 'Rooted in heritage fields. Crafted with clinical laboratory discipline for fine fragrance enthusiasts globally.',
-    img: 'https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&w=900&q=80',
+    tag: '10 THE MANIFESTATION',
+    title: 'FROM VISION TO REALITY',
+    body: 'In 2026, we proudly introduce a redefined architecture of fine fragrance, engineered by us and crafted by Pranav.',
+    img: Ten,
   },
 ];
 
@@ -159,7 +164,6 @@ export const OurStoryHero: React.FC = () => {
     const vh = window.innerHeight;
     const wrapHeight = innerWrapper.scrollHeight || 1600;
 
-    // Direct scroll budget without premature ending or void padding
     const galleryScrollDist = Math.max(0, wrapHeight - vh + 40);
     const panelSlideDist = vh;
     const totalScrollDist = panelSlideDist + galleryScrollDist;
@@ -199,7 +203,6 @@ export const OurStoryHero: React.FC = () => {
           if (self.progress >= 1) {
             gsap.set(whitePanel, { y: 0 });
             gsap.set(innerWrapper, { y: -galleryScrollDist });
-            // Lock all revealed cards at 100% visibility when at the bottom
             cardElementsRef.current.forEach((card) => {
               if (card) gsap.set(card, { opacity: 1, y: 0, scale: 1 });
             });
@@ -221,14 +224,13 @@ export const OurStoryHero: React.FC = () => {
           const galleryOffset = -(scroll - panelSlideDist);
           gsap.set(innerWrapper, { y: galleryOffset });
 
-          // 3. Smooth progressive reveal (Cards enter smoothly and STAY VISIBLE)
+          // 3. Smooth progressive reveal
           cardElementsRef.current.forEach((card, i) => {
             if (!card) return;
 
             const staticOffsetTop = cardOffsetsRef.current[i] ?? 0;
             const cardTop = wrapperTopInPanel + staticOffsetTop + galleryOffset;
 
-            // Pure entry interpolation — cards never disappear after coming into view
             const enterProgress = clamp((vh * 0.92 - cardTop) / (vh * 0.36), 0, 1);
 
             if (
@@ -308,17 +310,20 @@ export const OurStoryHero: React.FC = () => {
               style={{ willChange: 'transform' }}
             >
               <div
-                className={`grid gap-5 sm:gap-7 lg:gap-8 w-full max-w-[1583px] mx-auto ${cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'
-                  }`}
+                className={`grid gap-5 sm:gap-7 lg:gap-8 w-full max-w-[1583px] mx-auto ${
+                  cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'
+                }`}
               >
                 {gridRows.map((row, rowIdx) =>
                   row.map((itemIdx, colIdx) => {
-                    // ROW 1: QUOTE 01
+                    // =========================================================================
+                    // 1. ORIGINAL QUOTE 01 (Row 1)
+                    // =========================================================================
                     if (rowIdx === 1) {
                       if (colIdx === 0) {
                         return (
                           <div
-                            key={`quote-span-01`}
+                            key="quote-span-01"
                             className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col justify-center items-start p-6 sm:p-10 lg:p-14"
                           >
                             <span className="text-[10px] font-mono tracking-[0.3em] uppercase text-black/40 mb-3">
@@ -336,18 +341,44 @@ export const OurStoryHero: React.FC = () => {
                       if (colIdx < cols - 1) return null;
                     }
 
-                    // ROW 4: QUOTE 02 (Near Card 07)
+                    // =========================================================================
+                    // 2. NEW QUOTE: NEAR CARD 04 (MEETING PRANAV)
+                    // =========================================================================
+                    const hasMeetingPranav = row.includes(3);
+                    if (hasMeetingPranav && itemIdx === -1) {
+                      const firstEmptyCol = row.indexOf(-1);
+                      if (colIdx === firstEmptyCol) {
+                        return (
+                          <div
+                            key="quote-span-pranav"
+                            className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col justify-center items-start p-6 sm:p-10 lg:p-14"
+                          >
+                            <blockquote className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-lg sm:text-2xl lg:text-3xl xl:text-4xl italic text-black/90 leading-snug">
+                              “When modern chemical engineering met Pranav Kapoor’s ancestral intuition, two different worlds of fragrance came together to imagine something entirely new.”
+                            </blockquote>
+                            <p className="mt-4 text-xs font-mono tracking-widest uppercase text-black/50">
+                              — Kannauj Exploration, 2024
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }
+
+                    // =========================================================================
+                    // 3. ORIGINAL QUOTE 02 (Row 4, Near Card 07)
+                    // =========================================================================
                     const hasCard07 = row.includes(6);
                     if (hasCard07 && itemIdx === -1) {
                       const firstEmptyIdx = row.indexOf(-1);
                       if (colIdx === firstEmptyIdx) {
                         return (
                           <div
-                            key={`quote-span-02`}
+                            key="quote-span-02"
                             className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col justify-center items-start p-6 sm:p-10 lg:p-14"
                           >
                             <span className="text-[10px] font-mono tracking-[0.3em] uppercase text-black/40 mb-3">
-                              EXTRACTION PRINCIPLE // 02
+                              EXTRACTION PRINCIPLE 
                             </span>
                             <blockquote className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-lg sm:text-2xl lg:text-3xl xl:text-4xl italic text-black/90 leading-snug">
                               “Nature provides the starting volatile compound. Science unlocks its longevity. Skin heat provides the final meaning.”
@@ -361,6 +392,33 @@ export const OurStoryHero: React.FC = () => {
                       return null;
                     }
 
+                    // =========================================================================
+                    // 4. NEW QUOTE: NEAR CARD 08 (08 CHEMISTRY)
+                    // =========================================================================
+                    const hasChemistryCard = row.includes(7);
+                    if (hasChemistryCard && itemIdx === -1) {
+                      if (colIdx === 0) {
+                        return (
+                          <div
+                            key="quote-span-chemistry"
+                            className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col justify-center items-start p-6 sm:p-10 lg:p-14"
+                          >
+                            <span className="text-[10px] font-mono tracking-[0.3em] uppercase text-black/40 mb-3">
+                              MOLECULAR ARCHITECTURE
+                            </span>
+                            <blockquote className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-lg sm:text-2xl lg:text-3xl xl:text-4xl italic text-black/90 leading-snug">
+                              “We explored fragrance at a molecular level, studying how science and botanical ingredients could come together to create a new olfactive architecture.”
+                            </blockquote>
+                            <p className="mt-4 text-xs font-mono tracking-widest uppercase text-black/50">
+                              — Sriram &amp; Srinivas Ganesh, Chemical Engineers
+                            </p>
+                          </div>
+                        );
+                      }
+                      if (colIdx < cols - 1) return null;
+                    }
+
+                    // Empty Plinth Slot
                     if (itemIdx === -1 || !STORY_ITEMS[itemIdx]) {
                       return (
                         <div
@@ -476,8 +534,6 @@ export const OurStoryHero: React.FC = () => {
 
           {/* Part B: Provenance Sequence */}
           <div className="w-full relative rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] overflow-hidden border border-black/10 shadow-xs p-6 sm:p-10 lg:p-14 xl:p-16 min-h-[460px] sm:min-h-[500px] lg:min-h-[540px] flex items-center justify-start">
-
-            {/* Full Card Background Image */}
             <img
               src={provenanceSrc}
               alt="Chembros Extraction & Flacon Craftsmanship"
@@ -485,23 +541,17 @@ export const OurStoryHero: React.FC = () => {
               draggable={false}
             />
 
-            {/* Soft Light Diffuser (Protects text legibility on the left without a heavy dark overlay) */}
             <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/60 to-transparent sm:w-[65%] lg:w-[55%] pointer-events-none" />
 
-            {/* Content Layer (Aligned Left) */}
             <div className="relative z-10 max-w-lg sm:max-w-md lg:max-w-lg space-y-4 sm:space-y-5 text-left">
-
-              {/* Title - Montserrat Semibold with Tight Tracking */}
               <h2 className="font-['Montserrat',sans-serif] text-2xl sm:text-3xl lg:text-4xl font-semibold uppercase tracking-tight text-black leading-[1.08]">
                 From Southern Flora to Global Extraits
               </h2>
 
-              {/* Description Copy */}
               <p className="text-xs sm:text-[13px] text-neutral-700 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed max-w-sm sm:max-w-none">
                 Most luxury perfume labels license third-party formulas and re-bottle them. Chembros controls the entire synthesis chain: botanical cultivation, laboratory fractional separation, maturation, and climate-controlled packaging in Madurai.
               </p>
 
-              {/* Stepper Flow */}
               <div className="pt-2 flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] sm:text-[11px] font-mono tracking-wider text-black/85 uppercase font-medium">
                 <span className="px-2.5 py-1 rounded-full bg-black/5 border border-black/10">01 HARVEST</span>
                 <span className="text-black/40">&rarr;</span>
@@ -509,14 +559,13 @@ export const OurStoryHero: React.FC = () => {
                 <span className="text-black/40">&rarr;</span>
                 <span className="px-2.5 py-1 rounded-full bg-black/5 border border-black/10">03 BOTTLE</span>
               </div>
-
             </div>
           </div>
 
           {/* Part C: Founders Statement & Collection CTA */}
           <div className="text-center max-w-2xl space-y-6">
-            <div className="text-[11px] font-mono tracking-[0.3em] uppercase text-black/40">
-              SRIRAM GANESH AND SRINIVAS GANESH // FOUNDERS
+            <div className="text-[11px] font-mono tracking-[0.3em] text-black/40">
+              SRIRAM GANESH AND SRINIVAS GANESH - Founders 
             </div>
             <p className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-xl sm:text-3xl italic text-black/90 leading-snug">
               We set out to demonstrate that Indian chemical engineering and botanical mastery can set a new standard in global fine perfumery.
