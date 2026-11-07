@@ -30,7 +30,8 @@ export const serverConfig = {
   BREVO_API_KEY: process.env.BREVO_API_KEY || '',
   EMAIL_WEBHOOK_URL: process.env.EMAIL_WEBHOOK_URL || '',
 
-  FRONTEND_URL:
+  FRONTEND_URL: (
     process.env.FRONTEND_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ).trim().replace(/\/+$/, ''),
 }

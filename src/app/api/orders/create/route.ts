@@ -98,7 +98,7 @@ export async function POST(req: Request) {
       process.env.FRONTEND_URL ||
       serverConfig.FRONTEND_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.thechemicalbrothers.in')
-    ).replace(/\/+$/, '')
+    ).trim().replace(/\/+$/, '')
     const returnUrl = `${baseUrl}/order-confirmation?order_id=${orderNumber}`
 
     const cfResult = await cashfreeService.createOrder({
