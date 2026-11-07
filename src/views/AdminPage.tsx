@@ -100,7 +100,7 @@ export default function AdminPage() {
   // Column filter state for Products
   const [prodFilters, setProdFilters] = useState({
     name: '',
-    family: '',
+    description: '',
     price: '',
     origPrice: '',
     deliveryFee: '',
@@ -164,8 +164,8 @@ export default function AdminPage() {
     delivery_fee: 0,
     stock: 50,
     category: 'Extrait de Parfum',
-    fragrance_family: 'Woody',
-    concentration: '30% Pure Extrait',
+    fragrance_family: 'Extrait de Parfum',
+    concentration: 'Extrait de Parfum',
     volume_ml: 50,
     top_notes: '',
     heart_notes: '',
@@ -807,8 +807,8 @@ export default function AdminPage() {
       delivery_fee: 0,
       stock: 50,
       category: 'Extrait de Parfum',
-      fragrance_family: 'Woody',
-      concentration: '30% Pure Extrait',
+      fragrance_family: 'Extrait de Parfum',
+      concentration: 'Extrait de Parfum',
       volume_ml: 50,
       top_notes: '',
       heart_notes: '',
@@ -832,9 +832,9 @@ export default function AdminPage() {
       original_price: product.original_price || product.price,
       delivery_fee: product.delivery_fee ?? 0,
       stock: product.stock,
-      category: product.category,
-      fragrance_family: product.fragrance_family,
-      concentration: product.concentration,
+      category: product.category || 'Extrait de Parfum',
+      fragrance_family: product.fragrance_family || 'Extrait de Parfum',
+      concentration: product.concentration || 'Extrait de Parfum',
       volume_ml: product.volume_ml,
       top_notes: product.top_notes || '',
       heart_notes: product.heart_notes || '',
@@ -867,12 +867,12 @@ export default function AdminPage() {
   const filteredProducts = sortedProducts.filter((p) => {
     if (!productColSearch) return true
     const matchName = !prodFilters.name || (p.name + ' ' + (p.subtitle || '')).toLowerCase().includes(prodFilters.name.toLowerCase().trim())
-    const matchFamily = !prodFilters.family || (p.fragrance_family + ' ' + (p.top_notes || '')).toLowerCase().includes(prodFilters.family.toLowerCase().trim())
+    const matchDesc = !prodFilters.description || ((p.description || '') + ' ' + (p.subtitle || '')).toLowerCase().includes(prodFilters.description.toLowerCase().trim())
     const matchPrice = !prodFilters.price || String(p.price).includes(prodFilters.price.trim())
     const matchOrigPrice = !prodFilters.origPrice || String(p.original_price || p.price).includes(prodFilters.origPrice.trim())
     const matchFee = !prodFilters.deliveryFee || String(p.delivery_fee ?? 0).includes(prodFilters.deliveryFee.trim())
     const matchStock = !prodFilters.stock || String(p.stock).includes(prodFilters.stock.trim())
-    return matchName && matchFamily && matchPrice && matchOrigPrice && matchFee && matchStock
+    return matchName && matchDesc && matchPrice && matchOrigPrice && matchFee && matchStock
   })
 
   // Real-time filtered orders
@@ -1283,7 +1283,7 @@ export default function AdminPage() {
                   </span>
                 </h2>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  Manage pricing, delivery fees, fragrance notes, and stock levels.
+                  Manage pricing, delivery fees, descriptions, and stock levels.
                 </p>
               </div>
 
@@ -1303,11 +1303,11 @@ export default function AdminPage() {
                   onClick={() =>
                     exportToPdfPrintable(
                       'Products Catalog',
-                      ['ID', 'Fragrance', 'Family', 'Price (₹)', 'MRP (₹)', 'Delivery Fee (₹)', 'Stock'],
+                      ['ID', 'Fragrance', 'Concentration', 'Price (₹)', 'MRP (₹)', 'Delivery Fee (₹)', 'Stock'],
                       filteredProducts.map((p) => [
                         p.id,
                         `${p.name} (${p.volume_ml}ml)`,
-                        p.fragrance_family,
+                        p.concentration || 'Extrait de Parfum',
                         `₹${p.price}`,
                         `₹${p.original_price || p.price}`,
                         `₹${p.delivery_fee ?? 0}`,
@@ -1327,12 +1327,12 @@ export default function AdminPage() {
                   onClick={() =>
                     exportToCsv(
                       'chembros_products',
-                      ['Product ID', 'Name', 'Subtitle', 'Family', 'Price', 'MRP', 'Delivery Fee', 'Stock', 'Volume ML'],
+                      ['Product ID', 'Name', 'Subtitle', 'Concentration', 'Price', 'MRP', 'Delivery Fee', 'Stock', 'Volume ML'],
                       filteredProducts.map((p) => [
                         p.id,
                         p.name,
                         p.subtitle || '',
-                        p.fragrance_family,
+                        p.concentration || 'Extrait de Parfum',
                         p.price,
                         p.original_price || p.price,
                         p.delivery_fee ?? 0,
@@ -1352,11 +1352,11 @@ export default function AdminPage() {
                   type="button"
                   onClick={() =>
                     copyTableDataToClipboard(
-                      ['ID', 'Name', 'Family', 'Price', 'MRP', 'Delivery Fee', 'Stock'],
+                      ['ID', 'Name', 'Concentration', 'Price', 'MRP', 'Delivery Fee', 'Stock'],
                       filteredProducts.map((p) => [
                         p.id,
                         p.name,
-                        p.fragrance_family,
+                        p.concentration || 'Extrait de Parfum',
                         p.price,
                         p.original_price || p.price,
                         p.delivery_fee ?? 0,
@@ -1409,7 +1409,7 @@ export default function AdminPage() {
                     <tr>
                       <th className="py-3 px-4 font-semibold">Product</th>
                       <th className="py-3 px-4 font-semibold">Fragrance</th>
-                      <th className="py-3 px-4 font-semibold">Family / Notes</th>
+                      <th className="py-3 px-4 font-semibold">Description</th>
                       <th className="py-3 px-4 font-semibold">Selling Price (₹)</th>
                       <th className="py-3 px-4 font-semibold">Original MRP (₹)</th>
                       <th className="py-3 px-4 font-semibold">Delivery Fee (₹)</th>
@@ -1439,8 +1439,8 @@ export default function AdminPage() {
                             <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2 pointer-events-none" />
                             <input
                               type="text"
-                              value={prodFilters.family}
-                              onChange={(e) => setProdFilters({ ...prodFilters, family: e.target.value })}
+                              value={prodFilters.description}
+                              onChange={(e) => setProdFilters({ ...prodFilters, description: e.target.value })}
                               placeholder="Search..."
                               className="w-full pl-7 pr-2 py-1 bg-white border border-neutral-300 rounded text-xs text-black focus:outline-none focus:border-[#4a2e70]"
                             />
@@ -1501,7 +1501,7 @@ export default function AdminPage() {
                             onClick={() =>
                               setProdFilters({
                                 name: '',
-                                family: '',
+                                description: '',
                                 price: '',
                                 origPrice: '',
                                 deliveryFee: '',
@@ -1568,9 +1568,11 @@ export default function AdminPage() {
 
                             <td className="py-3 px-4 max-w-xs">
                               <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-[#f4effc] text-[#4a2e70] border border-[#e2dcee] mb-1">
-                                {p.fragrance_family}
+                                {p.concentration || 'Extrait de Parfum'}
                               </span>
-                              <p className="text-[10px] text-neutral-500 truncate">{p.top_notes || p.description}</p>
+                              <p className="text-[10px] text-neutral-600 truncate" title={p.description || p.subtitle || ''}>
+                                {p.description || p.subtitle || '—'}
+                              </p>
                             </td>
 
                             <td className="py-3 px-4">
@@ -4039,32 +4041,16 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Fragrance Family
-                    </label>
-                    <select
-                      value={productForm.fragrance_family}
-                      onChange={(e) => setProductForm({ ...productForm, fragrance_family: e.target.value })}
-                      className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
-                    >
-                      <option value="Woody">Woody</option>
-                      <option value="Amber / Oriental">Amber / Oriental</option>
-                      <option value="Floral">Floral</option>
-                      <option value="Fresh / Citrus">Fresh / Citrus</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                      Fragrance Type (e.g. Eau de Parfum)
+                      Fragrance Type / Concentration
                     </label>
                     <input
                       type="text"
                       value={productForm.concentration}
                       onChange={(e) => setProductForm({ ...productForm, concentration: e.target.value })}
-                      placeholder="30% Pure Extrait"
+                      placeholder="Extrait de Parfum"
                       className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                     />
                   </div>
@@ -4084,53 +4070,14 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Top Notes
-                  </label>
-                  <input
-                    type="text"
-                    value={productForm.top_notes}
-                    onChange={(e) => setProductForm({ ...productForm, top_notes: e.target.value })}
-                    placeholder="Bergamot, Pink Pepper, Saffron"
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Heart / Middle Notes
-                  </label>
-                  <input
-                    type="text"
-                    value={productForm.heart_notes}
-                    onChange={(e) => setProductForm({ ...productForm, heart_notes: e.target.value })}
-                    placeholder="Madurai Sambac Jasmine, Cashmeran, Rose Absolute"
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Base Notes
-                  </label>
-                  <input
-                    type="text"
-                    value={productForm.base_notes}
-                    onChange={(e) => setProductForm({ ...productForm, base_notes: e.target.value })}
-                    placeholder="Virginian Cedarwood, Grey Ambergris, Cetalox"
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 uppercase tracking-wider mb-1">
                     Product Description
                   </label>
                   <textarea
-                    rows={2}
+                    rows={4}
                     value={productForm.description}
                     onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                    placeholder="Enter complete product description..."
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
+                    placeholder="Enter complete product description and olfactory profile..."
+                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs leading-relaxed focus:outline-none focus:border-[#4a2e70]"
                   />
                 </div>
 

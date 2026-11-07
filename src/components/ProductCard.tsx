@@ -28,7 +28,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Top Meta Tags */}
       <div className="p-5 pb-0 flex items-center justify-between text-[11px] font-['Inter',sans-serif] tracking-wider z-10">
         <span className="px-3 py-1 rounded-full bg-neutral-100 text-neutral-800 uppercase font-medium">
-          {product.fragrance_family}
+          Extrait de Parfum
         </span>
         <div className="flex items-center gap-1 text-neutral-700">
           <Star className="w-3.5 h-3.5 fill-black text-black" />

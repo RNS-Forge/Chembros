@@ -79,10 +79,9 @@ const landscapeDiscoverySrc = resolveAssetSrc(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCT GALLERY MAP
-// Map slugs and database IDs to image arrays. You can add 3, 4, or more images.
 // ─────────────────────────────────────────────────────────────────────────────
 const PRODUCT_GALLERY_MAP: Record<string, string[]> = {
-  // Molecule J (using your 4 imported images)
+  // Molecule J (4 imported images)
   'molecule-j': [j1Src, j2Src, j3Src, j4Src],
   '3': [j1Src, j2Src, j3Src, j4Src],
 
@@ -112,6 +111,14 @@ const PRODUCT_GALLERY_MAP: Record<string, string[]> = {
     landscapeDiscoverySrc,
     'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
   ],
+  'discovery-archive': [
+    landscapeDiscoverySrc,
+    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
+  ],
+  '4': [
+    landscapeDiscoverySrc,
+    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
+  ],
 }
 
 // Lucide Icons
@@ -123,6 +130,7 @@ import {
   AlertCircle,
   Star,
   Truck,
+  Sparkles,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -151,7 +159,6 @@ export default function ProductDetail() {
     const list = getCachedProductsSync()
     return !(list?.some((p) => String(p.id) === String(id) || p.slug === String(id)))
   })
-  const [selectedSize, setSelectedSize] = useState<string>('30ml Extrait')
   const [isAdded, setIsAdded] = useState(false)
 
   // Carousel State
@@ -182,11 +189,16 @@ export default function ProductDetail() {
         ])
 
         setProduct(detailData)
-        setSelectedSize(detailData.volume_ml ? `${detailData.volume_ml}ml Extrait` : '30ml Extrait')
         setReviews(Array.isArray(reviewsData) ? reviewsData : [])
 
         if (Array.isArray(allProducts)) {
-          const others = allProducts.filter(
+          const sorted = [...allProducts].sort((a, b) => {
+            const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
+            const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
+            if (orderA !== orderB) return orderA - orderB
+            return Number(a.id) - Number(b.id)
+          })
+          const others = sorted.filter(
             (p) => String(p.id) !== String(detailData.id) && p.slug !== detailData.slug
           )
           setRelatedProducts(others.slice(0, 4))
@@ -200,6 +212,30 @@ export default function ProductDetail() {
     loadData()
     setActiveImageIndex(0)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    const handleProductsUpdated = (e: any) => {
+      const updated = e.detail
+      if (Array.isArray(updated) && updated.length > 0) {
+        const sorted = [...updated].sort((a, b) => {
+          const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
+          const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
+          if (orderA !== orderB) return orderA - orderB
+          return Number(a.id) - Number(b.id)
+        })
+        setRelatedProducts((prev) => {
+          const currentId = id
+          const others = sorted.filter(
+            (p) => String(p.id) !== String(currentId) && p.slug !== currentId
+          )
+          return others.slice(0, 4)
+        })
+      }
+    }
+
+    window.addEventListener('chembros:products-updated', handleProductsUpdated)
+    return () => {
+      window.removeEventListener('chembros:products-updated', handleProductsUpdated)
+    }
   }, [id])
 
   const handleAddToCart = () => {
@@ -234,7 +270,7 @@ export default function ProductDetail() {
     if (!reviewTitle.trim() || !reviewComment.trim() || !reviewAuthor.trim()) {
       setReviewFeedback({
         type: 'error',
-        message: 'Please complete your name, headline, and comments.'
+        message: 'Please complete your name, headline, and comments.',
       })
       return
     }
@@ -265,7 +301,7 @@ export default function ProductDetail() {
 
       setReviewFeedback({
         type: 'success',
-        message: 'Your review has been published.'
+        message: 'Your review has been published.',
       })
 
       setTimeout(() => {
@@ -294,7 +330,7 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-2xl font-normal font-['Montserrat',sans-serif] uppercase mb-2">Formulation Not Found</h2>
+        <h2 className="text-2xl font-semibold font-['Montserrat',sans-serif] uppercase mb-2">Formulation Not Found</h2>
         <p className="text-sm text-neutral-500 mb-6 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
           The fragrance you are searching for is unavailable.
         </p>
@@ -310,13 +346,27 @@ export default function ProductDetail() {
 
   const lookupSlug = (product.slug || '').toLowerCase()
   const lookupId = String(product.id || '').toLowerCase()
+  const lookupName = (product.name || '').toLowerCase()
+  const isArchive =
+    Boolean(product.is_archive) ||
+    lookupSlug.includes('discovery') ||
+    lookupName.includes('discovery')
 
-  // Resolve array of images (supports 4 for Molecule J, 3 for others)
+  // Resolve array of images strictly from static local assets (no backend images in this detail view)
   const galleryImages: string[] =
     PRODUCT_GALLERY_MAP[lookupSlug] ||
     PRODUCT_GALLERY_MAP[lookupId] ||
-    (lookupSlug.includes('molecule-j') ? PRODUCT_GALLERY_MAP['molecule-j'] : null) || [
-      product.image_base64 || defaultBottle,
+    (lookupSlug.includes('molecule-j') || lookupName.includes('molecule j')
+      ? PRODUCT_GALLERY_MAP['molecule-j']
+      : null) ||
+    (lookupSlug.includes('molecule-x') || lookupName.includes('molecule x')
+      ? PRODUCT_GALLERY_MAP['molecule-x']
+      : null) ||
+    (lookupSlug.includes('molecule-t') || lookupName.includes('molecule t')
+      ? PRODUCT_GALLERY_MAP['molecule-t']
+      : null) ||
+    (isArchive ? PRODUCT_GALLERY_MAP['the-discovery-archive'] : null) || [
+      defaultBottle,
       defaultHeroBg,
     ]
 
@@ -354,11 +404,11 @@ export default function ProductDetail() {
       <main className="w-full max-w-[1583px] px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-20 sm:pt-28 pb-16 flex-1 flex flex-col items-center">
 
         {/* =========================================================================
-            PART 1: MAIN HERO CARD (1:1 Carousel Showcase & Balanced Purchase Panel)
+            PART 1: MAIN HERO CARD (1:1 Carousel Showcase & Purchase Panel)
             ========================================================================= */}
-        <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] p-4 sm:p-6 lg:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col gap-6 sm:gap-8">
+        <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] p-5 sm:p-7 lg:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
 
-          {/* Top Section: Split Grid */}
+          {/* Split Grid */}
           <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 xl:gap-12 items-center">
 
             {/* Left Column: 1:1 Square Carousel with Thumbnail Bar */}
@@ -376,7 +426,7 @@ export default function ProductDetail() {
                   style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
                 >
                   {galleryImages.map((src, idx) => (
-                    <div key={idx} className="w-full h-full shrink-0 relative bg-neutral-100 flex items-center justify-center">
+                    <div key={idx} className="w-full h-full shrink-0 relative bg-white">
                       <img
                         src={src}
                         alt={`${product.name} View ${idx + 1}`}
@@ -388,9 +438,9 @@ export default function ProductDetail() {
                 </div>
 
                 {/* Top Concentration Tag */}
-                <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5 pointer-events-none">
-                  <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md text-black text-[9px] sm:text-[11px] font-mono uppercase tracking-wider sm:tracking-widest shadow-xs">
-                    {product.concentration || '32% Organic Concentration'}
+                <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5 pointer-events-none z-10">
+                  <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md text-black text-[9px] sm:text-[11px] font-mono uppercase tracking-wider sm:tracking-widest border border-black/10 shadow-xs">
+                    {product.concentration || (isArchive ? '25% Organic Concentration' : '25% Natural Oil Concentration')}
                   </span>
                 </div>
 
@@ -401,7 +451,7 @@ export default function ProductDetail() {
                       type="button"
                       onClick={prevImage}
                       aria-label="Previous Image"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white active:scale-95 text-black shadow-md backdrop-blur-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white active:scale-95 text-black shadow-md border border-black/10 backdrop-blur-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer z-10"
                     >
                       <ChevronLeft className="w-5 h-5 -ml-0.5" />
                     </button>
@@ -410,7 +460,7 @@ export default function ProductDetail() {
                       type="button"
                       onClick={nextImage}
                       aria-label="Next Image"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white active:scale-95 text-black shadow-md backdrop-blur-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white active:scale-95 text-black shadow-md border border-black/10 backdrop-blur-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer z-10"
                     >
                       <ChevronRight className="w-5 h-5 -mr-0.5" />
                     </button>
@@ -419,7 +469,7 @@ export default function ProductDetail() {
 
                 {/* Bottom Center Indicator Dots */}
                 {galleryImages.length > 1 && (
-                  <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md">
+                  <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md z-10">
                     {galleryImages.map((_, dotIdx) => (
                       <button
                         key={dotIdx}
@@ -434,16 +484,16 @@ export default function ProductDetail() {
                 )}
 
                 {/* Bottom Rating Tag */}
-                <div className="absolute bottom-3.5 right-3.5 sm:bottom-5 sm:right-5 pointer-events-none">
-                  <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/65 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-mono flex items-center gap-1.5">
+                <div className="absolute bottom-3.5 right-3.5 sm:bottom-5 sm:right-5 pointer-events-none z-10">
+                  <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-mono flex items-center gap-1.5 shadow-sm">
                     <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
-                    <span>{product.rating ? `${product.rating} / 5.0` : '5.0 / 5.0'}</span>
-                    <span className="text-white/60">({reviews.length || product.reviews_count || 3})</span>
+                    <span>{product.rating ? `${product.rating} / 5.0` : '4.95 / 5.0'}</span>
+                    <span className="text-white/60">({reviews.length || product.reviews_count || 1})</span>
                   </div>
                 </div>
               </div>
 
-              {/* Dynamic Thumbnail Strip (Automatically fits 3, 4, or more images) */}
+              {/* Dynamic Thumbnail Strip */}
               <div
                 className="w-full grid gap-2 sm:gap-2.5 pt-0.5"
                 style={{
@@ -457,7 +507,7 @@ export default function ProductDetail() {
                       key={thumbIdx}
                       type="button"
                       onClick={() => setActiveImageIndex(thumbIdx)}
-                      className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white ${isSelected
+                      className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white p-1 flex items-center justify-center ${isSelected
                           ? 'border-black ring-2 ring-black/20 shadow-xs scale-[1.02]'
                           : 'border-black/10 opacity-70 hover:opacity-100 hover:border-black/30'
                         }`}
@@ -465,7 +515,7 @@ export default function ProductDetail() {
                       <img
                         src={src}
                         alt={`Thumbnail ${thumbIdx + 1}`}
-                        className="w-full h-full object-cover object-center"
+                        className="w-full h-full object-contain object-center"
                       />
                     </button>
                   )
@@ -480,16 +530,22 @@ export default function ProductDetail() {
               {/* Product Header */}
               <div>
                 <span className="text-[10px] sm:text-xs font-mono tracking-[0.2em] uppercase text-black/50 block mb-1 sm:mb-1.5">
-                  {product.fragrance_family || 'WOODY'} · {product.category || 'EXTRAIT DE PARFUM'}
+                  EXTRAIT DE PARFUM
                 </span>
 
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] tracking-wide text-black leading-[1.12] uppercase">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold font-['Montserrat',sans-serif] tracking-tight text-black leading-[1.08] uppercase">
                   {product.name}
                 </h1>
 
                 {product.subtitle && (
-                  <p className="mt-1.5 sm:mt-2 text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-lg">
+                  <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-lg">
                     {product.subtitle}
+                  </p>
+                )}
+
+                {product.description && product.description !== product.subtitle && (
+                  <p className="mt-2 text-xs sm:text-[13px] text-neutral-600 leading-relaxed max-w-lg">
+                    {product.description}
                   </p>
                 )}
               </div>
@@ -501,7 +557,7 @@ export default function ProductDetail() {
                     Price
                   </span>
                   <div className="flex items-baseline gap-2 sm:gap-2.5">
-                    <span className="text-xl sm:text-2xl font-normal font-['Montserrat',sans-serif] text-black tracking-tight">
+                    <span className="text-xl sm:text-2xl font-semibold font-['Montserrat',sans-serif] text-black tracking-tight">
                       ₹{product.price.toLocaleString('en-IN')}
                     </span>
                     {product.original_price && product.original_price > product.price && (
@@ -516,25 +572,15 @@ export default function ProductDetail() {
                 </span>
               </div>
 
-              {/* Size Selector */}
+              {/* Exclusive Single Formulation Size Display */}
               <div>
                 <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-neutral-500 block mb-2">
                   Select Bottle Size
                 </span>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {['30ml Travel', '50ml Signature', '100ml Luxury'].map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${selectedSize === size
-                          ? 'bg-black text-white shadow-xs font-semibold'
-                          : 'bg-white text-black/70 border border-neutral-200 hover:border-black'
-                        }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <div className="px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase bg-black text-white shadow-xs font-semibold cursor-default">
+                    {isArchive ? '4 × 3ml Extrait Archive' : '50ml Signature'}
+                  </div>
                 </div>
               </div>
 
@@ -560,7 +606,7 @@ export default function ProductDetail() {
               {/* Trust Badges */}
               <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-neutral-500 uppercase pt-1">
                 <span className="flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5" /> {product.price >= 1500 ? 'Free Dispatch Across India' : 'Standard Shipping ₹100'}
+                  <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
                 </span>
                 <span className="flex items-center gap-1.5">
                   10+ Hours Wear Time
@@ -568,36 +614,6 @@ export default function ProductDetail() {
               </div>
             </div>
 
-          </div>
-
-          {/* Bottom Section: Notes & Crafting Details */}
-          <div className="w-full pt-6 border-t border-black/5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
-            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/5 space-y-1 shadow-xs">
-              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
-                TOP NOTES (FIRST 15 MINS)
-              </span>
-              <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
-                {product.top_notes || 'Green Cardamom, Crisp Pink Peppercorn, Cedrat'}
-              </p>
-            </div>
-
-            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/5 space-y-1 shadow-xs">
-              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
-                HEART NOTES (2 TO 6 HOURS)
-              </span>
-              <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
-                {product.heart_notes || 'Fractional Orris, Cashmeran, Paper Birch'}
-              </p>
-            </div>
-
-            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/5 space-y-1 shadow-xs">
-              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
-                BASE NOTES (ALL-DAY DRYDOWN)
-              </span>
-              <p className="text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-black leading-snug">
-                {product.base_notes || 'Pure Australian Sandalwood, Iso E Super, Clean Musk'}
-              </p>
-            </div>
           </div>
 
         </div>
@@ -611,7 +627,7 @@ export default function ProductDetail() {
               <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                 COMMUNITY FEEDBACK
               </span>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wider text-black">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold font-['Montserrat',sans-serif] uppercase tracking-tight text-black">
                 Customer Reviews
               </h2>
             </div>
@@ -624,10 +640,10 @@ export default function ProductDetail() {
                   ))}
                 </div>
                 <span className="font-semibold text-black">
-                  {product.rating ? `${product.rating} / 5.0` : '4.9 / 5.0'}
+                  {product.rating ? `${product.rating} / 5.0` : '4.95 / 5.0'}
                 </span>
                 <span className="text-neutral-400">
-                  · Based on {reviews.length || product.reviews_count || 12} reviews
+                  · Based on {reviews.length || product.reviews_count || 1} review
                 </span>
               </div>
 
@@ -684,7 +700,7 @@ export default function ProductDetail() {
                           ))}
                         </div>
 
-                        <h3 className="text-xs sm:text-sm font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black leading-snug">
+                        <h3 className="text-xs sm:text-sm font-semibold font-['Montserrat',sans-serif] uppercase tracking-wide text-black leading-snug">
                           "{rev.title}"
                         </h3>
                         <p className="mt-2 text-xs sm:text-[13px] text-neutral-600 leading-relaxed font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
@@ -711,8 +727,8 @@ export default function ProductDetail() {
         </section>
 
         {/* =========================================================================
-    PART 3: MORE FROM THE COLLECTION
-    ========================================================================= */}
+            PART 3: MORE FROM THE COLLECTION
+            ========================================================================= */}
         {relatedProducts.length > 0 && (
           <section className="w-full mt-12 sm:mt-16 lg:mt-20 pt-8 border-t border-black/10">
             <div className="flex items-center justify-between gap-4 mb-8">
@@ -747,7 +763,7 @@ export default function ProductDetail() {
                   {/* Bottle Display */}
                   <div className="my-auto flex items-center justify-center relative w-full h-[120px] sm:h-[180px] lg:h-[210px]">
                     <img
-                      src={other.image_base64 || defaultBottle}
+                      src={other.image_base64 || (bottleImg as any)?.src || defaultBottle}
                       alt={other.name}
                       draggable={false}
                       className="w-auto h-full max-h-[110px] sm:max-h-[170px] lg:max-h-[195px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
@@ -787,7 +803,7 @@ export default function ProductDetail() {
               <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                 CHEMBROS FRAGRANCE REVIEW
               </span>
-              <h3 className="text-xl sm:text-2xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black">
+              <h3 className="text-xl sm:text-2xl font-semibold font-['Montserrat',sans-serif] uppercase tracking-tight text-black">
                 Review Fragrance
               </h3>
               <p className="text-xs text-neutral-500 mt-1">

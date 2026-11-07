@@ -1213,20 +1213,8 @@ export async function getTrendingProductsApi(limit: number = 8): Promise<Product
 
 export async function getProductDetailApi(productId: number | string): Promise<Product> {
   const idOrSlug = String(productId).trim()
-  const all = initProductsCache()
-  if (all && all.length > 0) {
-    const matched = all.find((p) => {
-      if (String(p.id) === idOrSlug) return true
-      if (p.slug && p.slug.toLowerCase() === idOrSlug.toLowerCase()) return true
-      if (p.name && p.name.toLowerCase() === idOrSlug.toLowerCase().replace(/-/g, ' ')) return true
-      return false
-    })
-    if (matched) {
-      return attachDeliveryFee(matched)
-    }
-  }
 
-  // If not found in cache, fallback to direct query
+  // 1. Try direct Supabase query first for fresh, complete database record (including description)
   try {
     if (!isNaN(Number(idOrSlug))) {
       const { data, error } = await supabase
@@ -1256,10 +1244,33 @@ export async function getProductDetailApi(productId: number | string): Promise<P
     console.warn('Supabase getProductDetail fallback to backend:', err)
   }
 
-  const fbDetail = await request<Product>(`/api/products/${productId}`)
-  const enriched = attachDeliveryFee(fbDetail)
-  upsertCachedProduct(enriched)
-  return enriched
+  // 2. Try backend API endpoint
+  try {
+    const fbDetail = await request<Product>(`/api/products/${productId}`)
+    if (fbDetail && fbDetail.id) {
+      const enriched = attachDeliveryFee(fbDetail)
+      upsertCachedProduct(enriched)
+      return enriched
+    }
+  } catch (err) {
+    console.warn('Backend getProductDetail fallback to cache:', err)
+  }
+
+  // 3. Fallback to cache if network is offline
+  const all = initProductsCache()
+  if (all && all.length > 0) {
+    const matched = all.find((p) => {
+      if (String(p.id) === idOrSlug) return true
+      if (p.slug && p.slug.toLowerCase() === idOrSlug.toLowerCase()) return true
+      if (p.name && p.name.toLowerCase() === idOrSlug.toLowerCase().replace(/-/g, ' ')) return true
+      return false
+    })
+    if (matched) {
+      return attachDeliveryFee(matched)
+    }
+  }
+
+  throw new Error(`Product not found for ${productId}`)
 }
 
 export async function getProductRecommendationsApi(
