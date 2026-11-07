@@ -162,24 +162,29 @@ export const OurStoryHero: React.FC = () => {
     if (!root || !stage || !whitePanel || !innerWrapper) return;
 
     const vh = window.innerHeight;
-    const isMobile = window.innerWidth < 640;
-    const wrapHeight = innerWrapper.scrollHeight || 1600;
+    const wrapperTopInPanel = innerWrapper.offsetTop;
 
-    // On mobile, stop scrolling as soon as the final row is visible to eliminate the bottom white gap
-    const bottomBuffer = isMobile ? -Math.round(vh * 0.28) : 20;
-    const galleryScrollDist = Math.max(0, wrapHeight - vh + bottomBuffer);
+    // Measure every card's exact position and find the true bottom of the last card
+    let maxCardBottom = 0;
+    cardElementsRef.current.forEach((card, i) => {
+      if (!card) return;
+      const top = card.offsetTop;
+      const height = card.offsetHeight;
+      cardOffsetsRef.current[i] = top;
+      cardHeightsRef.current[i] = height;
+      if (top + height > maxCardBottom) {
+        maxCardBottom = top + height;
+      }
+    });
+
+    // Exact scroll distance so the bottom of the last card sits 24px above the bottom of the screen
+    const exactContentHeight =
+      maxCardBottom > 0 ? wrapperTopInPanel + maxCardBottom + 24 : innerWrapper.scrollHeight;
+    const galleryScrollDist = Math.max(0, exactContentHeight - vh);
     const panelSlideDist = vh;
     const totalScrollDist = panelSlideDist + galleryScrollDist;
 
     root.style.height = `${totalScrollDist + vh}px`;
-
-    const wrapperTopInPanel = innerWrapper.offsetTop;
-
-    cardElementsRef.current.forEach((card, i) => {
-      if (!card) return;
-      cardOffsetsRef.current[i] = card.offsetTop;
-      cardHeightsRef.current[i] = card.offsetHeight;
-    });
 
     lastRevealRef.current = [];
 
@@ -309,7 +314,7 @@ export const OurStoryHero: React.FC = () => {
           >
             <div
               ref={innerWrapperRef}
-              className="w-full pt-[min(140px,18vh)] sm:pt-[min(260px,28vh)] pb-4 sm:pb-16 px-3.5 sm:px-6 md:px-8 lg:px-10 xl:px-12 bg-white"
+              className="w-full pt-[min(120px,15vh)] sm:pt-[min(260px,28vh)] pb-6 sm:pb-16 px-3.5 sm:px-6 md:px-8 lg:px-10 xl:px-12 bg-white"
               style={{ willChange: 'transform' }}
             >
               <div
@@ -329,9 +334,6 @@ export const OurStoryHero: React.FC = () => {
                             key="quote-span-01"
                             className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col justify-center items-start p-3 sm:p-10 lg:p-14"
                           >
-                            <span className="text-[8px] sm:text-[10px] font-mono tracking-[0.25em] sm:tracking-[0.3em] uppercase text-black/40 mb-2 sm:mb-3">
-                              THE ARCHIVE DIRECTIVE // 01
-                            </span>
                             <blockquote className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-[13px] sm:text-2xl lg:text-3xl xl:text-4xl italic text-black/90 leading-relaxed sm:leading-snug">
                               “We didn’t set out to make another perfume brand. We set out to prove that Indian chemical engineering and pure botanical extraction can redefine global fine perfumery.”
                             </blockquote>
