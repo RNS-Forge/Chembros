@@ -14,12 +14,12 @@ export const Footer = ({
   onOpenPolicy,
 }: FooterProps) => {
   return (
-    <footer className="w-full flex justify-center items-center overflow-hidden select-none bg-white py-6 sm:py-8 lg:py-12 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+    <footer className="w-full flex flex-col justify-center items-center overflow-hidden select-none bg-white py-6 sm:py-8 lg:py-12 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
       
       {/* Outer Card Container */}
-      <div className="w-full max-w-[1583px] relative rounded-[20px] sm:rounded-[32px] lg:rounded-[44px] xl:rounded-[50px] overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-black/5 flex flex-col justify-between p-6 sm:p-8 md:p-10 lg:p-14 xl:p-16 min-h-[480px] sm:min-h-[520px] lg:min-h-[580px] xl:h-[660px]">
+      <div className="w-full max-w-[1583px] relative rounded-[20px] sm:rounded-[32px] lg:rounded-[44px] xl:rounded-[50px] overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.06)] border border-black/5 flex flex-col justify-between p-6 sm:p-8 md:p-10 lg:p-14 xl:p-16 min-h-[460px] sm:min-h-[500px] lg:min-h-[560px] xl:h-[640px]">
         
-        {/* Layer 1: Background Atmospheric Graphic (Bottles at bottom, clean white on top) */}
+        {/* Layer 1: Background Atmospheric Graphic */}
         <img
           className="w-full h-full inset-0 absolute object-cover object-bottom select-none pointer-events-none"
           src={(footerBgImg as any)?.src || footerBgImg}
@@ -36,7 +36,7 @@ export const Footer = ({
               CHEMBROS
             </h2>
             <p className="mt-3 text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-xs">
-            Pure organic extrait concentrations crafted in Madurai.
+              Pure organic extrait concentrations crafted in Madurai.
             </p>
           </div>
 
@@ -118,7 +118,7 @@ export const Footer = ({
               </span>
               <div className="flex flex-col items-start gap-1.5 sm:gap-2">
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/chembrosmadurai?srtk=cHVmdGFpYmpoYzJs"
                   target="_blank"
                   rel="noreferrer"
                   className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors"
@@ -154,17 +154,23 @@ export const Footer = ({
 
         </div>
 
-        {/* Layer 3: Minimal Bottom Metadata */}
-        <div className="relative z-10 w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-6 mt-auto">
-          <span className="text-white font-mono text-[9px] sm:text-[10px] tracking-wider uppercase">
-            © 2026 CHEMBROS ARCHIVE. ALL RIGHTS RESERVED.
-          </span>
-          <span className="text-white font-mono text-[9px] sm:text-[10px] tracking-wider uppercase">
-            DESIGNED & DEVELOPED BY BEHINDBRIEF
-          </span>
-        </div>
-
       </div>
+
+      {/* Layer 3: Minimal Bottom Metadata Outside the Card in Solid Black */}
+      <div className="w-full max-w-[1583px] px-2 sm:px-4 pt-4 sm:pt-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <span className="text-black font-mono text-[10px] tracking-wider uppercase">
+          © 2026 CHEMBROS ARCHIVE. ALL RIGHTS RESERVED.
+        </span>
+        <a
+          href="https://www.behindbrief.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black hover:text-neutral-600 font-mono text-[10px] tracking-wider uppercase transition-colors cursor-pointer"
+        >
+          DESIGNED & DEVELOPED BY BEHINDBRIEF
+        </a>
+      </div>
+
     </footer>
   )
 }
