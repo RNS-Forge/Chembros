@@ -92,7 +92,13 @@ export async function POST(req: Request) {
     const customerId = currentUser?.id ? `cust_${currentUser.id}` : `guest_${orderNumber}`
 
     // Handle Online Pre-Payment via Cashfree PG
-    const baseUrl = (serverConfig.FRONTEND_URL || 'https://chembros.vercel.app').replace(/\/+$/, '')
+    // Resolve the canonical frontend URL — FRONTEND_URL env var must be set to your custom domain
+    // in Vercel (e.g. https://www.thechemicalbrothers.in). VERCEL_URL is a preview subdomain only.
+    const baseUrl = (
+      process.env.FRONTEND_URL ||
+      serverConfig.FRONTEND_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.thechemicalbrothers.in')
+    ).replace(/\/+$/, '')
     const returnUrl = `${baseUrl}/order-confirmation?order_id=${orderNumber}`
 
     const cfResult = await cashfreeService.createOrder({

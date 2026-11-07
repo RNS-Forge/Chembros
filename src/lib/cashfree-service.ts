@@ -101,6 +101,12 @@ export class CashfreeService {
 
     if (!isPlaceholder) {
       try {
+        const resolvedFrontendUrl = (
+          process.env.FRONTEND_URL ||
+          serverConfig.FRONTEND_URL ||
+          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.thechemicalbrothers.in')
+        ).replace(/\/+$/, '')
+
         const payload = {
           order_id: params.order_id,
           order_amount: Math.round(params.order_amount * 100) / 100,
@@ -113,7 +119,7 @@ export class CashfreeService {
           },
           order_meta: {
             return_url: params.return_url,
-            notify_url: `${serverConfig.FRONTEND_URL}/api/orders/webhook`,
+            notify_url: `${resolvedFrontendUrl}/api/orders/webhook`,
           },
         }
 
