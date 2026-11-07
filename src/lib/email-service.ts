@@ -1,7 +1,10 @@
 import nodemailer from 'nodemailer'
 import fs from 'fs'
 import path from 'path'
+import { Resend } from 'resend'
 import { serverConfig } from './server-config'
+
+const resendClient = serverConfig.RESEND_API_KEY ? new Resend(serverConfig.RESEND_API_KEY) : null
 
 const DEFAULT_SITE_URL = 'https://thechemicalbrothers.in'
 const SITE_URL = (serverConfig.FRONTEND_URL && !serverConfig.FRONTEND_URL.includes('localhost'))
@@ -36,7 +39,50 @@ export async function sendEmail({
     cid?: string
   }>
 }): Promise<boolean> {
-  // 1. HTTPS Webhook Gateway
+  // ───────────────────────────────────────────────────────────────────────
+  // PRIMARY PROVIDER: Resend (HTTPS API — works on Vercel serverless)
+  // ───────────────────────────────────────────────────────────────────────
+  if (resendClient) {
+    try {
+      // Resend fetches the logo over HTTPS; swap the inline CID reference for the public URL.
+      const resendHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
+
+      // Map our attachment shape to Resend's { filename, content } (base64/Buffer).
+      const resendAttachments = (attachments || [])
+        .filter((a) => !a.cid) // skip the inline logo; it's rendered via PUBLIC_LOGO_URL
+        .map((a) => {
+          let content = a.content
+          if (!content && a.path && fs.existsSync(a.path)) {
+            content = fs.readFileSync(a.path)
+          }
+          return content ? { filename: a.filename, content } : null
+        })
+        .filter(Boolean) as Array<{ filename: string; content: Buffer | string }>
+
+      const { data, error } = await resendClient.emails.send({
+        from: serverConfig.RESEND_FROM,
+        to: [to],
+        subject,
+        html: resendHtml,
+        attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
+      })
+
+      if (error) {
+        console.error('Resend email dispatch failed:', error)
+      } else {
+        console.log(`Resend email dispatched to ${to} (id: ${data?.id})`)
+        return true
+      }
+    } catch (err) {
+      console.error('Resend email dispatch error:', err)
+    }
+  } else {
+    console.error('Resend is not configured — RESEND_API_KEY is missing.')
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // FALLBACK 1: HTTPS Webhook Gateway
+  // ───────────────────────────────────────────────────────────────────────
   if (serverConfig.EMAIL_WEBHOOK_URL) {
     try {
       const webhookHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
@@ -51,7 +97,9 @@ export async function sendEmail({
     }
   }
 
-  // 2. Brevo HTTPS API
+  // ───────────────────────────────────────────────────────────────────────
+  // FALLBACK 2: Brevo HTTPS API
+  // ───────────────────────────────────────────────────────────────────────
   if (serverConfig.BREVO_API_KEY) {
     try {
       const brevoHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
@@ -74,73 +122,9 @@ export async function sendEmail({
     }
   }
 
-  // 3. Resend HTTPS API
-  if (serverConfig.RESEND_API_KEY) {
-    try {
-      const resendHtml = html.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${serverConfig.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'Chembros <onboarding@resend.dev>',
-          to: [to],
-          subject,
-          html: resendHtml,
-        }),
-      })
-      if (res.ok) return true
-    } catch (err) {
-      console.warn('Resend email dispatch note:', err)
-    }
-  }
-
-  // 4. Nodemailer via SMTP
-  try {
-    const transporter = nodemailer.createTransport({
-      host: serverConfig.SMTP_HOST,
-      port: serverConfig.SMTP_PORT,
-      secure: serverConfig.SMTP_PORT === 465,
-      auth: {
-        user: serverConfig.SMTP_USER,
-        pass: serverConfig.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    })
-
-    const finalAttachments: any[] = attachments ? [...attachments] : []
-    let finalHtml = html
-
-    if (html.includes('cid:chembros-logo')) {
-      const localLogoPath = path.join(process.cwd(), 'public/assets/email-logo.png')
-      if (fs.existsSync(localLogoPath)) {
-        finalAttachments.push({
-          filename: 'chembros-logo.png',
-          path: localLogoPath,
-          cid: 'chembros-logo',
-        })
-      } else {
-        finalHtml = finalHtml.replace(/cid:chembros-logo/g, PUBLIC_LOGO_URL)
-      }
-    }
-
-    await transporter.sendMail({
-      from: `"Chembros" <${serverConfig.SMTP_FROM}>`,
-      to,
-      subject,
-      html: finalHtml,
-      attachments: finalAttachments.length > 0 ? finalAttachments : undefined,
-    })
-    return true
-  } catch (smtpErr) {
-    console.warn('Nodemailer SMTP dispatch note:', smtpErr)
-  }
-
-  // 5. Supabase Auth OTP Fallback
+  // ───────────────────────────────────────────────────────────────────────
+  // FALLBACK 3: Supabase Auth OTP
+  // ───────────────────────────────────────────────────────────────────────
   try {
     const res = await fetch(`${serverConfig.SUPABASE_URL}/auth/v1/otp`, {
       method: 'POST',

@@ -26,6 +26,7 @@ export const serverConfig = {
   CASHFREE_API_VERSION: '2023-08-01',
 
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  RESEND_FROM: process.env.RESEND_FROM || 'Chembros <onboarding@resend.dev>',
   BREVO_API_KEY: process.env.BREVO_API_KEY || '',
   EMAIL_WEBHOOK_URL: process.env.EMAIL_WEBHOOK_URL || '',
 
