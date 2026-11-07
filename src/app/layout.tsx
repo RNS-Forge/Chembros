@@ -4,12 +4,32 @@ import './globals.css'
 import ClientProviders from '@/components/ClientProviders'
 
 export const metadata: Metadata = {
-  title: 'CHEM BROS — Haute Parfumerie & Chemistry',
-  description: 'Chemistry captured in a bottle. Bespoke extrait de parfum crafted through modern molecular synthesis and natural extractions.',
+  title: 'CHEM BROS | Luxury Extrait de Parfum from India',
+  description:
+    'Discover CHEM BROS — a new expression of Indian fine perfumery. Explore distinctive extrait de parfum crafted through botanical heritage, natural extractions and modern chemistry.',
+  keywords: [
+    'CHEM BROS',
+    'Luxury Perfumes',
+    'Extrait de Parfum',
+    'Indian Perfumery',
+    'Fine Fragrances',
+    'Botanical Perfumes',
+    'Molecule J',
+    'Molecule T',
+    'Molecule R',
+    'Molecule X',
+  ],
   icons: {
     icon: '/favicon.svg',
   },
-}
+  openGraph: {
+    title: 'CHEM BROS | Luxury Fragrance, Reimagined',
+    description:
+      'Rooted in Madurai. Crafted for a wider world. Discover a new architecture of fine fragrance.',
+    siteName: 'CHEM BROS',
+    type: 'website',
+  },
+};
 
 export default function RootLayout({
   children,
