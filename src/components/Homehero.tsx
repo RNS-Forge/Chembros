@@ -5,11 +5,11 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 // Assets
-import angelWaterBg from '../assets/bg/bg123.png'
-import bottle1 from '../assets/bg/T.png'
-import bottle2 from '../assets/bg/x.png'
-import bottle3 from '../assets/bg/R.png'
-import bottle4 from '../assets/bg/J.png'
+import angelWaterBg from '../assets/bg/bg123.webp'
+import bottle1 from '../assets/product/t.webp'
+import bottle2 from '../assets/product/x.webp'
+import bottle3 from '../assets/product/r.webp'
+import bottle4 from '../assets/product/j.webp'
 import MobileA from '../assets/bg/mobile.png'
 
 const DEFAULT_MOBILE_PORTRAIT = (MobileA as any)?.src || MobileA

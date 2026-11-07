@@ -7,12 +7,12 @@ import { useCart } from '../context/CartContext'
 import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
 
-import boyImg from '../assets/bg/archbg1.png'
-import bottle1Raw from '../assets/bg/x.png'
-import bottle2Raw from '../assets/bg/T.png'
-import bottle3Raw from '../assets/bg/J.png' // Molecule J (hero flight target)
-import bottle4Raw from '../assets/bg/R.png'
-import DiscoveryRaw from '../assets/product/archive.png'
+import boyImg from '../assets/bg/productbg.webp'
+import bottle1Raw from '../assets/product/x.webp'
+import bottle2Raw from '../assets/product/t.webp'
+import bottle3Raw from '../assets/product/j.webp' // Molecule J (hero flight target)
+import bottle4Raw from '../assets/product/r.webp'
+import DiscoveryRaw from '../assets/bg/archiveimg.webp'
 
 const boySrc = (boyImg as any)?.src || boyImg
 const bottle1Src = (bottle1Raw as any)?.src || bottle1Raw

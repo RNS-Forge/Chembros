@@ -22,7 +22,7 @@ import heroBg from '../assets/hero.png'
 // Molecule J Imports
 import J1 from '../assets/product/molj/J1.png'
 import J2 from '../assets/product/molj/J2.png'
-import J3 from '../assets/product/molj/J3.png'
+import J3 from '../assets/product/molj/J3.jpeg'
 import J4 from '../assets/product/molj/J4.png'
 
 // Dynamic / safe import helpers to avoid crash if asset is missing
@@ -32,13 +32,13 @@ let landscapeDiscovery: any = null
 
 try {
   landscapeX = require('../assets/product/landscape-x.jpg')
-} catch {}
+} catch { }
 try {
   landscapeT = require('../assets/product/landscape-t.jpg')
-} catch {}
+} catch { }
 try {
   landscapeDiscovery = require('../assets/product/landscape-discovery.jpg')
-} catch {}
+} catch { }
 
 const resolveAssetSrc = (asset: any, fallback: string = ''): string => {
   if (!asset) return fallback
@@ -357,13 +357,13 @@ export default function ProductDetail() {
             PART 1: MAIN HERO CARD (1:1 Carousel Showcase & Balanced Purchase Panel)
             ========================================================================= */}
         <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] p-4 sm:p-6 lg:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col gap-6 sm:gap-8">
-          
+
           {/* Top Section: Split Grid */}
           <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 xl:gap-12 items-center">
-            
+
             {/* Left Column: 1:1 Square Carousel with Thumbnail Bar */}
             <div className="lg:col-span-6 w-full max-w-[540px] mx-auto flex flex-col gap-3">
-              
+
               {/* Main 1:1 Image Carousel Viewport */}
               <div
                 onTouchStart={handleTouchStart}
@@ -426,9 +426,8 @@ export default function ProductDetail() {
                         type="button"
                         onClick={() => setActiveImageIndex(dotIdx)}
                         aria-label={`Go to image ${dotIdx + 1}`}
-                        className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                          activeImageIndex === dotIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
-                        }`}
+                        className={`h-1.5 rounded-full transition-all cursor-pointer ${activeImageIndex === dotIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                          }`}
                       />
                     ))}
                   </div>
@@ -458,11 +457,10 @@ export default function ProductDetail() {
                       key={thumbIdx}
                       type="button"
                       onClick={() => setActiveImageIndex(thumbIdx)}
-                      className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white ${
-                        isSelected
+                      className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white ${isSelected
                           ? 'border-black ring-2 ring-black/20 shadow-xs scale-[1.02]'
                           : 'border-black/10 opacity-70 hover:opacity-100 hover:border-black/30'
-                      }`}
+                        }`}
                     >
                       <img
                         src={src}
@@ -478,7 +476,7 @@ export default function ProductDetail() {
 
             {/* Right Column: Commercial Details & Purchase Panel */}
             <div className="lg:col-span-6 flex flex-col justify-center space-y-4 sm:space-y-5 lg:space-y-6">
-              
+
               {/* Product Header */}
               <div>
                 <span className="text-[10px] sm:text-xs font-mono tracking-[0.2em] uppercase text-black/50 block mb-1 sm:mb-1.5">
@@ -529,11 +527,10 @@ export default function ProductDetail() {
                       key={size}
                       type="button"
                       onClick={() => setSelectedSize(size)}
-                      className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${
-                        selectedSize === size
+                      className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${selectedSize === size
                           ? 'bg-black text-white shadow-xs font-semibold'
                           : 'bg-white text-black/70 border border-neutral-200 hover:border-black'
-                      }`}
+                        }`}
                     >
                       {size}
                     </button>
@@ -714,8 +711,8 @@ export default function ProductDetail() {
         </section>
 
         {/* =========================================================================
-            PART 3: MORE FROM THE COLLECTION
-            ========================================================================= */}
+    PART 3: MORE FROM THE COLLECTION
+    ========================================================================= */}
         {relatedProducts.length > 0 && (
           <section className="w-full mt-12 sm:mt-16 lg:mt-20 pt-8 border-t border-black/10">
             <div className="flex items-center justify-between gap-4 mb-8">
@@ -723,7 +720,7 @@ export default function ProductDetail() {
                 <span className="text-xs font-mono tracking-[0.25em] text-neutral-400 uppercase block mb-1">
                   EXPLORE OTHER SCENTS
                 </span>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wider text-black">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold font-['Montserrat',sans-serif] uppercase tracking-tight text-black">
                   More From the Collection
                 </h2>
               </div>
@@ -740,26 +737,29 @@ export default function ProductDetail() {
                 <Link
                   key={other.id}
                   to={`/fragrances/${other.slug || other.id}`}
-                  className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[280px] sm:h-[380px] md:h-[440px] lg:h-[470px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-black text-white overflow-hidden flex flex-col justify-between p-3 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)] group"
+                  className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[280px] sm:h-[380px] md:h-[440px] lg:h-[470px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-white text-black border border-black/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col justify-between p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 group"
                 >
-                  <div className="w-full text-center text-white text-[10px] sm:text-xs md:text-sm font-normal font-['Montserrat',sans-serif] tracking-wider uppercase pt-0.5 truncate">
+                  {/* Card Title */}
+                  <div className="w-full text-center text-black text-[11px] sm:text-xs md:text-sm font-semibold font-['Montserrat',sans-serif] tracking-tight uppercase pt-0.5 truncate px-1">
                     {other.name}
                   </div>
 
+                  {/* Bottle Display */}
                   <div className="my-auto flex items-center justify-center relative w-full h-[120px] sm:h-[180px] lg:h-[210px]">
                     <img
                       src={other.image_base64 || defaultBottle}
                       alt={other.name}
                       draggable={false}
-                      className="w-auto h-full max-h-[110px] sm:max-h-[170px] lg:max-h-[195px] object-contain drop-shadow-[0_8px_18px_rgba(255,255,255,0.06)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                      className="w-auto h-full max-h-[110px] sm:max-h-[170px] lg:max-h-[195px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
                     />
                   </div>
 
-                  <div className="w-full flex items-center justify-between border-t border-white/10 pt-2 pb-0.5">
-                    <div className="text-white text-xs sm:text-base font-normal font-['Montserrat',sans-serif] tracking-wider">
+                  {/* Card Footer: Price & Action */}
+                  <div className="w-full flex items-center justify-between border-t border-black/[0.08] pt-2.5 pb-0.5">
+                    <div className="text-black text-xs sm:text-base font-semibold font-['Montserrat',sans-serif] tracking-tight">
                       ₹{other.price.toLocaleString('en-IN')}
                     </div>
-                    <span className="text-[9px] sm:text-[10px] font-mono uppercase text-white/60 tracking-wider">
+                    <span className="text-[9px] sm:text-[10px] font-mono uppercase text-black/60 group-hover:text-black tracking-wider transition-colors">
                       Explore &rarr;
                     </span>
                   </div>
@@ -797,11 +797,10 @@ export default function ProductDetail() {
 
             {reviewFeedback && (
               <div
-                className={`mt-4 p-3.5 rounded-xl flex items-start gap-2.5 text-xs ${
-                  reviewFeedback.type === 'success'
+                className={`mt-4 p-3.5 rounded-xl flex items-start gap-2.5 text-xs ${reviewFeedback.type === 'success'
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-red-50 text-red-700 border border-red-200'
-                }`}
+                  }`}
               >
                 {reviewFeedback.type === 'success' ? (
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />

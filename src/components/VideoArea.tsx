@@ -2,10 +2,10 @@
 import { useState, useRef } from 'react'
 import { Star } from 'lucide-react'
 
-const DEFAULT_CLOUDINARY_EMBED = 'https://player.cloudinary.com/embed/?cloud_name=o2iumbkf&public_id=WhatsApp_Video_2026-10-28_at_12.32.21_PM'
-const DEFAULT_CLOUDINARY_STREAM = 'https://res.cloudinary.com/o2iumbkf/video/upload/WhatsApp_Video_2026-10-28_at_12.32.21_PM.mp4'
+export const HOME_VIDEO_SRC = 'https://player.cloudinary.com/embed/?cloud_name=o2iumbkf&public_id=video'
+export const FRAGRANCES_VIDEO_SRC = 'https://player.cloudinary.com/embed/?cloud_name=o2iumbkf&public_id=WhatsApp_Video_2026-10-28_at_12.32.21_PM'
 
-const Vid = DEFAULT_CLOUDINARY_STREAM
+const Vid = HOME_VIDEO_SRC
 
 function resolveMediaSource(src: string): { streamUrl: string; embedUrl: string } {
   if (src.includes('player.cloudinary.com/embed')) {

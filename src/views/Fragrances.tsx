@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
 import NavBar from '../components/NavBar'
-import VideoArea from '../components/VideoArea'
+import VideoArea, { FRAGRANCES_VIDEO_SRC } from '../components/VideoArea'
 import Footer from '../components/Footer'
 import bottleImg from '../assets/bottle.png'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
@@ -187,7 +187,7 @@ export default function Fragrances() {
 
       </main>
 
-      {(settings?.enable_video_stories ?? true) && <VideoArea />}
+      {(settings?.enable_video_stories ?? true) && <VideoArea videoSrc={FRAGRANCES_VIDEO_SRC} />}
 
       <Footer />
     </div>
