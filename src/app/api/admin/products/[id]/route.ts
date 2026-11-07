@@ -90,16 +90,34 @@ async function handleUpdate(
     if (body.heart_notes !== undefined) updatePayload.heart_notes = String(body.heart_notes)
     if (body.base_notes !== undefined) updatePayload.base_notes = String(body.base_notes)
     if (body.description !== undefined) updatePayload.description = String(body.description)
-    if (body.image_base64 !== undefined) updatePayload.image_base64 = body.image_base64
+    if (body.image_base64 !== undefined) {
+      if (body.image_base64 !== '' || body.remove_image) {
+        updatePayload.image_base64 = body.image_base64
+      }
+    }
+    if (body.sort_order !== undefined) updatePayload.sort_order = body.sort_order !== null ? Number(body.sort_order) : null
     if (body.is_trending !== undefined) updatePayload.is_trending = Boolean(body.is_trending)
     if (body.is_featured !== undefined) updatePayload.is_featured = Boolean(body.is_featured)
 
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('products')
       .update(updatePayload)
       .eq('id', id)
       .select()
       .single()
+
+    // If sort_order column does not exist in Supabase schema cache, retry without sort_order
+    if (error && error.message?.includes('sort_order')) {
+      const { sort_order: _omit, ...payloadWithoutSort } = updatePayload
+      const retry = await supabaseAdmin
+        .from('products')
+        .update(payloadWithoutSort)
+        .eq('id', id)
+        .select()
+        .single()
+      data = retry.data
+      error = retry.error
+    }
 
     if (error) {
       console.error('Update product error:', error)

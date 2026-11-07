@@ -45,9 +45,10 @@ export default function HomeProduct() {
       'molecule-r': 3,
     }
     const sortedMolecules = [...molecules].sort((a, b) => {
-      const posA = a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99
-      const posB = b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99
-      return posA - posB
+      const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : (a.slug ? (orderMap[a.slug.toLowerCase()] ?? 99) : 99)
+      const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : (b.slug ? (orderMap[b.slug.toLowerCase()] ?? 99) : 99)
+      if (orderA !== orderB) return orderA - orderB
+      return Number(a.id) - Number(b.id)
     })
     return {
       molecules: sortedMolecules.slice(0, 4),
@@ -106,14 +107,15 @@ export default function HomeProduct() {
     }
   }, [])
 
-  // Resolve dynamic bottle image
+  // Resolve dynamic bottle image - prioritize custom uploaded image!
   const getProductImage = (prod: Product, idx: number) => {
+    if (prod.image_base64) return prod.image_base64
     if (idx === 0) return bottle3Src
     if (prod.slug === 'molecule-x') return bottle1Src
     if (prod.slug === 'molecule-t') return bottle2Src
     if (prod.slug === 'molecule-k' || prod.slug === 'molecule-r') return bottle4Src
     const list = [bottle3Src, bottle1Src, bottle2Src, bottle4Src]
-    return prod.image_base64 || list[idx % list.length]
+    return list[idx % list.length]
   }
 
   // Symmetrical Desktop Scroll Flight

@@ -25,6 +25,7 @@ export interface Product {
   is_trending: boolean
   is_featured: boolean
   sales_count: number
+  sort_order?: number
   created_at?: string
 }
 

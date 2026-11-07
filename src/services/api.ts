@@ -901,6 +901,7 @@ export async function getMeApi(): Promise<User> {
 // ----------------- Products Endpoints (Direct Supabase) -----------------
 
 const PRODUCT_DELIVERY_FEES_KEY = 'chembros_product_delivery_fees'
+const PRODUCT_SORT_ORDERS_KEY = 'chembros_product_sort_orders'
 
 export function getStoredDeliveryFees(): Record<string, number> {
   try {
@@ -919,6 +920,23 @@ export function setStoredDeliveryFee(productId: number | string, fee: number) {
   } catch {}
 }
 
+export function getStoredSortOrders(): Record<string, number> {
+  try {
+    const raw = safeStorage.getItem(PRODUCT_SORT_ORDERS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function setStoredSortOrder(productId: number | string, sort_order: number) {
+  try {
+    const orders = getStoredSortOrders()
+    orders[String(productId)] = Number(sort_order) || 0
+    safeStorage.setItem(PRODUCT_SORT_ORDERS_KEY, JSON.stringify(orders))
+  } catch {}
+}
+
 export function attachDeliveryFee(product: Product): Product {
   if (!product) return product
   const fees = getStoredDeliveryFees()
@@ -926,7 +944,14 @@ export function attachDeliveryFee(product: Product): Product {
   const fee = typeof product.delivery_fee === 'number'
     ? product.delivery_fee
     : (typeof stored === 'number' ? stored : 0)
-  return { ...product, delivery_fee: fee }
+
+  const orders = getStoredSortOrders()
+  const storedOrder = orders[String(product.id)]
+  const order = typeof product.sort_order === 'number' && product.sort_order > 0
+    ? product.sort_order
+    : (typeof storedOrder === 'number' && storedOrder > 0 ? storedOrder : undefined)
+
+  return { ...product, delivery_fee: fee, sort_order: order }
 }
 
 export function attachDeliveryFees(products: Product[]): Product[] {
@@ -963,7 +988,9 @@ export function initProductsCache(): Product[] | null {
       // Must contain complete catalog (at least 4 formulas), discard single-item partial caches
       if (Array.isArray(parsed) && parsed.length >= 4) {
         _cachedProducts = attachDeliveryFees(parsed)
-        _lastProductsFetchTime = ts ? Number(ts) || 0 : 0
+        // If any cached item is missing an image, mark cache stale immediately so fresh images load from DB
+        const hasMissingImages = parsed.some((p: any) => !p.image_base64)
+        _lastProductsFetchTime = hasMissingImages ? 0 : (ts ? Number(ts) || 0 : 0)
         return _cachedProducts
       }
     }
@@ -984,15 +1011,20 @@ export function setCachedProducts(products: Product[]): Product[] {
     _cachedProducts = enriched
     _lastProductsFetchTime = Date.now()
     try {
-      // Strip oversized image_base64 payloads (> 50KB) so we never exceed browser localStorage 5MB quota
-      const lightweightForStorage = enriched.map((p) => {
-        if (p.image_base64 && p.image_base64.length > 50000) {
-          const { image_base64, ...rest } = p
-          return rest as Product
-        }
-        return p
-      })
-      safeStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(lightweightForStorage))
+      // First attempt to store full complete images in cache
+      try {
+        safeStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(enriched))
+      } catch {
+        // Fallback only if browser localStorage quota is genuinely exceeded
+        const lightweightForStorage = enriched.map((p) => {
+          if (p.image_base64 && p.image_base64.length > 250000) {
+            const { image_base64, ...rest } = p
+            return rest as Product
+          }
+          return p
+        })
+        safeStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(lightweightForStorage))
+      }
       safeStorage.setItem(PRODUCTS_CACHE_TS_KEY, String(_lastProductsFetchTime))
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('chembros:products-updated', { detail: enriched }))
@@ -1039,7 +1071,10 @@ export function invalidateProductsCache(): void {
 
 async function fetchProductsDirect(): Promise<Product[]> {
   try {
-    const { data, error } = await supabase.from('products').select('*')
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id', { ascending: true })
     if (!error && data && data.length > 0) {
       return setCachedProducts(data as Product[])
     }
@@ -1141,8 +1176,11 @@ export async function getProductsApi(params: ProductQueryParams = {}): Promise<P
   } else if (params.sort_by === 'newest') {
     list.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
   } else {
-    // Default: featured first, then rating
+    // Default: sort_order first (admin-defined position), then featured, then rating
     list.sort((a, b) => {
+      const aOrder = a.sort_order != null ? a.sort_order : 999999
+      const bOrder = b.sort_order != null ? b.sort_order : 999999
+      if (aOrder !== bOrder) return aOrder - bOrder
       if (a.is_featured && !b.is_featured) return -1
       if (!a.is_featured && b.is_featured) return 1
       return (Number(b.rating) || 0) - (Number(a.rating) || 0)
@@ -1576,6 +1614,38 @@ export async function getAdminStatsApi(): Promise<AdminStats> {
   return request<AdminStats>('/api/admin/stats')
 }
 
+export async function getAdminProductsApi(): Promise<Product[]> {
+  try {
+    const res = await request<Product[]>('/api/admin/products')
+    if (Array.isArray(res) && res.length > 0) {
+      const enriched = attachDeliveryFees(res)
+      _cachedProducts = enriched
+      _lastProductsFetchTime = Date.now()
+      return enriched
+    }
+  } catch (err) {
+    console.warn('Backend getAdminProductsApi error, trying Supabase direct:', err)
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id', { ascending: true })
+
+    if (!error && data && data.length > 0) {
+      const enriched = attachDeliveryFees(data as Product[])
+      _cachedProducts = enriched
+      _lastProductsFetchTime = Date.now()
+      return enriched
+    }
+  } catch (err) {
+    console.error('Supabase getAdminProductsApi failed:', err)
+  }
+
+  return getProductsApi()
+}
+
 export async function createAdminProductApi(product: Partial<Product>): Promise<Product> {
   const { id: _omitId, ...cleanData } = product as any
 
@@ -1585,7 +1655,8 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
       body: JSON.stringify(cleanData),
     })
     const created = attachDeliveryFee(res)
-    upsertCachedProduct(created)
+    // Invalidate so next fetch gets full fresh data (including images) from DB
+    invalidateProductsCache()
     return created
   } catch (backendErr) {
     console.warn('Backend createAdminProduct error, trying Supabase direct:', backendErr)
@@ -1618,16 +1689,28 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
       is_trending: Boolean(product.is_trending),
       is_featured: Boolean(product.is_featured),
       sales_count: product.sales_count ?? 0,
+      sort_order: product.sort_order ?? null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
 
-    const { data, error } = await supabase.from('products').insert(insertData).select().single()
+    let { data, error } = await supabase.from('products').insert(insertData).select().single()
+
+    // If sort_order column does not exist in Supabase schema cache, retry without sort_order
+    if (error && error.message?.includes('sort_order')) {
+      const { sort_order: _omit, ...insertWithoutSort } = insertData
+      const retry = await supabase.from('products').insert(insertWithoutSort).select().single()
+      data = retry.data
+      error = retry.error
+    }
 
     if (!error && data) {
-      const created = attachDeliveryFee(data as Product)
-      upsertCachedProduct(created)
-      return created
+      if (product.sort_order) {
+        setStoredSortOrder((data as any).id, product.sort_order)
+      }
+      // Invalidate so next fetch gets full fresh data (including images) from DB
+      invalidateProductsCache()
+      return attachDeliveryFee(data as Product)
     }
     if (error) throw new Error(error.message)
   } catch (err) {
@@ -1643,6 +1726,14 @@ export async function updateAdminProductApi(
   product: Partial<Product>
 ): Promise<Product> {
   const { id: _omitId, ...cleanData } = product as any
+  // Prevent accidental image wipe if empty string was passed
+  if (cleanData.image_base64 === '' && !(product as any).remove_image) {
+    delete cleanData.image_base64
+  }
+
+  if (product.sort_order !== undefined) {
+    setStoredSortOrder(productId, Number(product.sort_order) || 0)
+  }
 
   try {
     const res = await request<Product>(`/api/admin/products/${productId}`, {
@@ -1650,14 +1741,15 @@ export async function updateAdminProductApi(
       body: JSON.stringify(cleanData),
     })
     const updated = attachDeliveryFee(res)
-    upsertCachedProduct(updated)
+    // Invalidate so next fetch gets full fresh data (including images) from DB
+    invalidateProductsCache()
     return updated
   } catch (backendErr) {
     console.warn('Backend updateAdminProduct error, trying Supabase direct:', backendErr)
   }
 
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('products')
       .update({
         ...cleanData,
@@ -1667,9 +1759,26 @@ export async function updateAdminProductApi(
       .select()
       .single()
 
+    // If sort_order column does not exist in Supabase schema cache, retry without sort_order
+    if (error && error.message?.includes('sort_order')) {
+      const { sort_order: _omit, ...cleanWithoutSort } = cleanData
+      const retry = await supabase
+        .from('products')
+        .update({
+          ...cleanWithoutSort,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', Number(productId))
+        .select()
+        .single()
+      data = retry.data
+      error = retry.error
+    }
+
     if (!error && data) {
       const updated = attachDeliveryFee(data as Product)
-      upsertCachedProduct(updated)
+      // Invalidate so next fetch gets full fresh data (including images) from DB
+      invalidateProductsCache()
       return updated
     }
     if (error) throw new Error(error.message)
@@ -1679,6 +1788,34 @@ export async function updateAdminProductApi(
   }
 
   throw new Error('Failed to update product')
+}
+
+export async function updateProductSortOrderApi(productId: number | string, sort_order: number): Promise<void> {
+  setStoredSortOrder(productId, sort_order)
+
+  // Update in-memory cache immediately so the UI reflects the new order without a full refetch
+  const current = initProductsCache()
+  if (current) {
+    const updated = current.map((p) =>
+      String(p.id) === String(productId) ? { ...p, sort_order } : p
+    )
+    setCachedProducts(updated)
+  }
+
+  // Gracefully attempt backend / Supabase update if column is configured in PostgreSQL
+  try {
+    await request<Product>(`/api/admin/products/${productId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sort_order }),
+    })
+  } catch {
+    try {
+      await supabase
+        .from('products')
+        .update({ sort_order, updated_at: new Date().toISOString() })
+        .eq('id', Number(productId))
+    } catch {}
+  }
 }
 
 export async function updateProductStockApi(productId: number | string, stock: number): Promise<Product> {

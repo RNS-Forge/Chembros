@@ -7,11 +7,13 @@ import type { Product, Order, AdminStats, User, AdminLogItem, PlatformSettings }
 import { DEFAULT_PLATFORM_SETTINGS } from '../types'
 import {
   getAdminStatsApi,
+  getAdminProductsApi,
   getProductsApi,
   createAdminProductApi,
   updateAdminProductApi,
   updateProductStockApi,
   updateProductPriceApi,
+  updateProductSortOrderApi,
   deleteAdminProductApi,
   getAdminOrdersApi,
   updateAdminOrderStatusApi,
@@ -20,6 +22,7 @@ import {
   updateAdminUserRoleApi,
   getAdminLogsApi,
   getCachedAdminLogsSync,
+  invalidateProductsCache,
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
@@ -171,6 +174,7 @@ export default function AdminPage() {
     image_base64: '',
     is_trending: false,
     is_featured: false,
+    sort_order: 0,
   })
 
   // Quick edits on products table
@@ -178,6 +182,7 @@ export default function AdminPage() {
   const [priceEdits, setPriceEdits] = useState<Record<string, number>>({})
   const [origPriceEdits, setOrigPriceEdits] = useState<Record<string, number>>({})
   const [deliveryFeeEdits, setDeliveryFeeEdits] = useState<Record<string, number>>({})
+  const [sortOrderEdits, setSortOrderEdits] = useState<Record<string, number>>({})
 
   // Shipping Dispatch Modal state
   const [dispatchModalOrder, setDispatchModalOrder] = useState<Order | null>(null)
@@ -288,7 +293,7 @@ export default function AdminPage() {
       // Prioritize essential overview data for instantaneous rendering
       const [statsData, productsData, ordersData] = await Promise.all([
         getAdminStatsApi(),
-        getProductsApi(),
+        getAdminProductsApi(),
         getAdminOrdersApi(orderStatusFilter, orderSearch),
       ])
       setStats(statsData)
@@ -534,18 +539,80 @@ export default function AdminPage() {
     }
   }
 
-  // Handle Base64 Image Upload
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [imageUploading, setImageUploading] = useState(false)
+
+  // Compress & optimize uploaded images to ensure they save instantly and never get stripped
+  const compressImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith('image/')) {
+        reject(new Error('Please select an image file.'))
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onerror = () => reject(new Error('Failed to read image.'))
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onerror = () => reject(new Error('Failed to parse image.'))
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 900
+          const MAX_HEIGHT = 1200
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width)
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height)
+              height = MAX_HEIGHT
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            resolve(e.target?.result as string)
+            return
+          }
+
+          ctx.drawImage(img, 0, 0, width, height)
+          const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+          const compressed = canvas.toDataURL(outputType, 0.88)
+          resolve(compressed)
+        }
+        img.src = e.target?.result as string
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Handle Base64 Image Upload with Auto-Optimization
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setProductForm((prev) => ({ ...prev, image_base64: reader.result as string }))
+    setImageUploading(true)
+    try {
+      const optimizedBase64 = await compressImageFile(file)
+      setProductForm((prev) => ({ ...prev, image_base64: optimizedBase64 }))
+    } catch (err) {
+      console.warn('Image optimizer fallback to raw data URL:', err)
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setProductForm((prev) => ({ ...prev, image_base64: reader.result as string }))
+        }
       }
+      reader.readAsDataURL(file)
+    } finally {
+      setImageUploading(false)
     }
-    reader.readAsDataURL(file)
   }
 
   // Save new or edited product
@@ -561,6 +628,8 @@ export default function AdminPage() {
       }
       setIsAddModalOpen(false)
       setEditingProduct(null)
+      // Invalidate stale cache so loadAllAdminData fetches fresh images from DB
+      invalidateProductsCache()
       loadAllAdminData()
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to save fragrance')
@@ -636,6 +705,27 @@ export default function AdminPage() {
       loadAllAdminData()
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to update delivery fee')
+    }
+  }
+
+  // Quick Sort Order Save per product
+  const handleQuickSortOrderSave = async (id: number | string) => {
+    const newOrder = sortOrderEdits[String(id)]
+    if (newOrder === undefined) return
+    const targetProduct = products.find((p) => String(p.id) === String(id))
+    try {
+      await updateProductSortOrderApi(id, newOrder)
+      setProducts((prev) =>
+        prev.map((item) => (String(item.id) === String(id) ? { ...item, sort_order: newOrder } : item))
+      )
+      setSaveFeedback(`Display order for "${targetProduct?.name || `#${id}`}" set to position ${newOrder}.`)
+      setSortOrderEdits((prev) => {
+        const next = { ...prev }
+        delete next[String(id)]
+        return next
+      })
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to update sort order')
     }
   }
 
@@ -727,6 +817,7 @@ export default function AdminPage() {
       image_base64: '',
       is_trending: false,
       is_featured: false,
+      sort_order: products.length + 1,
     })
     setIsAddModalOpen(true)
   }
@@ -752,6 +843,7 @@ export default function AdminPage() {
       image_base64: product.image_base64 || '',
       is_trending: Boolean(product.is_trending),
       is_featured: Boolean(product.is_featured),
+      sort_order: product.sort_order ?? 0,
     })
     setIsAddModalOpen(true)
   }
@@ -764,8 +856,15 @@ export default function AdminPage() {
     })
   }
 
-  // Real-time filtered products
-  const filteredProducts = products.filter((p) => {
+  // Real-time filtered and sorted products
+  const sortedProducts = [...products].sort((a, b) => {
+    const aOrder = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
+    const bOrder = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
+    if (aOrder !== bOrder) return aOrder - bOrder
+    return Number(a.id) - Number(b.id)
+  })
+
+  const filteredProducts = sortedProducts.filter((p) => {
     if (!productColSearch) return true
     const matchName = !prodFilters.name || (p.name + ' ' + (p.subtitle || '')).toLowerCase().includes(prodFilters.name.toLowerCase().trim())
     const matchFamily = !prodFilters.family || (p.fragrance_family + ' ' + (p.top_notes || '')).toLowerCase().includes(prodFilters.family.toLowerCase().trim())
@@ -1316,6 +1415,7 @@ export default function AdminPage() {
                       <th className="py-3 px-4 font-semibold">Delivery Fee (₹)</th>
                       <th className="py-3 px-4 font-semibold">Stock</th>
                       <th className="py-3 px-4 font-semibold">Margin</th>
+                      <th className="py-3 px-4 font-semibold text-center" title="Display order on storefront (1 = first)">Sort #</th>
                       <th className="py-3 px-4 font-semibold text-right">Edit</th>
                     </tr>
 
@@ -1421,7 +1521,7 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-neutral-100">
                     {filteredProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="py-12 text-center text-neutral-500">
+                        <td colSpan={10} className="py-12 text-center text-neutral-500">
                           No fragrances match the specified criteria.
                         </td>
                       </tr>
@@ -1570,6 +1670,37 @@ export default function AdminPage() {
                                   Standard
                                 </span>
                               )}
+                            </td>
+
+                            {/* Sort Order Cell */}
+                            <td className="py-3 px-4 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  title="Display order on storefront (1 = first)"
+                                  defaultValue={p.sort_order ?? ''}
+                                  placeholder="—"
+                                  onChange={(e) =>
+                                    setSortOrderEdits((prev) => ({
+                                      ...prev,
+                                      [String(p.id)]: Number(e.target.value),
+                                    }))
+                                  }
+                                  className="w-12 px-1.5 py-1 bg-neutral-50 border border-neutral-300 rounded text-xs font-semibold text-center text-black focus:outline-none focus:border-[#4a2e70]"
+                                />
+                                {sortOrderEdits[String(p.id)] !== undefined &&
+                                  sortOrderEdits[String(p.id)] !== (p.sort_order ?? 0) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickSortOrderSave(p.id)}
+                                      className="p-1 bg-[#4a2e70] text-white rounded hover:bg-[#3b245e] cursor-pointer shadow-2xs"
+                                      title="Save Display Order"
+                                    >
+                                      <Save className="w-3 h-3" />
+                                    </button>
+                                  )}
+                              </div>
                             </td>
 
                             <td className="py-3 px-4 text-right">
@@ -3784,18 +3915,40 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2 flex-1">
-                      <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full text-xs font-medium uppercase tracking-wider hover:bg-neutral-800 transition-colors cursor-pointer">
-                        <Upload className="w-4 h-4" />
-                        <span>Upload Image File</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageFileChange}
-                          className="hidden"
-                        />
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full text-xs font-medium uppercase tracking-wider hover:bg-neutral-800 transition-colors cursor-pointer">
+                          {imageUploading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Processing Image...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4" />
+                              <span>Upload Image File</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={imageUploading}
+                            onChange={handleImageFileChange}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {productForm.image_base64 && (
+                          <button
+                            type="button"
+                            onClick={() => setProductForm((prev) => ({ ...prev, image_base64: '' }))}
+                            className="px-3 py-2 text-xs font-semibold text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors cursor-pointer border border-red-200"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                       <p className="text-[11px] text-neutral-500">
-                        Select a JPG, PNG, or WebP image. Will be uploaded and saved to the product catalog.
+                        Upload bottle photo (JPG, PNG, or WebP). Automatically optimized for crisp clarity & instant loading.
                       </p>
                     </div>
                   </div>
@@ -3979,6 +4132,23 @@ export default function AdminPage() {
                     placeholder="Enter complete product description..."
                     className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-xl"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold text-[#4a2e70] uppercase tracking-wider mb-1">
+                      Display Position / Order (1 = 1st, 2 = 2nd...)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={productForm.sort_order || ''}
+                      onChange={(e) => setProductForm({ ...productForm, sort_order: Number(e.target.value) })}
+                      placeholder="e.g. 1"
+                      className="w-full px-4 py-2.5 bg-[#faf8fd] border border-[#dcd0ee] rounded-xl font-semibold text-[#4a2e70]"
+                    />
+                    <span className="text-[10px] text-neutral-400 block mt-0.5">Controls which bottle appears 1st, 2nd, 3rd, etc. on storefront.</span>
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-3 border-t border-neutral-200">

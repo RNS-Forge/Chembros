@@ -35,7 +35,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ detail: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(data || [])
+    const list = (data || []).sort((a: any, b: any) => {
+      const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
+      const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
+      if (orderA !== orderB) return orderA - orderB
+      return Number(a.id) - Number(b.id)
+    })
+
+    return NextResponse.json(list)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error'
     return NextResponse.json({ detail: message }, { status: 500 })
@@ -77,6 +84,7 @@ export async function POST(req: Request) {
       is_trending: Boolean(body.is_trending),
       is_featured: Boolean(body.is_featured),
       sales_count: body.sales_count ? Number(body.sales_count) : 0,
+      sort_order: body.sort_order !== undefined && body.sort_order !== null ? Number(body.sort_order) : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -85,11 +93,23 @@ export async function POST(req: Request) {
       insertPayload.image_base64 = body.image_base64
     }
 
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('products')
       .insert(insertPayload)
       .select()
       .single()
+
+    // If sort_order column does not exist in Supabase schema cache, retry without sort_order
+    if (error && error.message?.includes('sort_order')) {
+      const { sort_order: _omit, ...payloadWithoutSort } = insertPayload
+      const retry = await supabaseAdmin
+        .from('products')
+        .insert(payloadWithoutSort)
+        .select()
+        .single()
+      data = retry.data
+      error = retry.error
+    }
 
     if (error) {
       console.error('Create product error:', error)

@@ -48,11 +48,18 @@ export default function Fragrances() {
     }
   }, [])
 
-  const displayedProducts = products.filter((item) => {
-    if (filter === 'bottles') return !item.is_archive
-    if (filter === 'sets') return Boolean(item.is_archive)
-    return true
-  })
+  const displayedProducts = products
+    .filter((item) => {
+      if (filter === 'bottles') return !item.is_archive
+      if (filter === 'sets') return Boolean(item.is_archive)
+      return true
+    })
+    .sort((a, b) => {
+      const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
+      const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
+      if (orderA !== orderB) return orderA - orderB
+      return Number(a.id) - Number(b.id)
+    })
 
   return (
     <div className="w-full min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white flex flex-col justify-between overflow-x-hidden">
