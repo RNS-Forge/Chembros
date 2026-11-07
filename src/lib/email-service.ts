@@ -192,7 +192,7 @@ function wrapEmailHtml(content: string): string {
         <tr>
             <td style="background-color: #fafafa; border-top: 1px solid #f3f4f6; padding: 24px 24px; text-align: center;">
                 <div style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #4b5563; text-transform: uppercase;">
-                    Chembros Private Limited
+                    Chemical Brothers perfumery LLP
                 </div>
                 <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
                     Madurai, Tamil Nadu, India

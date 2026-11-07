@@ -573,7 +573,7 @@ export const OurStoryHero: React.FC = () => {
               SRIRAM GANESH AND SRINIVAS GANESH - Founders 
             </div>
             <p className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-lg sm:text-3xl italic text-black/90 leading-snug">
-              We set out to demonstrate that Indian chemical engineering and botanical mastery can set a new standard in global fine perfumery.
+              Set out to demonstrate how Indian floral heritage, chemical engineering, and botanical mastery could establish a new standard in global fine perfumery.
             </p>
             <div className="pt-2 sm:pt-3">
               <Link
