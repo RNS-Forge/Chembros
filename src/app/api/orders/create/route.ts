@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { serverConfig } from '@/lib/server-config'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { cashfreeService } from '@/lib/cashfree-service'
-import { sendOrderPlacedEmail } from '@/lib/email-service'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
 import { getPlatformSettingsServer } from '@/lib/settings-service'
 
@@ -10,18 +9,6 @@ function generateOrderNumber(): string {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const randomSuffix = Math.floor(1000 + Math.random() * 9000)
   return `CB-${today}-${randomSuffix}`
-}
-
-function formatItemsSummary(items: any[]): string {
-  return items
-    .map((item) => {
-      const name = item.name || 'Fragrance Extrait'
-      const vol = item.volume_ml || 50
-      const qty = item.quantity || 1
-      const price = Number(item.price) || 0
-      return `• ${name} (${vol}ml) × ${qty} — Rs. ${(price * qty).toLocaleString('en-IN')}`
-    })
-    .join('\n')
 }
 
 export async function POST(req: Request) {
@@ -118,7 +105,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { data: newOrder, error: dbErr } = await supabaseAdmin
+    const { error: dbErr } = await supabaseAdmin
       .from('orders')
       .insert({
         order_number: orderNumber,
@@ -132,7 +119,7 @@ export async function POST(req: Request) {
         shipping_fee: shippingFee,
         total_amount: totalAmount,
         payment_status: 'PENDING',
-        order_status: 'Placed',
+        order_status: 'Awaiting Payment',
         cashfree_order_id: cfOrderId,
         cashfree_payment_session_id: cfResult.data.payment_session_id || '',
         payment_method: 'Cashfree PG',
@@ -146,19 +133,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Failed to record order: ' + dbErr.message }, { status: 500 })
     }
 
-    // Dispatch Order Placed confirmation email
-    try {
-      await sendOrderPlacedEmail({
-        toEmail: cleanEmail,
-        customerName: cleanName,
-        orderNumber: orderNumber,
-        totalAmount: totalAmount,
-        itemsSummary: formatItemsSummary(itemsJsonList),
-        shippingAddress: cleanAddress,
-      })
-    } catch (emailErr) {
-      console.warn('Order placed email dispatch note:', emailErr)
-    }
+    // Confirmation mail is sent only after Cashfree reports the payment as PAID
+    // (see /api/orders/verify and /api/orders/webhook).
 
     return NextResponse.json({
       order_number: orderNumber,

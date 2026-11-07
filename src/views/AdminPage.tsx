@@ -2184,6 +2184,7 @@ export default function AdminPage() {
                                 onChange={(e) => handleOrderStatusChange(o.id, e.target.value, o.tracking_number)}
                                 className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-black border border-neutral-300 rounded-lg text-xs font-semibold focus:outline-none cursor-pointer transition-colors"
                               >
+                                <option value="Awaiting Payment">Awaiting Payment</option>
                                 <option value="Placed">Placed</option>
                                 <option value="Processing">Processing</option>
                                 <option value="Shipped">Shipped</option>

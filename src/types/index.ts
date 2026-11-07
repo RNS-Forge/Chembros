@@ -109,7 +109,7 @@ export interface Order {
   shipping_fee: number
   total_amount: number
   payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
-  order_status: 'Placed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'
+  order_status: 'Awaiting Payment' | 'Placed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'
   tracking_number?: string
   created_at: string
 }

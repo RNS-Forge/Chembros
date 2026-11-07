@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cashfreeService } from '@/lib/cashfree-service'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { sendPaymentDoneEmail } from '@/lib/email-service'
+import { sendOrderPlacedEmail } from '@/lib/email-service'
 
 function formatItemsSummary(items: any[]): string {
   return items
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       paymentStatus === 'PAID'
 
     if (isSuccess && order.payment_status !== 'PAID') {
-      await supabaseAdmin
+      const { data: claimed, error: claimErr } = await supabaseAdmin
         .from('orders')
         .update({
           payment_status: 'PAID',
@@ -79,26 +79,31 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', order.id)
+        .neq('payment_status', 'PAID')
+        .select('id')
 
-      let itemsList: any[] = []
-      try {
-        itemsList = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []
-      } catch {
-        itemsList = []
-      }
+      if (claimErr) {
+        console.error('Webhook failed to mark order paid:', claimErr)
+      } else if (claimed && claimed.length > 0) {
+        let itemsList: any[] = []
+        try {
+          itemsList = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []
+        } catch {
+          itemsList = []
+        }
 
-      // Asynchronously trigger customer notification email
-      try {
-        await sendPaymentDoneEmail({
-          toEmail: order.customer_email,
-          customerName: order.customer_name,
-          orderNumber: order.order_number,
-          totalAmount: order.total_amount,
-          itemsSummary: formatItemsSummary(itemsList),
-          shippingAddress: order.shipping_address,
-        })
-      } catch (mailErr) {
-        console.warn('Webhook payment email dispatch notice:', mailErr)
+        try {
+          await sendOrderPlacedEmail({
+            toEmail: order.customer_email,
+            customerName: order.customer_name,
+            orderNumber: order.order_number,
+            totalAmount: order.total_amount,
+            itemsSummary: formatItemsSummary(itemsList),
+            shippingAddress: order.shipping_address,
+          })
+        } catch (mailErr) {
+          console.warn('Webhook payment email dispatch notice:', mailErr)
+        }
       }
     }
 

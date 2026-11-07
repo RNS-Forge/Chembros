@@ -58,6 +58,8 @@ export default function OrderConfirmationPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [orderNumber])
 
+  const isPaid = order?.payment_status === 'PAID'
+
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center font-sans">
@@ -78,27 +80,40 @@ export default function OrderConfirmationPage() {
         
         {/* Success Announcement Header */}
         <div className="text-center space-y-3 mb-6 max-w-xl">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto border ${isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
             <CheckCircle2 className="w-8 h-8 stroke-[1.75]" />
           </div>
 
           <div>
             <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-neutral-400 block mb-1">
-              PAYMENT VERIFIED
+              {!order ? 'ORDER LOOKUP' : isPaid ? 'PAYMENT VERIFIED' : 'PAYMENT PENDING'}
             </span>
             <h1 className="text-2xl sm:text-4xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black">
-              Order Confirmed
+              {!order ? 'Order not found' : isPaid ? 'Order Confirmed' : 'Payment not completed'}
             </h1>
             <p className="text-xs sm:text-sm text-neutral-600 mt-2 font-sans leading-relaxed">
-              Thank you for your purchase. We have sent your order confirmation receipt to{' '}
-              <strong className="text-black font-semibold font-mono">
-                {cleanText(order?.customer_email) || 'your email'}
-              </strong>.
+              {isPaid ? (
+                <>
+                  Thank you for your purchase. We have sent your order confirmation receipt to{' '}
+                  <strong className="text-black font-semibold font-mono">
+                    {cleanText(order?.customer_email) || 'your email'}
+                  </strong>.
+                </>
+              ) : order ? (
+                <>
+                  This order is not confirmed yet. Complete the Cashfree payment and the receipt will be sent to{' '}
+                  <strong className="text-black font-semibold font-mono">
+                    {cleanText(order.customer_email) || 'your email'}
+                  </strong>.
+                </>
+              ) : (
+                <>No matching order was found for this link.</>
+              )}
             </p>
           </div>
         </div>
 
-        {/* Final Sale / No Cancellation Notice */}
+        {isPaid && (
         <div className="w-full max-w-xl mb-8 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-center space-y-1">
           <span className="text-[10px] font-mono tracking-widest uppercase text-amber-800 font-bold block">
             Non-Cancellable & Non-Refundable
@@ -107,6 +122,7 @@ export default function OrderConfirmationPage() {
             Your order is locked for packaging and dispatch immediately. As per our luxury fragrance hygiene policy, all sales are final with no cancellation or refund option.
           </p>
         </div>
+        )}
 
         {order ? (
           <div className="w-full bg-[#FAF9F6] border border-black/5 rounded-[32px] sm:rounded-[40px] p-6 sm:p-9 lg:p-12 space-y-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
@@ -123,7 +139,7 @@ export default function OrderConfirmationPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider bg-emerald-100 text-emerald-800 font-semibold">
+                <span className={`px-3.5 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider font-semibold ${isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                   Payment: {cleanText(order.payment_status)}
                 </span>
                 <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider bg-black text-white">
@@ -148,7 +164,7 @@ export default function OrderConfirmationPage() {
                   {
                     title: 'Order Placed',
                     icon: CheckCircle2,
-                    active: true,
+                    active: isPaid,
                   },
                   {
                     title: 'Processing',
@@ -284,7 +300,7 @@ export default function OrderConfirmationPage() {
                   </span>
                 </div>
                 <div className="flex justify-between font-bold text-black text-base pt-3 border-t border-neutral-100 font-sans">
-                  <span>Total Paid</span>
+                  <span>{isPaid ? 'Total Paid' : 'Total Due'}</span>
                   <span className="font-mono text-lg">
                     ₹{order.total_amount.toLocaleString('en-IN')}
                   </span>
