@@ -19,26 +19,33 @@ import Footer from '../components/Footer'
 import bottleImg from '../assets/bottle.png'
 import heroBg from '../assets/hero.png'
 
-// Molecule J Imports
+// Molecule J Imports (4 Images)
 import J1 from '../assets/product/molj/J1.png'
 import J2 from '../assets/product/molj/J2.png'
 import J3 from '../assets/product/molj/J3.jpeg'
 import J4 from '../assets/product/molj/J4.png'
 
-// Dynamic / safe import helpers to avoid crash if asset is missing
-let landscapeX: any = null
-let landscapeT: any = null
-let landscapeDiscovery: any = null
+// Molecule T Imports (4 Images)
+import T1 from '../assets/product/T/T1.png'
+import T2 from '../assets/product/T/T2.png'
+import T3 from '../assets/product/T/T3.png'
+import T4 from '../assets/product/T/T4.png'
 
-try {
-  landscapeX = require('../assets/product/landscape-x.jpg')
-} catch { }
-try {
-  landscapeT = require('../assets/product/landscape-t.jpg')
-} catch { }
-try {
-  landscapeDiscovery = require('../assets/product/landscape-discovery.jpg')
-} catch { }
+// Molecule X Imports (4 Images)
+import X1 from '../assets/product/X/X1.png'
+import X2 from '../assets/product/X/X2.png'
+import X3 from '../assets/product/X/X3.png'
+import X4 from '../assets/product/X/X4.png'
+
+// Molecule R Imports (4 Images)
+import R1 from '../assets/product/R/R1.png'
+import R2 from '../assets/product/R/R2.png'
+import R3 from '../assets/product/R/R3.png'
+import R4 from '../assets/product/R/R4.png'
+
+// Discovery Archive Imports (Aliased to avoid collision with Molecule T)
+import Tetra1 from '../assets/product/tetra/t1.png'
+import Tetra2 from '../assets/product/tetra/t2.png'
 
 const resolveAssetSrc = (asset: any, fallback: string = ''): string => {
   if (!asset) return fallback
@@ -54,71 +61,66 @@ const resolveAssetSrc = (asset: any, fallback: string = ''): string => {
 }
 
 const defaultBottle = resolveAssetSrc(bottleImg, '')
-const defaultHeroBg = resolveAssetSrc(
-  heroBg,
-  'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85'
-)
+const defaultHeroBg = resolveAssetSrc(heroBg, '')
 
+// Resolved Gallery Images
 const j1Src = resolveAssetSrc(J1, defaultBottle)
 const j2Src = resolveAssetSrc(J2, defaultBottle)
 const j3Src = resolveAssetSrc(J3, defaultBottle)
 const j4Src = resolveAssetSrc(J4, defaultBottle)
 
-const landscapeXSrc = resolveAssetSrc(
-  landscapeX,
-  'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85'
-)
-const landscapeTSrc = resolveAssetSrc(
-  landscapeT,
-  'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1920&q=85'
-)
-const landscapeDiscoverySrc = resolveAssetSrc(
-  landscapeDiscovery,
-  'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1920&q=85'
-)
+const t1Src = resolveAssetSrc(T1, defaultBottle)
+const t2Src = resolveAssetSrc(T2, defaultBottle)
+const t3Src = resolveAssetSrc(T3, defaultBottle)
+const t4Src = resolveAssetSrc(T4, defaultBottle)
+
+const x1Src = resolveAssetSrc(X1, defaultBottle)
+const x2Src = resolveAssetSrc(X2, defaultBottle)
+const x3Src = resolveAssetSrc(X3, defaultBottle)
+const x4Src = resolveAssetSrc(X4, defaultBottle)
+
+const r1Src = resolveAssetSrc(R1, defaultBottle)
+const r2Src = resolveAssetSrc(R2, defaultBottle)
+const r3Src = resolveAssetSrc(R3, defaultBottle)
+const r4Src = resolveAssetSrc(R4, defaultBottle)
+
+const tetra1Src = resolveAssetSrc(Tetra1, defaultBottle)
+const tetra2Src = resolveAssetSrc(Tetra2, defaultBottle)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRODUCT GALLERY MAP
+// 5 OFFICIAL PRODUCTS GALLERY MAP
 // ─────────────────────────────────────────────────────────────────────────────
 const PRODUCT_GALLERY_MAP: Record<string, string[]> = {
-  // Molecule J (4 imported images)
+  // 1. Molecule J
   'molecule-j': [j1Src, j2Src, j3Src, j4Src],
-  '3': [j1Src, j2Src, j3Src, j4Src],
 
-  // Molecule X
-  'molecule-x': [
-    landscapeXSrc,
-    'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85',
-    'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1200&q=85',
-  ],
-  '1': [
-    landscapeXSrc,
-    'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85',
-  ],
+  // 2. Molecule X
+  'molecule-x': [x1Src, x2Src, x3Src, x4Src],
 
-  // Molecule T
-  'molecule-t': [
-    landscapeTSrc,
-    'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1200&q=85',
-  ],
-  '2': [
-    landscapeTSrc,
-    'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=1200&q=85',
-  ],
+  // 3. Molecule T
+  'molecule-t': [t1Src, t2Src, t3Src, t4Src],
 
-  // Discovery Archive
-  'the-discovery-archive': [
-    landscapeDiscoverySrc,
-    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
-  ],
-  'discovery-archive': [
-    landscapeDiscoverySrc,
-    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
-  ],
-  '4': [
-    landscapeDiscoverySrc,
-    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=85',
-  ],
+  // 4. Molecule R (handles both molecule-r and legacy molecule-k aliases)
+  'molecule-r': [r1Src, r2Src, r3Src, r4Src],
+  'molecule-k': [r1Src, r2Src, r3Src, r4Src],
+
+  // 5. The Discovery Archive
+  'the-discovery-archive': [tetra1Src, tetra2Src],
+  'discovery-archive': [tetra1Src, tetra2Src],
+}
+
+// Helper to reliably resolve a thumbnail image for "More From the Collection"
+const getProductThumbnail = (prod: Product): string => {
+  const s = (prod.slug || '').toLowerCase()
+  const n = (prod.name || '').toLowerCase()
+
+  if (s.includes('molecule-j') || n.includes('molecule j')) return j1Src
+  if (s.includes('molecule-x') || n.includes('molecule x')) return x1Src
+  if (s.includes('molecule-t') || n.includes('molecule t')) return t1Src
+  if (s.includes('molecule-r') || n.includes('molecule r') || s.includes('molecule-k') || n.includes('molecule k')) return r1Src
+  if (s.includes('discovery') || n.includes('discovery') || Boolean(prod.is_archive)) return tetra1Src
+
+  return prod.image_base64 || defaultBottle
 }
 
 // Lucide Icons
@@ -147,12 +149,7 @@ export default function ProductDetail() {
     const list = getCachedProductsSync()
     return list?.find((p) => String(p.id) === String(id) || p.slug === String(id)) || null
   })
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>(() => {
-    if (!id) return []
-    const list = getCachedProductsSync()
-    if (!list) return []
-    return list.filter((p) => String(p.id) !== String(id) && p.slug !== String(id)).slice(0, 4)
-  })
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [reviews, setReviews] = useState<CustomerReview[]>([])
   const [loading, setLoading] = useState(() => {
     if (!id) return true
@@ -192,15 +189,36 @@ export default function ProductDetail() {
         setReviews(Array.isArray(reviewsData) ? reviewsData : [])
 
         if (Array.isArray(allProducts)) {
-          const sorted = [...allProducts].sort((a, b) => {
-            const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
-            const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
-            if (orderA !== orderB) return orderA - orderB
-            return Number(a.id) - Number(b.id)
+          // Canonical ordering map for the 5 formulas
+          const orderMap: Record<string, number> = {
+            'molecule-j': 0,
+            'molecule-x': 1,
+            'molecule-t': 2,
+            'molecule-r': 3,
+            'molecule-k': 3,
+            'the-discovery-archive': 4,
+            'discovery-archive': 4,
+          }
+
+          // Filter out the active product by both slug and ID
+          const currentSlug = (detailData.slug || '').toLowerCase()
+          const currentId = String(detailData.id)
+
+          const others = allProducts.filter((p) => {
+            const pSlug = (p.slug || '').toLowerCase()
+            const pId = String(p.id)
+            return pSlug !== currentSlug && pId !== currentId
           })
-          const others = sorted.filter(
-            (p) => String(p.id) !== String(detailData.id) && p.slug !== detailData.slug
-          )
+
+          // Sort so J, X, T, R, and Discovery appear in expected order
+          others.sort((a, b) => {
+            const slugA = (a.slug || '').toLowerCase()
+            const slugB = (b.slug || '').toLowerCase()
+            const rankA = orderMap[slugA] ?? (a.is_archive ? 4 : 99)
+            const rankB = orderMap[slugB] ?? (b.is_archive ? 4 : 99)
+            return rankA - rankB
+          })
+
           setRelatedProducts(others.slice(0, 4))
         }
       } catch (err) {
@@ -209,33 +227,10 @@ export default function ProductDetail() {
         setLoading(false)
       }
     }
+
     loadData()
     setActiveImageIndex(0)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-
-    const handleProductsUpdated = (e: any) => {
-      const updated = e.detail
-      if (Array.isArray(updated) && updated.length > 0) {
-        const sorted = [...updated].sort((a, b) => {
-          const orderA = a.sort_order != null && a.sort_order > 0 ? a.sort_order : 999999
-          const orderB = b.sort_order != null && b.sort_order > 0 ? b.sort_order : 999999
-          if (orderA !== orderB) return orderA - orderB
-          return Number(a.id) - Number(b.id)
-        })
-        setRelatedProducts((prev) => {
-          const currentId = id
-          const others = sorted.filter(
-            (p) => String(p.id) !== String(currentId) && p.slug !== currentId
-          )
-          return others.slice(0, 4)
-        })
-      }
-    }
-
-    window.addEventListener('chembros:products-updated', handleProductsUpdated)
-    return () => {
-      window.removeEventListener('chembros:products-updated', handleProductsUpdated)
-    }
   }, [id])
 
   const handleAddToCart = () => {
@@ -345,17 +340,14 @@ export default function ProductDetail() {
   }
 
   const lookupSlug = (product.slug || '').toLowerCase()
-  const lookupId = String(product.id || '').toLowerCase()
   const lookupName = (product.name || '').toLowerCase()
   const isArchive =
     Boolean(product.is_archive) ||
     lookupSlug.includes('discovery') ||
     lookupName.includes('discovery')
 
-  // Resolve array of images strictly from static local assets (no backend images in this detail view)
+  // Resolve array of images strictly for the 5 formulas
   const galleryImages: string[] =
-    PRODUCT_GALLERY_MAP[lookupSlug] ||
-    PRODUCT_GALLERY_MAP[lookupId] ||
     (lookupSlug.includes('molecule-j') || lookupName.includes('molecule j')
       ? PRODUCT_GALLERY_MAP['molecule-j']
       : null) ||
@@ -365,10 +357,11 @@ export default function ProductDetail() {
     (lookupSlug.includes('molecule-t') || lookupName.includes('molecule t')
       ? PRODUCT_GALLERY_MAP['molecule-t']
       : null) ||
-    (isArchive ? PRODUCT_GALLERY_MAP['the-discovery-archive'] : null) || [
-      defaultBottle,
-      defaultHeroBg,
-    ]
+    (lookupSlug.includes('molecule-r') || lookupName.includes('molecule r') || lookupSlug.includes('molecule-k') || lookupName.includes('molecule k')
+      ? PRODUCT_GALLERY_MAP['molecule-r']
+      : null) ||
+    (isArchive ? PRODUCT_GALLERY_MAP['the-discovery-archive'] : null) ||
+    PRODUCT_GALLERY_MAP[lookupSlug] || [defaultBottle]
 
   const nextImage = () => {
     setActiveImageIndex((prev) => (prev + 1) % galleryImages.length)
@@ -420,13 +413,13 @@ export default function ProductDetail() {
                 onTouchEnd={handleTouchEnd}
                 className="w-full aspect-square rounded-[22px] sm:rounded-[28px] lg:rounded-[34px] overflow-hidden relative border border-black/5 bg-white shadow-xs group"
               >
-                {/* Image Slide Track */}
+                {/* Image Slide Track (Edge-to-Edge Fill) */}
                 <div
                   className="w-full h-full flex transition-transform duration-500 ease-out will-change-transform"
                   style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
                 >
                   {galleryImages.map((src, idx) => (
-                    <div key={idx} className="w-full h-full shrink-0 relative bg-white">
+                    <div key={idx} className="w-full h-full shrink-0 relative bg-white flex items-center justify-center">
                       <img
                         src={src}
                         alt={`${product.name} View ${idx + 1}`}
@@ -494,33 +487,35 @@ export default function ProductDetail() {
               </div>
 
               {/* Dynamic Thumbnail Strip */}
-              <div
-                className="w-full grid gap-2 sm:gap-2.5 pt-0.5"
-                style={{
-                  gridTemplateColumns: `repeat(${galleryImages.length}, minmax(0, 1fr))`,
-                }}
-              >
-                {galleryImages.map((src, thumbIdx) => {
-                  const isSelected = activeImageIndex === thumbIdx
-                  return (
-                    <button
-                      key={thumbIdx}
-                      type="button"
-                      onClick={() => setActiveImageIndex(thumbIdx)}
-                      className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white p-1 flex items-center justify-center ${isSelected
-                          ? 'border-black ring-2 ring-black/20 shadow-xs scale-[1.02]'
-                          : 'border-black/10 opacity-70 hover:opacity-100 hover:border-black/30'
-                        }`}
-                    >
-                      <img
-                        src={src}
-                        alt={`Thumbnail ${thumbIdx + 1}`}
-                        className="w-full h-full object-contain object-center"
-                      />
-                    </button>
-                  )
-                })}
-              </div>
+              {galleryImages.length > 1 && (
+                <div
+                  className="w-full grid gap-2 sm:gap-2.5 pt-0.5"
+                  style={{
+                    gridTemplateColumns: `repeat(${galleryImages.length}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {galleryImages.map((src, thumbIdx) => {
+                    const isSelected = activeImageIndex === thumbIdx
+                    return (
+                      <button
+                        key={thumbIdx}
+                        type="button"
+                        onClick={() => setActiveImageIndex(thumbIdx)}
+                        className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer bg-white flex items-center justify-center ${isSelected
+                            ? 'border-black ring-2 ring-black/20 shadow-xs scale-[1.02]'
+                            : 'border-black/10 opacity-70 hover:opacity-100 hover:border-black/30'
+                          }`}
+                      >
+                        <img
+                          src={src}
+                          alt={`Thumbnail ${thumbIdx + 1}`}
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
 
             </div>
 
@@ -572,7 +567,7 @@ export default function ProductDetail() {
                 </span>
               </div>
 
-              {/* Exclusive Single Formulation Size Display */}
+              {/* Formulation Specification */}
               <div>
                 <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-neutral-500 block mb-2">
                   Select Bottle Size
@@ -609,7 +604,7 @@ export default function ProductDetail() {
                   <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
                 </span>
                 <span className="flex items-center gap-1.5">
-                  10+ Hours Wear Time
+                  <Sparkles className="w-3.5 h-3.5" /> 10+ Hours Wear Time
                 </span>
               </div>
             </div>
@@ -727,8 +722,8 @@ export default function ProductDetail() {
         </section>
 
         {/* =========================================================================
-            PART 3: MORE FROM THE COLLECTION
-            ========================================================================= */}
+    PART 3: MORE FROM THE COLLECTION (Fetching Direct From Backend)
+    ========================================================================= */}
         {relatedProducts.length > 0 && (
           <section className="w-full mt-12 sm:mt-16 lg:mt-20 pt-8 border-t border-black/10">
             <div className="flex items-center justify-between gap-4 mb-8">
@@ -749,38 +744,47 @@ export default function ProductDetail() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6 justify-items-center">
-              {relatedProducts.map((other) => (
-                <Link
-                  key={other.id}
-                  to={`/fragrances/${other.slug || other.id}`}
-                  className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[280px] sm:h-[380px] md:h-[440px] lg:h-[470px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-white text-black border border-black/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col justify-between p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 group"
-                >
-                  {/* Card Title */}
-                  <div className="w-full text-center text-black text-[11px] sm:text-xs md:text-sm font-semibold font-['Montserrat',sans-serif] tracking-tight uppercase pt-0.5 truncate px-1">
-                    {other.name}
-                  </div>
+              {relatedProducts.map((other) => {
+                // Fetch image directly from backend record
+                const backendImgSrc =
+                  other.image_base64 ||
+                  (other as any).image_url ||
+                  (other as any).image ||
+                  defaultBottle
 
-                  {/* Bottle Display */}
-                  <div className="my-auto flex items-center justify-center relative w-full h-[120px] sm:h-[180px] lg:h-[210px]">
-                    <img
-                      src={other.image_base64 || (bottleImg as any)?.src || defaultBottle}
-                      alt={other.name}
-                      draggable={false}
-                      className="w-auto h-full max-h-[110px] sm:max-h-[170px] lg:max-h-[195px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
-                    />
-                  </div>
-
-                  {/* Card Footer: Price & Action */}
-                  <div className="w-full flex items-center justify-between border-t border-black/[0.08] pt-2.5 pb-0.5">
-                    <div className="text-black text-xs sm:text-base font-semibold font-['Montserrat',sans-serif] tracking-tight">
-                      ₹{other.price.toLocaleString('en-IN')}
+                return (
+                  <Link
+                    key={other.id}
+                    to={`/fragrances/${other.slug || other.id}`}
+                    className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[290px] sm:h-[390px] md:h-[450px] lg:h-[480px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-white text-black border border-black/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col justify-between p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 group"
+                  >
+                    {/* Title */}
+                    <div className="w-full text-center text-black text-[11px] sm:text-xs md:text-sm font-semibold font-['Montserrat',sans-serif] tracking-tight uppercase pt-0.5 truncate px-1">
+                      {other.name}
                     </div>
-                    <span className="text-[9px] sm:text-[10px] font-mono uppercase text-black/60 group-hover:text-black tracking-wider transition-colors">
-                      Explore &rarr;
-                    </span>
-                  </div>
-                </Link>
-              ))}
+
+                    {/* Bottle Image Slot: mix-blend-multiply eliminates the white image box */}
+                    <div className="my-auto flex items-center justify-center relative w-full h-[150px] sm:h-[220px] lg:h-[250px] overflow-hidden">
+                      <img
+                        src={backendImgSrc}
+                        alt={other.name}
+                        draggable={false}
+                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                      />
+                    </div>
+
+                    {/* Price & Action */}
+                    <div className="w-full flex items-center justify-between border-t border-black/[0.08] pt-2.5 pb-0.5">
+                      <div className="text-black text-xs sm:text-base font-semibold font-['Montserrat',sans-serif] tracking-tight">
+                        ₹{other.price.toLocaleString('en-IN')}
+                      </div>
+                      <span className="text-[9px] sm:text-[10px] font-mono uppercase text-black/60 group-hover:text-black tracking-wider transition-colors">
+                        Explore &rarr;
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </section>
         )}
