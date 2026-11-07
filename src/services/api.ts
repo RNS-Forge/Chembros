@@ -185,7 +185,7 @@ function formatReview(row: any): CustomerReview {
 }
 
 // ----------------- Auth Endpoints -----------------
-// Real live 2FA OTP emails remain powered by the backend Gmail SMTP engine
+// Real live 2FA OTP emails remain powered by the backend Resend email engine
 
 /**
  * Automatically retrieves complete address details for the user.
@@ -1964,7 +1964,7 @@ export async function updateAdminOrderStatusApi(
     console.warn('Supabase update order status error:', err)
   }
 
-  // 2. Dispatch status update email notification via backend Gmail SMTP service
+  // 2. Dispatch status update email notification via backend Resend service
   try {
     request<Order>(`/api/admin/orders/${orderId}/status`, {
       method: 'PATCH',
@@ -2084,7 +2084,7 @@ async function fetchAdminLogsDirect(): Promise<AdminLogItem[]> {
       timestamp: new Date().toISOString(),
       action: 'SYSTEM_VERIFY',
       category: 'SYSTEM',
-      details: 'Gmail SMTP Multi-Stage Dispatch Service operational and active.',
+      details: 'Resend Multi-Stage Dispatch Service operational and active.',
       user_email: 'dispatch@chembros.com',
       status: 'SUCCESS',
     })

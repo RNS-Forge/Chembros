@@ -1224,7 +1224,7 @@ export default function AuthModal() {
         {/* Security Assurance Badge */}
         <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-center gap-2 text-[10px] font-mono tracking-widest uppercase text-black/40">
           <ShieldCheck className="w-3.5 h-3.5 text-black/50" />
-          <span>AUTHENTICATED VIA SECURE GMAIL SMTP</span>
+          <span>AUTHENTICATED VIA SECURE EMAIL</span>
         </div>
       </div>
     </div>

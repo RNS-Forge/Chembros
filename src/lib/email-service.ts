@@ -593,6 +593,30 @@ export async function sendOrderPlacedEmail(params: {
   return await sendEmail({ to: params.toEmail, subject, html, attachments })
 }
 
+export async function sendOrderProcessingEmail(params: {
+  toEmail: string
+  customerName: string
+  orderNumber: string
+  totalAmount: number
+  itemsSummary: string
+  shippingAddress?: string
+}): Promise<boolean> {
+  const subject = `Your Order #${cleanText(params.orderNumber)} Is Being Prepared - Chembros`
+  const html = buildOrderHtml({
+    titleBadge: 'Order Processing',
+    headline: `We're Preparing Your Order, ${cleanText(params.customerName)}`,
+    messageText:
+      'Good news — your order is now in production. Our atelier is carefully hand-packing your fragrances and preparing them for dispatch. You will receive a tracking link as soon as it ships.',
+    stageNum: 2,
+    orderNumber: params.orderNumber,
+    customerName: params.customerName,
+    totalAmount: params.totalAmount,
+    itemsSummary: params.itemsSummary,
+    shippingAddress: params.shippingAddress,
+  })
+  return await sendEmail({ to: params.toEmail, subject, html })
+}
+
 export async function sendPaymentDoneEmail(params: {
   toEmail: string
   customerName: string
@@ -794,6 +818,8 @@ export async function sendOrderStatusEmail(params: {
     return await sendDeliveryTodayEmail(params)
   } else if (statusLower.includes('deliver')) {
     return await sendOrderDeliveredEmail(params)
+  } else if (statusLower.includes('process')) {
+    return await sendOrderProcessingEmail(params)
   } else if (statusLower.includes('paid')) {
     return await sendPaymentDoneEmail(params)
   }

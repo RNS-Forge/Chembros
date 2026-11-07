@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Failed to generate verification code.' }, { status: 500 })
     }
 
-    // Dispatch luxury password reset email via Gmail SMTP
+    // Dispatch luxury password reset email via Resend
     const sent = await sendPasswordResetOtpEmail(email, otpCode)
     if (!sent) {
       return NextResponse.json(

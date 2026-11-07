@@ -151,7 +151,7 @@ export async function POST(req: Request) {
       itemsList = []
     }
 
-    // Dispatch dedicated Order Cancellation email notification via Gmail SMTP
+    // Dispatch dedicated Order Cancellation email notification via Resend
     try {
       await sendOrderCancelledEmail({
         toEmail: updatedOrder.customer_email,

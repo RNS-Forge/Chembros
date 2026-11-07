@@ -35,8 +35,8 @@ export async function GET(req: Request) {
       timestamp: new Date().toISOString(),
       action: 'SYSTEM_VERIFY',
       category: 'SYSTEM',
-      details: 'Gmail SMTP Multi-Stage Dispatch Service operational and active.',
-      user_email: serverConfig.SMTP_FROM,
+      details: 'Resend Multi-Stage Dispatch Service operational and active.',
+      user_email: serverConfig.RESEND_FROM,
       status: 'SUCCESS',
     })
 

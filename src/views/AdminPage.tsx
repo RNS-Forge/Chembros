@@ -930,7 +930,12 @@ export default function AdminPage() {
       o.customer_email.toLowerCase().includes(s) ||
       (o.shipping_address || '').toLowerCase().includes(s)
 
+    // Only paid orders are real orders. Unpaid / "Awaiting Payment" orders are
+    // never surfaced in the admin panel.
+    const isPaid = (o.payment_status || '').toUpperCase() === 'PAID'
     const statusMatch = orderStatusFilter === 'all' || o.order_status === orderStatusFilter
+
+    if (!isPaid) return false
 
     if (!orderColSearch) return globalMatch && statusMatch
 
@@ -2184,7 +2189,6 @@ export default function AdminPage() {
                                 onChange={(e) => handleOrderStatusChange(o.id, e.target.value, o.tracking_number)}
                                 className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-black border border-neutral-300 rounded-lg text-xs font-semibold focus:outline-none cursor-pointer transition-colors"
                               >
-                                <option value="Awaiting Payment">Awaiting Payment</option>
                                 <option value="Placed">Placed</option>
                                 <option value="Processing">Processing</option>
                                 <option value="Shipped">Shipped</option>
