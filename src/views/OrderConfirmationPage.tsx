@@ -4,7 +4,7 @@ import { useSearchParams, useParams, Link } from 'react-router-dom'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import type { Order } from '../types'
-import { getOrderByNumberApi } from '../services/api'
+import { getOrderByNumberApi, verifyOrderPaymentApi } from '../services/api'
 import {
   CheckCircle2,
   Package,
@@ -45,6 +45,21 @@ export default function OrderConfirmationPage() {
         setLoading(false)
         return
       }
+
+      // The order is persisted to the database ONLY after payment is confirmed.
+      // When the customer returns from Cashfree, verify the payment first — on success
+      // this creates the paid order row (using the payload stashed at checkout) and
+      // triggers the confirmation email. Abandoned payments never create a row.
+      const cashfreeOrderId =
+        searchParams.get('cashfree_order_id') || `cf_${orderNumber}`
+      try {
+        await verifyOrderPaymentApi(orderNumber, cashfreeOrderId)
+      } catch (err) {
+        // Payment not completed / still pending — no order is recorded. We fall through
+        // to the lookup below, which will simply show "payment not completed".
+        console.warn('Payment not yet verified for this order:', err)
+      }
+
       try {
         const data = await getOrderByNumberApi(orderNumber)
         setOrder(data)

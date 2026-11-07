@@ -105,36 +105,28 @@ export async function POST(req: Request) {
       )
     }
 
-    const { error: dbErr } = await supabaseAdmin
-      .from('orders')
-      .insert({
-        order_number: orderNumber,
-        user_id: currentUser?.id || body.user_id || null,
-        customer_name: cleanName,
-        customer_email: cleanEmail,
-        customer_phone: cleanPhone,
-        shipping_address: cleanAddress,
-        items: JSON.stringify(itemsJsonList),
-        subtotal,
-        shipping_fee: shippingFee,
-        total_amount: totalAmount,
-        payment_status: 'PENDING',
-        order_status: 'Awaiting Payment',
-        cashfree_order_id: cfOrderId,
-        cashfree_payment_session_id: cfResult.data.payment_session_id || '',
-        payment_method: 'Cashfree PG',
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
-
-    if (dbErr) {
-      console.error('Error persisting order in Supabase:', dbErr)
-      return NextResponse.json({ detail: 'Failed to record order: ' + dbErr.message }, { status: 500 })
+    // IMPORTANT: We do NOT write the order to the database here.
+    // An order row is persisted ONLY after payment is confirmed (see /api/orders/verify
+    // and /api/orders/webhook). This guarantees abandoned / unpaid checkouts never appear
+    // in the admin panel, overview stats, or customer dashboard.
+    //
+    // The full order payload is returned to the client, which holds it until the customer
+    // returns from Cashfree and the confirmation page calls /api/orders/verify with it.
+    const pendingOrder = {
+      order_number: orderNumber,
+      user_id: currentUser?.id || body.user_id || null,
+      customer_name: cleanName,
+      customer_email: cleanEmail,
+      customer_phone: cleanPhone,
+      shipping_address: cleanAddress,
+      items: itemsJsonList,
+      subtotal,
+      shipping_fee: shippingFee,
+      total_amount: totalAmount,
+      cashfree_order_id: cfOrderId,
+      cashfree_payment_session_id: cfResult.data.payment_session_id || '',
+      payment_method: 'Cashfree PG',
     }
-
-    // Confirmation mail is sent only after Cashfree reports the payment as PAID
-    // (see /api/orders/verify and /api/orders/webhook).
 
     return NextResponse.json({
       order_number: orderNumber,
@@ -142,6 +134,7 @@ export async function POST(req: Request) {
       payment_session_id: cfResult.data.payment_session_id || '',
       total_amount: totalAmount,
       cf_environment: serverConfig.CASHFREE_ENV,
+      pending_order: pendingOrder,
     })
   } catch (err: any) {
     console.error('Error in create order API:', err)

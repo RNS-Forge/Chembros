@@ -1479,26 +1479,76 @@ export async function createOrderApi(payload: CreateOrderPayload): Promise<{
   cf_environment?: string
   payment_method?: string
   status?: string
+  pending_order?: any
 }> {
-  return request('/api/orders/create', {
+  const res = await request<{
+    order_number: string
+    cashfree_order_id?: string
+    payment_session_id?: string
+    total_amount: number
+    cf_environment?: string
+    payment_method?: string
+    status?: string
+    pending_order?: any
+  }>('/api/orders/create', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+
+  // The order is NOT yet in the database — it is persisted only after payment succeeds.
+  // Stash the pending payload locally so the confirmation page can pass it to /verify.
+  try {
+    if (res.pending_order && res.order_number) {
+      safeStorage.setItem(`chembros_pending_order_${res.order_number}`, JSON.stringify(res.pending_order))
+    }
+  } catch {
+    /* storage unavailable — verify can still work if payload passed directly */
+  }
+
+  return res
 }
 
 export async function verifyOrderPaymentApi(
   order_number: string,
-  cashfree_order_id?: string
+  cashfree_order_id?: string,
+  pendingOrder?: any
 ): Promise<{
   status: string
   message: string
   order_number: string
   total_amount: number
 }> {
-  return request('/api/orders/verify', {
+  // Recover the pending order payload saved at checkout time if not supplied explicitly.
+  let payload = pendingOrder
+  if (!payload) {
+    try {
+      const saved = safeStorage.getItem(`chembros_pending_order_${order_number}`)
+      if (saved) payload = JSON.parse(saved)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const result = await request<{
+    status: string
+    message: string
+    order_number: string
+    total_amount: number
+  }>('/api/orders/verify', {
     method: 'POST',
-    body: JSON.stringify({ order_number, cashfree_order_id }),
+    body: JSON.stringify({ order_number, cashfree_order_id, pending_order: payload }),
   })
+
+  // Clean up the local stash once the order is successfully recorded.
+  try {
+    if (result.status === 'success') {
+      safeStorage.removeItem(`chembros_pending_order_${order_number}`)
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return result
 }
 
 export async function getMyOrdersApi(): Promise<Order[]> {

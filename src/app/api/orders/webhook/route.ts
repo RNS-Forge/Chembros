@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendOrderPlacedEmail } from '@/lib/email-service'
 
 function formatItemsSummary(items: any[]): string {
-  return items
+  return (items || [])
     .map((item) => {
       const name = item.name || 'Fragrance Extrait'
       const vol = item.volume_ml || 50
@@ -42,16 +42,31 @@ export async function POST(req: Request) {
     const paymentData = payload.data?.payment || {}
 
     const cfOrderId = String(orderData.order_id || payload.order_id || '')
-    const paymentStatus = String(paymentData.payment_status || orderData.order_status || payload.event || '').toUpperCase()
+    const paymentStatus = String(
+      paymentData.payment_status || orderData.order_status || payload.event || ''
+    ).toUpperCase()
 
     if (!cfOrderId) {
       return NextResponse.json({ detail: 'No order identifier found in webhook payload' }, { status: 200 })
     }
 
-    // Determine target order identifier
     const orderNumber = cfOrderId.startsWith('cf_') ? cfOrderId.replace(/^cf_/, '') : cfOrderId
 
-    // Find order in Supabase
+    const isSuccess =
+      eventType.includes('PAYMENT_SUCCESS') ||
+      eventType.includes('ORDER_PAID') ||
+      paymentStatus === 'SUCCESS' ||
+      paymentStatus === 'PAID'
+
+    if (!isSuccess) {
+      // Non-success events are ignored — nothing is recorded for unpaid orders.
+      return NextResponse.json({ success: true, message: 'Event acknowledged (no action).' })
+    }
+
+    // Only paid orders are persisted. The browser-return /verify call is the primary
+    // creator (it carries the full item/customer payload). The webhook is a safety net:
+    // if the order row already exists we ensure it is marked PAID; if it does not exist
+    // yet, Cashfree will retry and the /verify call will create it shortly.
     const { data: order, error: findErr } = await supabaseAdmin
       .from('orders')
       .select('*')
@@ -59,51 +74,52 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (findErr || !order) {
-      console.warn(`Order not found for webhook: ${cfOrderId}`)
-      return NextResponse.json({ detail: 'Order not found' }, { status: 200 })
+      console.warn(
+        `Webhook received for ${cfOrderId} but no order row exists yet. ` +
+          `Awaiting the customer's return (/api/orders/verify) to persist it, or a webhook retry.`
+      )
+      return NextResponse.json({ success: true, message: 'Awaiting order persistence.' }, { status: 200 })
     }
 
-    // Check if payment was successful
-    const isSuccess =
-      eventType.includes('PAYMENT_SUCCESS') ||
-      eventType.includes('ORDER_PAID') ||
-      paymentStatus === 'SUCCESS' ||
-      paymentStatus === 'PAID'
+    if (order.payment_status === 'PAID') {
+      return NextResponse.json({ success: true, message: 'Order already confirmed.' })
+    }
 
-    if (isSuccess && order.payment_status !== 'PAID') {
-      const { data: claimed, error: claimErr } = await supabaseAdmin
-        .from('orders')
-        .update({
-          payment_status: 'PAID',
-          order_status: 'Placed',
-          updated_at: new Date().toISOString(),
+    const { data: claimed, error: claimErr } = await supabaseAdmin
+      .from('orders')
+      .update({
+        payment_status: 'PAID',
+        order_status: 'Placed',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', order.id)
+      .neq('payment_status', 'PAID')
+      .select('id')
+
+    if (claimErr) {
+      console.error('Webhook failed to mark order paid:', claimErr)
+      return NextResponse.json({ success: false }, { status: 200 })
+    }
+
+    if (claimed && claimed.length > 0) {
+      let itemsList: any[] = []
+      try {
+        itemsList = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []
+      } catch {
+        itemsList = []
+      }
+
+      try {
+        await sendOrderPlacedEmail({
+          toEmail: order.customer_email,
+          customerName: order.customer_name,
+          orderNumber: order.order_number,
+          totalAmount: order.total_amount,
+          itemsSummary: formatItemsSummary(itemsList),
+          shippingAddress: order.shipping_address,
         })
-        .eq('id', order.id)
-        .neq('payment_status', 'PAID')
-        .select('id')
-
-      if (claimErr) {
-        console.error('Webhook failed to mark order paid:', claimErr)
-      } else if (claimed && claimed.length > 0) {
-        let itemsList: any[] = []
-        try {
-          itemsList = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || []
-        } catch {
-          itemsList = []
-        }
-
-        try {
-          await sendOrderPlacedEmail({
-            toEmail: order.customer_email,
-            customerName: order.customer_name,
-            orderNumber: order.order_number,
-            totalAmount: order.total_amount,
-            itemsSummary: formatItemsSummary(itemsList),
-            shippingAddress: order.shipping_address,
-          })
-        } catch (mailErr) {
-          console.warn('Webhook payment email dispatch notice:', mailErr)
-        }
+      } catch (mailErr) {
+        console.warn('Webhook payment email dispatch notice:', mailErr)
       }
     }
 
@@ -113,4 +129,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ detail: err.message || 'Internal server error' }, { status: 500 })
   }
 }
-
