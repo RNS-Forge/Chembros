@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { Volume2, VolumeX } from 'lucide-react'
 
 // Assets
 import angelWaterBg from '../assets/bg/bg123.webp'
@@ -10,10 +11,10 @@ import bottle1 from '../assets/product/t.webp'
 import bottle2 from '../assets/product/x.webp'
 import bottle3 from '../assets/product/r.webp'
 import bottle4 from '../assets/product/j.webp'
-import MobileA from '../assets/bg/webmobile.webp'
 
-const DEFAULT_MOBILE_PORTRAIT = (MobileA as any)?.src || MobileA
 const HERO_BG_SRC = (angelWaterBg as any)?.src || angelWaterBg
+const MOBILE_VIDEO_DIRECT_SRC =
+  'https://res.cloudinary.com/o2iumbkf/video/upload/q_auto,f_auto/video.mp4'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -59,24 +60,21 @@ const BOTTLES: BottleConfig[] = [
 export default function HomeHero() {
   const [animKey, setAnimKey] = useState<number>(0)
   const [loadingFinished, setLoadingFinished] = useState<boolean>(false)
+  const [isMuted, setIsMuted] = useState<boolean>(true)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const heroBgRef = useRef<HTMLImageElement>(null)
   const leftTextRef = useRef<HTMLDivElement>(null)
   const rightMetaRef = useRef<HTMLDivElement>(null)
   const bottleRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const mobileVideoRef = useRef<HTMLVideoElement>(null)
 
-  // Mobile Targets
-  const mobileCardSlotRef = useRef<HTMLDivElement>(null)
-  const mobileCardRef = useRef<HTMLDivElement>(null)
-  const mobileCardImgRef = useRef<HTMLImageElement>(null)
-  const mobileCurtainRef = useRef<HTMLDivElement>(null)
-  const mobileBadgesRef = useRef<HTMLDivElement>(null)
-  const mobileHeadlineRef = useRef<HTMLHeadingElement>(null)
-  const mobileItalicRef = useRef<HTMLDivElement>(null)
-  const mobileSubRef = useRef<HTMLParagraphElement>(null)
-  const mobileCtaRef = useRef<HTMLDivElement>(null)
-  const mobileMetaRef = useRef<HTMLDivElement>(null)
+  const toggleMute = () => {
+    if (!mobileVideoRef.current) return
+    const nextMuted = !mobileVideoRef.current.muted
+    mobileVideoRef.current.muted = nextMuted
+    setIsMuted(nextMuted)
+  }
 
   const notifyComplete = useCallback(() => {
     setLoadingFinished(true)
@@ -96,12 +94,12 @@ export default function HomeHero() {
   }, [])
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. ASYNC ASSET PRELOADER (Instant Mobile Image & Cache Decryption)
+  // 1. ASYNC ASSET PRELOADER
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const preloadLinks = [DEFAULT_MOBILE_PORTRAIT, HERO_BG_SRC].map((src) => {
+    const preloadLinks = [HERO_BG_SRC].map((src) => {
       const link = document.createElement('link')
       link.rel = 'preload'
       link.as = 'image'
@@ -109,12 +107,6 @@ export default function HomeHero() {
       document.head.appendChild(link)
       return link
     })
-
-    const img = new Image()
-    img.src = DEFAULT_MOBILE_PORTRAIT
-    if ('decode' in img) {
-      img.decode().catch(() => {})
-    }
 
     return () => {
       preloadLinks.forEach((link) => link.remove())
@@ -127,213 +119,47 @@ export default function HomeHero() {
       typeof window !== 'undefined' &&
       sessionStorage.getItem('chembros_hero_animated') === 'true'
 
+    // Mobile has no GSAP animation — complete immediately
+    if (isMobile) {
+      notifyComplete()
+      return
+    }
+
     const watchdogTimer = setTimeout(() => {
       notifyComplete()
     }, 6000)
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO A: Already Animated in Session (Instant Layout)
+    // SCENARIO A: Already Animated in Session (Instant Layout on Desktop/Tablet)
     // ─────────────────────────────────────────────────────────────────────────────
     if (alreadyAnimated) {
       clearTimeout(watchdogTimer)
       notifyComplete()
 
-      if (isMobile) {
-        if (mobileCardRef.current) gsap.set(mobileCardRef.current, { clearProps: 'all' })
-        if (mobileCardImgRef.current) gsap.set(mobileCardImgRef.current, { clearProps: 'all' })
-        if (mobileCurtainRef.current) gsap.set(mobileCurtainRef.current, { opacity: 0 })
-        if (mobileBadgesRef.current) gsap.set(mobileBadgesRef.current, { opacity: 1 })
-        if (mobileHeadlineRef.current) gsap.set(mobileHeadlineRef.current, { yPercent: 0, opacity: 1 })
-        if (mobileItalicRef.current) gsap.set(mobileItalicRef.current, { yPercent: 0, opacity: 1 })
-        if (mobileSubRef.current) gsap.set(mobileSubRef.current, { opacity: 1, y: 0 })
-        if (mobileCtaRef.current) gsap.set(mobileCtaRef.current, { opacity: 1, y: 0 })
-        if (mobileMetaRef.current) gsap.set(mobileMetaRef.current, { opacity: 1 })
-      } else {
-        if (heroBgRef.current) gsap.set(heroBgRef.current, { opacity: 1, y: 0, scale: 1 })
-        if (leftTextRef.current) gsap.set(leftTextRef.current, { opacity: 1, y: 0 })
-        if (rightMetaRef.current) gsap.set(rightMetaRef.current, { opacity: 1, y: 0 })
+      if (heroBgRef.current) gsap.set(heroBgRef.current, { opacity: 1, y: 0, scale: 1 })
+      if (leftTextRef.current) gsap.set(leftTextRef.current, { opacity: 1, y: 0 })
+      if (rightMetaRef.current) gsap.set(rightMetaRef.current, { opacity: 1, y: 0 })
 
-        const isTablet1024 = window.innerWidth >= 768 && window.innerWidth <= 1180
-        BOTTLES.forEach((bottle, idx) => {
-          const el = bottleRefs.current[idx]
-          if (!el) return
-          const targetPos = isTablet1024 ? bottle.tablet1024 : bottle.desktop
-          gsap.set(el, {
-            xPercent: 0,
-            yPercent: 0,
-            left: targetPos.left,
-            top: targetPos.top,
-            scale: 1,
-            opacity: 1,
-          })
+      const isTablet1024 = window.innerWidth >= 768 && window.innerWidth <= 1180
+      BOTTLES.forEach((bottle, idx) => {
+        const el = bottleRefs.current[idx]
+        if (!el) return
+        const targetPos = isTablet1024 ? bottle.tablet1024 : bottle.desktop
+        gsap.set(el, {
+          xPercent: 0,
+          yPercent: 0,
+          left: targetPos.left,
+          top: targetPos.top,
+          scale: 1,
+          opacity: 1,
         })
-      }
+      })
+
       return () => clearTimeout(watchdogTimer)
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO B: Mobile Cinematic Reveal (< 768px) with 1.2s Fullscreen Hold
-    // ─────────────────────────────────────────────────────────────────────────────
-    if (isMobile) {
-      const mobileCtx = gsap.context(() => {
-        const slot = mobileCardSlotRef.current
-        const card = mobileCardRef.current
-        const cardImg = mobileCardImgRef.current
-        const curtain = mobileCurtainRef.current
-        const badges = mobileBadgesRef.current
-        const headline = mobileHeadlineRef.current
-        const italic = mobileItalicRef.current
-        const sub = mobileSubRef.current
-        const cta = mobileCtaRef.current
-        const meta = mobileMetaRef.current
-
-        if (!slot || !card || !cardImg) {
-          clearTimeout(watchdogTimer)
-          notifyComplete()
-          return
-        }
-
-        const rect = slot.getBoundingClientRect()
-        const vw = window.innerWidth
-        const vh = window.innerHeight
-
-        const targetW = rect.width > 50 ? rect.width : 340
-        const targetH = rect.height > 50 ? rect.height : 360
-        const targetLeft = rect.left || (vw - targetW) / 2
-        const targetTop = rect.top || 88
-
-        const scale = Math.max(vw / targetW, vh / targetH)
-        const deltaX = vw / 2 - (targetLeft + targetW / 2)
-        const deltaY = vh / 2 - (targetTop + targetH / 2)
-
-        gsap.set(card, {
-          x: deltaX,
-          y: deltaY,
-          scale: scale,
-          borderRadius: 0,
-          zIndex: 60,
-          transformOrigin: '50% 50%',
-        })
-
-        gsap.set(cardImg, {
-          scale: 1.35,
-          transformOrigin: 'center 30%',
-        })
-
-        if (curtain) gsap.set(curtain, { opacity: 0.35 })
-        if (badges) gsap.set(badges, { opacity: 0 })
-        if (headline) gsap.set(headline, { yPercent: 120, opacity: 0 })
-        if (italic) gsap.set(italic, { yPercent: 120, opacity: 0 })
-        if (sub) gsap.set(sub, { opacity: 0, y: 15 })
-        if (cta) gsap.set(cta, { opacity: 0, scale: 0.94, y: 10 })
-        if (meta) gsap.set(meta, { opacity: 0 })
-
-        const tl = gsap.timeline({
-          onComplete: () => {
-            clearTimeout(watchdogTimer)
-            gsap.set(card, { clearProps: 'zIndex,transformOrigin' })
-            notifyComplete()
-          },
-        })
-
-        tl.to({}, { duration: 1.2 })
-
-        tl.to(
-          card,
-          {
-            x: 0,
-            y: 0,
-            scale: 1,
-            borderRadius: '28px',
-            duration: 1.45,
-            ease: 'expo.inOut',
-            boxShadow: '0 20px 48px -12px rgba(0,0,0,0.22)',
-          },
-          'zoom'
-        )
-        .to(
-          cardImg,
-          {
-            scale: 1,
-            duration: 1.45,
-            ease: 'expo.inOut',
-          },
-          'zoom'
-        )
-        .to(
-          curtain,
-          {
-            opacity: 0,
-            duration: 1.1,
-            ease: 'power2.out',
-          },
-          'zoom'
-        )
-
-        tl.to(
-          badges,
-          {
-            opacity: 1,
-            duration: 0.45,
-            ease: 'power2.out',
-          },
-          '-=0.45'
-        )
-
-        tl.to(
-          [headline, italic],
-          {
-            yPercent: 0,
-            opacity: 1,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: 'power4.out',
-          },
-          '-=0.35'
-        )
-        .to(
-          sub,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            ease: 'power3.out',
-          },
-          '-=0.55'
-        )
-        .to(
-          cta,
-          {
-            opacity: 1,
-            scale: 1,
-            y: 0,
-            duration: 0.6,
-            ease: 'back.out(1.5)',
-          },
-          '-=0.45'
-        )
-
-        if (meta) {
-          tl.to(
-            meta,
-            {
-              opacity: 1,
-              duration: 0.4,
-              ease: 'power2.out',
-            },
-            '-=0.3'
-          )
-        }
-      }, containerRef)
-
-      return () => {
-        clearTimeout(watchdogTimer)
-        mobileCtx.revert()
-      }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO C: Desktop & Tablet Animation (1.5s Hold on 4 Centered Bottles)
+    // SCENARIO B: Desktop & Tablet Animation (1.5s Hold on 4 Centered Bottles)
     // ─────────────────────────────────────────────────────────────────────────────
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia()
@@ -554,79 +380,65 @@ export default function HomeHero() {
       </div>
 
       {/* =========================================================================
-          MOBILE VIEWPORT (< 768px): ZERO OVERLAP WITH FULLSCREEN PULL-BACK
+          MOBILE VIEWPORT (< 768px): ZOOMED EDGE-TO-EDGE VIDEO + SOUND TOGGLE
           ========================================================================= */}
       <div className="md:hidden w-full min-h-[100dvh] flex flex-col justify-between items-center px-5 pt-20 pb-8 relative z-20">
         
-        {/* Top: Card Plinth Slot with responsive max-height */}
-        <div
-          ref={mobileCardSlotRef}
-          className="w-full max-w-[330px] h-[340px] max-h-[46vh] shrink-0 relative flex items-center justify-center mt-1"
-        >
-          <div
-            ref={mobileCardRef}
-            className="w-full h-full relative rounded-[28px] overflow-hidden bg-neutral-900 will-change-transform [backface-visibility:hidden]"
-          >
-            <img
-              ref={mobileCardImgRef}
-              src={DEFAULT_MOBILE_PORTRAIT}
-              alt="Chembros Molecular Fragrance"
-              fetchPriority="high"
-              loading="eager"
-              className="w-full h-full object-cover object-[center_20%] pointer-events-none select-none will-change-transform [backface-visibility:hidden]"
-              draggable={false}
+        {/* Top: Video Card Slot */}
+        <div className="w-full max-w-[330px] h-[340px] max-h-[46vh] shrink-0 relative flex items-center justify-center mt-1">
+          <div className="w-full h-full relative rounded-[28px] overflow-hidden bg-neutral-900 shadow-[0_20px_48px_-12px_rgba(0,0,0,0.22)]">
+            <video
+              ref={mobileVideoRef}
+              src={MOBILE_VIDEO_DIRECT_SRC}
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
+              preload="auto"
+              className="w-full h-full object-cover object-center scale-[1.03] pointer-events-none select-none"
             />
 
-            <div
-              ref={mobileCurtainRef}
-              className="absolute inset-0 bg-black pointer-events-none"
-            />
-
-            <div
-              ref={mobileBadgesRef}
-              className="absolute inset-0 pointer-events-none"
+            {/* Mute / Unmute Button */}
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+              className="absolute bottom-3.5 right-3.5 z-20 w-9 h-9 rounded-full bg-black/55 backdrop-blur-md border border-white/15 text-white flex items-center justify-center active:scale-90 transition-all cursor-pointer shadow-md"
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-end text-[9px] font-mono tracking-[0.25em] text-white/90 uppercase pointer-events-none" />
-            </div>
+              {isMuted ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Middle: Kinetic Typography */}
+        {/* Middle: Typography */}
         <div className="w-full max-w-[330px] flex flex-col text-left space-y-1.5 my-3">
-          
-          <div className="overflow-hidden">
+          <div>
             <div className="text-[9px] font-mono tracking-[0.25em] uppercase text-black/50">
               4 SCENTS INFINITE POSSIBILITIES
             </div>
           </div>
 
-          <div className="overflow-hidden">
-            <h1
-              ref={mobileHeadlineRef}
-              className="text-black text-[clamp(21px,5.8vw,26px)] font-semibold font-['Montserrat',sans-serif] leading-[1.06] uppercase tracking-tight will-change-transform"
-            >
+          <div>
+            <h1 className="text-black text-[clamp(21px,5.8vw,26px)] font-semibold font-['Montserrat',sans-serif] leading-[1.06] uppercase tracking-tight">
               Chemistry captured
             </h1>
           </div>
 
-          <div className="overflow-hidden">
-            <div
-              ref={mobileItalicRef}
-              className="text-[clamp(19px,5.4vw,23px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90 leading-[1.08] will-change-transform"
-            >
+          <div>
+            <div className="text-[clamp(19px,5.4vw,23px)] font-light font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] italic text-black/90 leading-[1.08]">
               in a bottle.
             </div>
           </div>
 
-          <p
-            ref={mobileSubRef}
-            className="text-black/85 text-[11px] leading-relaxed pt-0.5"
-          >
+          <p className="text-black/85 text-[11px] leading-relaxed pt-0.5">
             Where science meets scent. Explore our pure extrait molecular series.
           </p>
 
-          <div ref={mobileCtaRef} className="pt-2">
+          <div className="pt-2">
             <Link
               to="/fragrances"
               className="w-full h-11 bg-black hover:bg-neutral-900 active:scale-[0.98] text-white rounded-full flex items-center justify-center font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-xs font-semibold tracking-[0.22em] uppercase shadow-[0_10px_20px_rgba(0,0,0,0.12)] transition-all duration-300"
@@ -637,10 +449,7 @@ export default function HomeHero() {
         </div>
 
         {/* Bottom: Minimal Scroll Indicator */}
-        <div
-          ref={mobileMetaRef}
-          className="w-full max-w-[330px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-1 shrink-0"
-        >
+        <div className="w-full max-w-[330px] flex items-center justify-between text-[9px] font-mono tracking-[0.2em] text-black/40 uppercase pt-1 shrink-0">
           <span className="flex items-center gap-1 font-semibold text-black/70 animate-bounce">
             <span>SCROLL</span>
             <span>↓</span>
