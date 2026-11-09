@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Star } from 'lucide-react'
 
 export const HOME_VIDEO_SRC = 'https://player.cloudinary.com/embed/?cloud_name=o2iumbkf&public_id=video'
@@ -88,9 +88,24 @@ export default function BrandStoryProtocol({
 }: BrandStoryProtocolProps) {
   const [isMuted, setIsMuted] = useState<boolean>(true)
   const [useIframeFallback, setUseIframeFallback] = useState<boolean>(false)
+  const [isMobile, setIsMobile] = useState<boolean>(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const media = resolveMediaSource(videoSrc)
+  useEffect(() => {
+    const checkViewport = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkViewport()
+    window.addEventListener('resize', checkViewport)
+    return () => window.removeEventListener('resize', checkViewport)
+  }, [])
+
+  const activeVideoSrc = isMobile ? FRAGRANCES_VIDEO_SRC : videoSrc
+  const media = resolveMediaSource(activeVideoSrc)
+
+  useEffect(() => {
+    setUseIframeFallback(false)
+  }, [activeVideoSrc])
 
   const toggleSound = () => {
     if (videoRef.current) {
@@ -121,13 +136,14 @@ export default function BrandStoryProtocol({
             />
           ) : media.streamUrl ? (
             <video
+              key={media.streamUrl}
               ref={videoRef}
               className="w-full h-full object-cover select-none pointer-events-none"
               src={media.streamUrl}
               poster={videoPoster}
               autoPlay
               loop
-              muted
+              muted={isMuted}
               playsInline
               onError={() => setUseIframeFallback(true)}
             />
