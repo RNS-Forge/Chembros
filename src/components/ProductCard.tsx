@@ -30,10 +30,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         <span className="px-3 py-1 rounded-full bg-neutral-100 text-neutral-800 uppercase font-medium">
           Extrait de Parfum
         </span>
-        <div className="flex items-center gap-1 text-neutral-700">
-          <Star className="w-3.5 h-3.5 fill-black text-black" />
-          <span className="font-semibold">{product.rating.toFixed(1)}</span>
-        </div>
+        {product.rating > 0 ? (
+          <div className="flex items-center gap-1 text-neutral-700">
+            <Star className="w-3.5 h-3.5 fill-black text-black" />
+            <span className="font-semibold">{product.rating.toFixed(1)}</span>
+          </div>
+        ) : null}
       </div>
 
       {/* Flacon Visual Area */}

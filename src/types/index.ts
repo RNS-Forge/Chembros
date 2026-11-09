@@ -135,6 +135,8 @@ export interface AdminStats {
 export interface CustomerReview {
   id: string | number
   product_id?: number
+  product_name?: string
+  product_slug?: string
   author?: string
   author_name?: string
   location?: string

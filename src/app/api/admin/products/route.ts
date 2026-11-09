@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       heart_notes: body.heart_notes || '',
       base_notes: body.base_notes || '',
       description: body.description || '',
-      rating: body.rating ? Number(body.rating) : 4.8,
+      rating: body.rating ? Number(body.rating) : 0,
       reviews_count: body.reviews_count ? Number(body.reviews_count) : 0,
       is_trending: Boolean(body.is_trending),
       is_featured: Boolean(body.is_featured),

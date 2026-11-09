@@ -168,19 +168,21 @@ function formatOrder(row: any): Order {
 function formatReview(row: any): CustomerReview {
   return {
     id: row.id,
-    product_id: row.product_id,
-    author: row.author_name,
-    author_name: row.author_name,
+    product_id: Number(row.product_id),
+    product_name: row.product_name || row.products?.name,
+    product_slug: row.product_slug || row.products?.slug,
+    author: row.author_name || row.author || 'Verified Buyer',
+    author_name: row.author_name || row.author || 'Verified Buyer',
     location: row.location || 'Verified Buyer',
-    rating: row.rating || 5,
+    rating: Number(row.rating) || 5,
     date: row.created_at
-      ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      ? new Date(row.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
       : undefined,
     created_at: row.created_at,
     title: row.title,
     comment: row.comment,
     longevity: row.longevity || '10+ Hours',
-    sillage: row.sillage || 'Subtle & Radiant',
+    sillage: row.sillage || 'Clean & Radiant',
   }
 }
 
@@ -1376,7 +1378,7 @@ export async function getProductReviewsApi(productIdOrSlug: number | string): Pr
         .eq('product_id', targetId)
         .order('created_at', { ascending: false })
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         return data.map(formatReview)
       }
     }
@@ -1384,42 +1386,51 @@ export async function getProductReviewsApi(productIdOrSlug: number | string): Pr
     console.warn('Supabase getProductReviews fallback:', err)
   }
 
-  return request<CustomerReview[]>(`/api/products/${productIdOrSlug}/reviews`)
+  try {
+    const res = await request<CustomerReview[]>(`/api/products/${productIdOrSlug}/reviews`)
+    if (Array.isArray(res) && res.length > 0) return res.map(formatReview)
+  } catch {}
+
+  return []
 }
 
 export async function createProductReviewApi(
   productIdOrSlug: number | string,
   payload: CreateReviewInput
 ): Promise<CustomerReview> {
+  let targetId: number | null = !isNaN(Number(productIdOrSlug)) ? Number(productIdOrSlug) : null
+  if (!targetId) {
+    const prod = await getProductDetailApi(productIdOrSlug)
+    targetId = Number(prod.id)
+  }
+
   try {
-    let targetId: number | null = !isNaN(Number(productIdOrSlug)) ? Number(productIdOrSlug) : null
-    if (!targetId) {
-      const prod = await getProductDetailApi(productIdOrSlug)
-      targetId = Number(prod.id)
+    const res = await request<CustomerReview>(`/api/products/${targetId || productIdOrSlug}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    if (res && res.id) return formatReview(res)
+  } catch (backendErr) {
+    console.warn('Backend createProductReview fallback to Supabase:', backendErr)
+  }
+
+  if (targetId) {
+    const insertPayload: Record<string, any> = {
+      product_id: targetId,
+      author_name: payload.author_name.trim(),
+      location: payload.location ? payload.location.trim() : 'Verified Buyer',
+      rating: Math.max(1, Math.min(5, payload.rating)),
+      title: payload.title.trim(),
+      comment: payload.comment.trim(),
+      longevity: payload.longevity || '10+ Hours',
+      sillage: payload.sillage || 'Clean & Radiant',
+      created_at: new Date().toISOString(),
     }
 
-    if (targetId) {
-      const token = safeStorage.getItem('chembros_token')
-      const jwtPayload = decodeJwt(token || '')
-      const userId = jwtPayload?.sub ? Number(jwtPayload.sub) : null
+    let { data, error } = await supabase.from('reviews').insert(insertPayload).select().single()
 
-      const insertPayload = {
-        product_id: targetId,
-        user_id: userId,
-        author_name: payload.author_name.trim(),
-        location: payload.location ? payload.location.trim() : 'Verified Buyer',
-        rating: Math.max(1, Math.min(5, payload.rating)),
-        title: payload.title.trim(),
-        comment: payload.comment.trim(),
-        longevity: payload.longevity || '10+ Hours',
-        sillage: payload.sillage || 'Subtle & Radiant',
-        created_at: new Date().toISOString(),
-      }
-
-      const { data, error } = await supabase.from('reviews').insert(insertPayload).select().single()
-
-      if (!error && data) {
-        // Recalculate and update rating on product table
+    if (!error && data) {
+      try {
         const { data: allReviews } = await supabase
           .from('reviews')
           .select('rating')
@@ -1437,18 +1448,103 @@ export async function createProductReviewApi(
             })
             .eq('id', targetId)
         }
+      } catch {}
 
-        return formatReview(data)
-      }
+      return formatReview(data)
     }
-  } catch (err) {
-    console.warn('Supabase createProductReview fallback to backend:', err)
+    if (error) throw new Error(error.message)
   }
 
-  return request<CustomerReview>(`/api/products/${productIdOrSlug}/reviews`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  throw new Error('Failed to submit review')
+}
+
+// ----------------- Admin Reviews Endpoints -----------------
+
+export async function getAdminReviewsApi(productId?: string | number): Promise<CustomerReview[]> {
+  try {
+    const url = productId && productId !== 'all' ? `/api/admin/reviews?product_id=${productId}` : '/api/admin/reviews'
+    const res = await request<CustomerReview[]>(url)
+    if (Array.isArray(res)) return res.map(formatReview)
+  } catch (backendErr) {
+    console.warn('Backend getAdminReviews fallback to Supabase:', backendErr)
+  }
+
+  try {
+    let query = supabase
+      .from('reviews')
+      .select('*, products(id, name, slug)')
+      .order('created_at', { ascending: false })
+
+    if (productId && productId !== 'all') {
+      query = query.eq('product_id', Number(productId))
+    }
+
+    const { data, error } = await query
+    if (!error && data) {
+      return data.map((r: any) => formatReview({
+        ...r,
+        product_name: r.products?.name,
+        product_slug: r.products?.slug,
+      }))
+    }
+  } catch (err) {
+    console.error('Supabase getAdminReviews failed:', err)
+  }
+
+  return []
+}
+
+export async function createAdminReviewApi(payload: {
+  product_id: number
+  author_name: string
+  location?: string
+  rating: number
+  title: string
+  comment: string
+  longevity?: string
+  sillage?: string
+}): Promise<CustomerReview> {
+  try {
+    const res = await request<CustomerReview>('/api/admin/reviews', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    if (res && res.id) return formatReview(res)
+  } catch (backendErr) {
+    console.warn('Backend createAdminReview fallback to Supabase:', backendErr)
+  }
+
+  const insertPayload = {
+    product_id: payload.product_id,
+    author_name: payload.author_name.trim(),
+    location: payload.location ? payload.location.trim() : 'Verified Buyer',
+    rating: Math.max(1, Math.min(5, payload.rating)),
+    title: payload.title.trim(),
+    comment: payload.comment.trim(),
+    longevity: payload.longevity || '10+ Hours',
+    sillage: payload.sillage || 'Clean & Radiant',
+    created_at: new Date().toISOString(),
+  }
+
+  const { data, error } = await supabase.from('reviews').insert(insertPayload).select().single()
+  if (!error && data) {
+    return formatReview(data)
+  }
+  throw new Error(error?.message || 'Failed to create review')
+}
+
+export async function deleteAdminReviewApi(reviewId: number | string): Promise<{ status: string; message: string }> {
+  try {
+    return await request<{ status: string; message: string }>(`/api/admin/reviews/${reviewId}`, {
+      method: 'DELETE',
+    })
+  } catch (backendErr) {
+    console.warn('Backend deleteAdminReview fallback to Supabase:', backendErr)
+  }
+
+  const { error } = await supabase.from('reviews').delete().eq('id', Number(reviewId))
+  if (error) throw new Error(error.message)
+  return { status: 'success', message: 'Review deleted successfully' }
 }
 
 // ----------------- Orders Endpoints -----------------
@@ -1747,8 +1843,8 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
       is_archive: Boolean(product.is_archive),
       description: product.description,
       image_base64: product.image_base64,
-      rating: product.rating ?? 4.9,
-      reviews_count: product.reviews_count ?? 12,
+      rating: product.rating ?? 0,
+      reviews_count: product.reviews_count ?? 0,
       is_trending: Boolean(product.is_trending),
       is_featured: Boolean(product.is_featured),
       sales_count: product.sales_count ?? 0,
