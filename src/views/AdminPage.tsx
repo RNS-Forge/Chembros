@@ -106,8 +106,6 @@ export default function AdminPage() {
     rating: 5,
     title: '',
     comment: '',
-    longevity: '10+ Hours',
-    sillage: 'Clean & Radiant',
   })
   const [isSubmittingAdminReview, setIsSubmittingAdminReview] = useState(false)
   const [adminReviewFeedback, setAdminReviewFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -393,8 +391,6 @@ export default function AdminPage() {
         rating: Number(newReviewForm.rating) || 5,
         title: newReviewForm.title.trim(),
         comment: newReviewForm.comment.trim(),
-        longevity: newReviewForm.longevity,
-        sillage: newReviewForm.sillage,
       })
       const targetProd = products.find((p) => p.id === Number(newReviewForm.product_id))
       setReviewsList((prev) => [{
@@ -411,8 +407,6 @@ export default function AdminPage() {
         rating: 5,
         title: '',
         comment: '',
-        longevity: '10+ Hours',
-        sillage: 'Clean & Radiant',
       })
       // Refresh products to show updated rating
       getAdminProductsApi().then(setProducts).catch(() => {})
@@ -2844,7 +2838,6 @@ export default function AdminPage() {
                       <th className="py-3 px-4">Reviewer</th>
                       <th className="py-3 px-4">Rating</th>
                       <th className="py-3 px-4">Headline & Experience</th>
-                      <th className="py-3 px-4">Longevity / Sillage</th>
                       <th className="py-3 px-4">Date</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
@@ -2922,10 +2915,6 @@ export default function AdminPage() {
                               <p className="text-[11px] text-neutral-600 line-clamp-2 mt-0.5 leading-relaxed">
                                 {rev.comment}
                               </p>
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-[11px] text-neutral-600 whitespace-nowrap">
-                              <div>Wear: {rev.longevity || '10+ Hours'}</div>
-                              <div className="text-[10px] text-neutral-400">Trail: {rev.sillage || 'Clean & Radiant'}</div>
                             </td>
                             <td className="py-3.5 px-4 font-mono text-[11px] text-neutral-500 whitespace-nowrap">
                               {rev.date || (rev.created_at ? new Date(rev.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')}
@@ -3082,41 +3071,6 @@ export default function AdminPage() {
                           onChange={(e) => setNewReviewForm((p) => ({ ...p, location: e.target.value }))}
                           className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
                         />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1 font-mono">
-                          Longevity
-                        </label>
-                        <select
-                          value={newReviewForm.longevity}
-                          onChange={(e) => setNewReviewForm((p) => ({ ...p, longevity: e.target.value }))}
-                          className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                        >
-                          <option value="6-8 Hours">6 to 8 Hours</option>
-                          <option value="8-10 Hours">8 to 10 Hours</option>
-                          <option value="10+ Hours">10+ Hours</option>
-                          <option value="All Day Long">All Day Long</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1 font-mono">
-                          Sillage
-                        </label>
-                        <select
-                          value={newReviewForm.sillage}
-                          onChange={(e) => setNewReviewForm((p) => ({ ...p, sillage: e.target.value }))}
-                          className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                        >
-                          <option value="Subtle (Close to Skin)">Subtle (Close to Skin)</option>
-                          <option value="Moderate and Clean">Moderate and Clean</option>
-                          <option value="Clean & Radiant">Clean & Radiant</option>
-                          <option value="Noticeable Aura">Noticeable Aura</option>
-                          <option value="Strong Projection">Strong Projection</option>
-                        </select>
                       </div>
                     </div>
 

@@ -169,8 +169,6 @@ export default function ProductDetail() {
   const [reviewComment, setReviewComment] = useState('')
   const [reviewAuthor, setReviewAuthor] = useState('')
   const [reviewLocation, setReviewLocation] = useState('')
-  const [reviewLongevity, setReviewLongevity] = useState('10+ Hours')
-  const [reviewSillage, setReviewSillage] = useState('Moderate and Clean')
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const [reviewFeedback, setReviewFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -252,8 +250,6 @@ export default function ProductDetail() {
     setReviewRating(5)
     setReviewTitle('')
     setReviewComment('')
-    setReviewLongevity('10+ Hours')
-    setReviewSillage('Moderate and Clean')
     setReviewFeedback(null)
     setIsReviewModalOpen(true)
   }
@@ -280,8 +276,6 @@ export default function ProductDetail() {
         rating: reviewRating,
         title: reviewTitle.trim(),
         comment: reviewComment.trim(),
-        longevity: reviewLongevity,
-        sillage: reviewSillage,
       }
 
       const newReview = await createProductReviewApi(product.id, payload)
@@ -723,17 +717,6 @@ export default function ProductDetail() {
                         </p>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2 mt-6 pt-3 border-t border-black/5 font-mono text-[10px]">
-                      <div>
-                        <span className="text-neutral-400 uppercase block text-[9px]">WEAR TIME</span>
-                        <span className="font-semibold text-black mt-0.5 block">{rev.longevity || '10+ Hours'}</span>
-                      </div>
-                      <div>
-                        <span className="text-neutral-400 uppercase block text-[9px]">SCENT TRAIL</span>
-                        <span className="font-semibold text-black mt-0.5 block">{rev.sillage || 'Clean and Radiant'}</span>
-                      </div>
-                    </div>
                   </div>
                 )
               })}
@@ -899,40 +882,6 @@ export default function ProductDetail() {
                   placeholder="How does it smell on your skin? How long does it last?"
                   className="w-full px-4 py-3 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black focus:border-black leading-relaxed"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
-                    Observed Wear Time
-                  </label>
-                  <select
-                    value={reviewLongevity}
-                    onChange={(e) => setReviewLongevity(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                  >
-                    <option value="6-8 Hours">6 to 8 Hours</option>
-                    <option value="8-10 Hours">8 to 10 Hours</option>
-                    <option value="10+ Hours">10+ Hours</option>
-                    <option value="All Day Long">All Day Long</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 font-mono">
-                    Scent Trail / Sillage
-                  </label>
-                  <select
-                    value={reviewSillage}
-                    onChange={(e) => setReviewSillage(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                  >
-                    <option value="Subtle (Close to Skin)">Subtle (Close to Skin)</option>
-                    <option value="Moderate and Clean">Moderate and Clean</option>
-                    <option value="Noticeable Aura">Noticeable Aura</option>
-                    <option value="Strong Projection">Strong Projection</option>
-                  </select>
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
