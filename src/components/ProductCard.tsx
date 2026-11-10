@@ -5,6 +5,7 @@ import type { Product } from '../types'
 import { useCart } from '../context/CartContext'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import { Plus, Check, Star } from 'lucide-react'
+import { CleanProductImage } from '../lib/image-cleaner'
 
 interface ProductCardProps {
   product: Product
@@ -42,11 +43,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link to={`/product/${product.id}`} className="block px-6 py-4 cursor-pointer">
         <div className="w-full h-64 flex items-center justify-center relative overflow-hidden transition-transform duration-500 group-hover:scale-105">
           {product.image_base64 ? (
-            <img
+            <CleanProductImage
               src={product.image_base64}
               alt={product.name}
               className="max-h-full max-w-full object-contain filter drop-shadow-md"
-              loading="lazy"
             />
           ) : (
             <div className="w-32 h-44 bg-neutral-100 rounded-lg flex items-center justify-center text-xs text-neutral-400">

@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
+import { CleanProductImage } from '../lib/image-cleaner'
 
 // Assets - Imported with defensive fallback handling
 import bottleImg from '../assets/bottle.png'
@@ -748,12 +749,12 @@ export default function ProductDetail() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6 justify-items-center">
               {relatedProducts.map((other) => {
-                // Fetch image directly from backend record
+                // Fetch image directly from backend record with high-res static fallback
                 const backendImgSrc =
                   other.image_base64 ||
                   (other as any).image_url ||
                   (other as any).image ||
-                  defaultBottle
+                  getProductThumbnail(other)
 
                 return (
                   <Link
@@ -766,13 +767,13 @@ export default function ProductDetail() {
                       {other.name}
                     </div>
 
-                    {/* Bottle Image Slot: mix-blend-multiply eliminates the white image box */}
+                    {/* Bottle Image Slot */}
                     <div className="my-auto flex items-center justify-center relative w-full h-[150px] sm:h-[220px] lg:h-[250px] overflow-hidden">
-                      <img
+                      <CleanProductImage
                         src={backendImgSrc}
                         alt={other.name}
                         draggable={false}
-                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                        className="w-auto h-full max-h-[140px] sm:max-h-[200px] lg:max-h-[225px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
                       />
                     </div>
 

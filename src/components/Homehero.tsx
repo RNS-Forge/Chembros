@@ -7,10 +7,10 @@ import { Volume2, VolumeX } from 'lucide-react'
 
 // Assets
 import angelWaterBg from '../assets/bg/bg123.webp'
-import bottle1 from '../assets/product/t.webp'
-import bottle2 from '../assets/product/x.webp'
-import bottle3 from '../assets/product/r.webp'
-import bottle4 from '../assets/product/j.webp'
+import bottle1 from '../assets/product/X.webp'
+import bottle2 from '../assets/product/T.webp'
+import bottle3 from '../assets/product/R.webp'
+import bottle4 from '../assets/product/J.webp'
 
 const HERO_BG_SRC = (angelWaterBg as any)?.src || angelWaterBg
 const MOBILE_VIDEO_DIRECT_SRC =

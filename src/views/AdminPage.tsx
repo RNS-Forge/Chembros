@@ -29,6 +29,7 @@ import {
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
+import { removeBlackBackgroundFromCanvas, CleanProductImage } from '../lib/image-cleaner'
 import {
   ShieldCheck,
   GripVertical,
@@ -686,8 +687,36 @@ export default function AdminPage() {
           }
 
           ctx.drawImage(img, 0, 0, width, height)
-          const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
-          const compressed = canvas.toDataURL(outputType, 0.88)
+
+          // 1. Check & strip accidental solid black background boxes while preserving dark wooden caps
+          removeBlackBackgroundFromCanvas(ctx, width, height)
+
+          // 2. Strict format resolution preserving 100% alpha transparency
+          // NEVER force background-removed images into image/jpeg, which discards alpha and bakes a black box!
+          const lowerName = file.name.toLowerCase()
+          const isWebp = file.type === 'image/webp' || lowerName.endsWith('.webp')
+          const isPng = file.type === 'image/png' || lowerName.endsWith('.png')
+
+          let outputType = 'image/png'
+          let quality = 0.92
+
+          if (isWebp) {
+            outputType = 'image/webp'
+            quality = 0.92
+          } else if (isPng) {
+            outputType = 'image/png'
+          } else if (file.type === 'image/jpeg' || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+            // For JPEGs, if drawn on transparent canvas, ensure transparent areas are white rather than black
+            ctx.globalCompositeOperation = 'destination-over'
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(0, 0, width, height)
+            outputType = 'image/webp'
+            quality = 0.90
+          } else {
+            outputType = 'image/png'
+          }
+
+          const compressed = canvas.toDataURL(outputType, quality)
           resolve(compressed)
         }
         img.src = e.target?.result as string
@@ -1778,7 +1807,7 @@ export default function AdminPage() {
                             <td className="py-3 px-4">
                               <div className="w-12 h-14 bg-neutral-100 rounded-lg border border-neutral-200 p-1 flex items-center justify-center overflow-hidden">
                                 {p.image_base64 ? (
-                                  <img src={p.image_base64} alt={p.name} className="h-full object-contain" />
+                                  <CleanProductImage src={p.image_base64} alt={p.name} className="h-full object-contain" />
                                 ) : (
                                   <span className="text-[9px] text-neutral-400 font-mono">BOTTLE</span>
                                 )}
@@ -4416,7 +4445,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-6 p-4 bg-neutral-50 rounded-2xl border border-neutral-300">
                     <div className="w-20 h-24 bg-white rounded-xl border border-neutral-200 flex items-center justify-center p-2 shrink-0 overflow-hidden">
                       {productForm.image_base64 ? (
-                        <img src={productForm.image_base64} alt="Preview" className="max-h-full object-contain" />
+                        <CleanProductImage src={productForm.image_base64} alt="Preview" className="max-h-full object-contain" />
                       ) : (
                         <span className="text-[10px] text-neutral-400 font-mono text-center">NO IMAGE</span>
                       )}

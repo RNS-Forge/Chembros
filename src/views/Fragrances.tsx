@@ -7,7 +7,24 @@ import NavBar from '../components/NavBar'
 import VideoArea, { FRAGRANCES_VIDEO_SRC } from '../components/VideoArea'
 import Footer from '../components/Footer'
 import bottleImg from '../assets/bottle.png'
+import bottleXRaw from '../assets/product/x.webp'
+import bottleTRaw from '../assets/product/t.webp'
+import bottleJRaw from '../assets/product/j.webp'
+import bottleRRaw from '../assets/product/r.webp'
+import discoveryRaw from '../assets/bg/archiveimg.webp'
+import { CleanProductImage } from '../lib/image-cleaner'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
+
+const getFragranceBottleFallback = (prod: Product): string => {
+  const s = (prod.slug || '').toLowerCase()
+  const n = (prod.name || '').toLowerCase()
+  if (s.includes('molecule-x') || n.includes('molecule x')) return (bottleXRaw as any)?.src || bottleXRaw
+  if (s.includes('molecule-j') || n.includes('molecule j')) return (bottleJRaw as any)?.src || bottleJRaw
+  if (s.includes('molecule-t') || n.includes('molecule t')) return (bottleTRaw as any)?.src || bottleTRaw
+  if (s.includes('molecule-r') || n.includes('molecule r') || s.includes('molecule-k')) return (bottleRRaw as any)?.src || bottleRRaw
+  if (s.includes('discovery') || n.includes('discovery') || Boolean(prod.is_archive)) return (discoveryRaw as any)?.src || discoveryRaw
+  return (bottleImg as any)?.src || bottleImg
+}
 
 export default function Fragrances() {
   const { settings } = usePlatformSettings()
@@ -161,8 +178,8 @@ export default function Fragrances() {
 
                   {/* Bottle / Archive Box Showcase Plinth */}
                   <div className="my-auto flex items-center justify-center relative w-full h-[180px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px]">
-                    <img
-                      src={prod.image_base64 || (bottleImg as any)?.src || bottleImg}
+                    <CleanProductImage
+                      src={prod.image_base64 || getFragranceBottleFallback(prod)}
                       alt={prod.name}
                       draggable={false}
                       className="w-auto h-full max-h-[170px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 group-hover:-translate-y-1 transition-transform duration-500 select-none pointer-events-none"

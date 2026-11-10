@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCart } from '../context/CartContext'
 import { getProductsApi, getCachedProductsSync } from '../services/api'
 import type { Product } from '../types'
+import { CleanProductImage } from '../lib/image-cleaner'
 
 import boyImg from '../assets/bg/productbg.webp'
 import bottle1Raw from '../assets/product/x.webp'
@@ -262,7 +263,7 @@ export default function HomeProduct() {
                     to={`/fragrances/${prod.slug || prod.id}`}
                     className="my-auto flex items-center justify-center relative w-full h-[140px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px] cursor-pointer"
                   >
-                    <img
+                    <CleanProductImage
                       id={idx === 0 ? 'target-product-slot-1' : undefined}
                       className="w-auto h-full max-h-[130px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
                       src={getProductImage(prod, idx)}
