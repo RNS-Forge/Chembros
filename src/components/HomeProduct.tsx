@@ -9,10 +9,10 @@ import type { Product } from '../types'
 import { CleanProductImage } from '../lib/image-cleaner'
 
 import boyImg from '../assets/bg/productbg.webp'
-import bottle1Raw from '../assets/product/x.webp'
-import bottle2Raw from '../assets/product/t.webp'
-import bottle3Raw from '../assets/product/j.webp' // Molecule J (hero flight target)
-import bottle4Raw from '../assets/product/r.webp'
+import bottle1Raw from '../assets/product/X.webp'
+import bottle2Raw from '../assets/product/T.webp'
+import bottle3Raw from '../assets/product/R.webp' // Molecule J (hero flight target)
+import bottle4Raw from '../assets/product/J.webp'
 import DiscoveryRaw from '../assets/bg/archiveimg.webp'
 
 const boySrc = (boyImg as any)?.src || boyImg
