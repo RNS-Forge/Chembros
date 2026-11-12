@@ -42,43 +42,33 @@ interface BrandStoryProtocolProps {
 interface Testimonial {
   id: string
   clientName: string
-  location: string
-  formula: string
   review: string
 }
 
 const TESTIMONIALS: Testimonial[] = [
   {
     id: '01',
-    clientName: 'Aarav M.',
-    location: 'Bengaluru',
-    formula: 'Molecule X',
+    clientName: 'Dr harsh perfumes',
     review:
-      'A true second-skin fragrance. The sandalwood and Iso E Super blend effortlessly with body heat—clean, subtle, and people consistently ask what smells so remarkable when I walk past.',
+      'The fragrances are long-lasting, versatile and beautifully suited to different occasions and seasons. Each one has a distinctive personality, setting them apart from what is commonly available in the market.',
   },
   {
     id: '02',
-    clientName: 'Dev P.',
-    location: 'Mumbai',
-    formula: 'Molecule T',
+    clientName: 'biswas tiwari ( indianperfumist )',
     review:
-      'Crisp bergamot opening that settles into an exceptional black tea and ambroxan steam. You can immediately feel the pure parfum concentration with zero synthetic residue.',
+      'What makes CHEM BROS stand out is the uniqueness of its fragrances and bottle design. The creations have the character of established niche perfume houses, yet bring something different to the table.',
   },
   {
     id: '03',
-    clientName: 'Kavya S.',
-    location: 'New Delhi',
-    formula: 'Discovery Archive',
+    clientName: 'Puneet kapoor',
     review:
-      'The 4-vial archive is beautifully packaged. Comparing Molecule J against Molecule K over a weekend made deciding on full bottles effortless. An absolute work of art.',
+      'The fragrances are different, the presentation is unique, and there is a clear identity behind the brand. Excited to see CHEM BROS grow and make its mark in the perfumery world.',
   },
   {
     id: '04',
-    clientName: 'Rohan K.',
-    location: 'Chennai',
-    formula: 'Molecule K',
+    clientName: 'Uma kannan madurai',
     review:
-      'Warm resin and petrichor unlike anything else in my collection. Held up through a humid 10-hour day and was still noticeable past midnight. Pure extract potency.',
+      'The perfumes are divine! Beautifully soft, addictive and comforting fragrances, complemented by excellent packaging and an overall beautiful brand experience. Wishing CHEM BROS tremendous success!',
   },
 ]
 
@@ -210,7 +200,7 @@ export default function BrandStoryProtocol({
                 ))}
               </div>
               <span className="font-semibold text-black">5.0</span>
-              <span className="text-black/45">/ Verified Patrons</span>
+              <span className="text-black/45">/ Ratings</span>
             </div>
           </div>
 
@@ -234,25 +224,12 @@ export default function BrandStoryProtocol({
                   `,
                 }}
               >
-                {/* Top: Stars & Glass Pill Badge */}
+                {/* Top: Stars & Review Quote */}
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-5">
-                    <div className="flex items-center text-black/85 gap-0.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-black text-black" />
-                      ))}
-                    </div>
-
-                    <span
-                      className="text-[10px] font-mono tracking-widest text-black/75 px-3 py-1 rounded-full uppercase font-medium"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.65)',
-                        border: '1px solid rgba(0, 0, 0, 0.08)',
-                        boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 2px 6px rgba(0, 0, 0, 0.03)',
-                      }}
-                    >
-                      {item.formula}
-                    </span>
+                  <div className="flex items-center text-black/85 gap-0.5 mb-5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className="w-3.5 h-3.5 fill-black text-black" />
+                    ))}
                   </div>
 
                   {/* Review Quote */}
@@ -261,15 +238,10 @@ export default function BrandStoryProtocol({
                   </p>
                 </div>
 
-                {/* Bottom: Reviewer details & Verified Chip */}
+                {/* Bottom: Reviewer Name & Verified Chip */}
                 <div className="pt-5 mt-6 border-t border-black/[0.08] flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-semibold text-black tracking-tight">
-                      {item.clientName}
-                    </div>
-                    <div className="text-[10px] font-mono tracking-wider text-black/50 mt-0.5">
-                      {item.location}
-                    </div>
+                  <div className="text-xs font-semibold text-black tracking-tight">
+                    {item.clientName}
                   </div>
 
                   <span

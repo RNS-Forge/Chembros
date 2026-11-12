@@ -153,10 +153,12 @@ export default function Fragrances() {
               const isArchive = Boolean(prod.is_archive)
               const specimenCode = String(idx + 1).padStart(2, '0')
 
+              const targetSlug = (prod.slug === 'molecule-k' ? 'molecule-r' : prod.slug) || prod.id
+
               return (
                 <Link
                   key={prod.id}
-                  to={`/fragrances/${prod.slug || prod.id}`}
+                  to={`/fragrances/${targetSlug}`}
                   className="w-full max-w-[340px] sm:max-w-none h-[440px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative rounded-[24px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden flex flex-col justify-between p-5 sm:p-6 lg:p-5 xl:p-7 2xl:p-8 transition-all duration-300 hover:-translate-y-1.5 group border bg-white border-black/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20"
                 >
                   {/* Card Header */}

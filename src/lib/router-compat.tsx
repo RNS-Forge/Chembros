@@ -20,19 +20,22 @@ export function Link({ to, href, children, ...props }: any) {
 
 export function useNavigate() {
   const router = useNextRouter()
-  return (to: any, options?: { replace?: boolean }) => {
-    if (typeof to === 'number') {
-      if (to === -1) {
-        if (typeof window !== 'undefined') window.history.back()
+  return React.useCallback(
+    (to: any, options?: { replace?: boolean }) => {
+      if (typeof to === 'number') {
+        if (to === -1) {
+          if (typeof window !== 'undefined') window.history.back()
+        }
+        return
       }
-      return
-    }
-    if (options?.replace) {
-      router.replace(to)
-    } else {
-      router.push(to)
-    }
-  }
+      if (options?.replace) {
+        router.replace(to)
+      } else {
+        router.push(to)
+      }
+    },
+    [router]
+  )
 }
 
 export function useLocation() {

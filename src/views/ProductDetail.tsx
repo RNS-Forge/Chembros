@@ -145,23 +145,26 @@ export default function ProductDetail() {
   const { user } = useAuth()
   const { settings } = usePlatformSettings()
 
+  const normalizedId = id === 'molecule-k' ? 'molecule-r' : id
+
   const [product, setProduct] = useState<Product | null>(() => {
-    if (!id) return null
+    if (!normalizedId) return null
     const list = getCachedProductsSync()
-    return list?.find((p) => String(p.id) === String(id) || p.slug === String(id)) || null
+    return list?.find((p) => String(p.id) === String(normalizedId) || p.slug === String(normalizedId)) || null
   })
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [reviews, setReviews] = useState<CustomerReview[]>([])
   const [loading, setLoading] = useState(() => {
-    if (!id) return true
+    if (!normalizedId) return true
     const list = getCachedProductsSync()
-    return !(list?.some((p) => String(p.id) === String(id) || p.slug === String(id)))
+    return !(list?.some((p) => String(p.id) === String(normalizedId) || p.slug === String(normalizedId)))
   })
   const [isAdded, setIsAdded] = useState(false)
 
   // Carousel State
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0)
   const touchStartXRef = useRef<number | null>(null)
+  const loadedIdRef = useRef<string | null>(null)
 
   // Review Form States
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
@@ -174,15 +177,33 @@ export default function ProductDetail() {
   const [reviewFeedback, setReviewFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
+    if (id === 'molecule-k') {
+      navigate('/fragrances/molecule-r', { replace: true })
+      return
+    }
+
+    if (!id || loadedIdRef.current === id) return
+    loadedIdRef.current = id
+
     async function loadData() {
       if (!id) return
-      setLoading(true)
+      // Only show full blocking loader if we don't already have the product in memory/cache
+      setLoading((prev) => {
+        const cached = getCachedProductsSync()
+        const hasCache = cached?.some((p) => String(p.id) === String(id) || p.slug === String(id))
+        return hasCache ? false : prev
+      })
+
       try {
         const [detailData, allProducts, reviewsData] = await Promise.all([
           getProductDetailApi(id),
           getProductsApi(),
           getProductReviewsApi(id).catch(() => []),
         ])
+
+        if (detailData && (detailData.slug === 'molecule-k' || detailData.name?.toLowerCase().includes('molecule r'))) {
+          detailData.slug = 'molecule-r'
+        }
 
         setProduct(detailData)
         setReviews(Array.isArray(reviewsData) ? reviewsData : [])
@@ -194,7 +215,6 @@ export default function ProductDetail() {
             'molecule-x': 1,
             'molecule-t': 2,
             'molecule-r': 3,
-            'molecule-k': 3,
             'the-discovery-archive': 4,
             'discovery-archive': 4,
           }
@@ -607,7 +627,7 @@ export default function ProductDetail() {
                   <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> 10+ Hours Wear Time
+                 Long lasting Wear Time
                 </span>
               </div>
             </div>
@@ -756,10 +776,11 @@ export default function ProductDetail() {
                   (other as any).image ||
                   getProductThumbnail(other)
 
-                return (
-                  <Link
-                    key={other.id}
-                    to={`/fragrances/${other.slug || other.id}`}
+                  const otherSlug = (other.slug === 'molecule-k' ? 'molecule-r' : other.slug) || other.id
+                  return (
+                    <Link
+                      key={other.id}
+                      to={`/fragrances/${otherSlug}`}
                     className="w-full max-w-[175px] sm:max-w-[260px] md:max-w-[310px] lg:max-w-none h-[290px] sm:h-[390px] md:h-[450px] lg:h-[480px] relative rounded-[20px] sm:rounded-[28px] lg:rounded-[36px] bg-white text-black border border-black/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col justify-between p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 group"
                   >
                     {/* Title */}

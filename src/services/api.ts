@@ -953,7 +953,13 @@ export function attachDeliveryFee(product: Product): Product {
     ? product.sort_order
     : (typeof storedOrder === 'number' && storedOrder > 0 ? storedOrder : undefined)
 
-  return { ...product, delivery_fee: fee, sort_order: order }
+  // Ensure slug is never molecule-k and always canonical molecule-r
+  let slug = product.slug
+  if (slug === 'molecule-k' || (!slug && product.name?.toLowerCase().includes('molecule r'))) {
+    slug = 'molecule-r'
+  }
+
+  return { ...product, slug, delivery_fee: fee, sort_order: order }
 }
 
 export function attachDeliveryFees(products: Product[]): Product[] {
@@ -962,15 +968,17 @@ export function attachDeliveryFees(products: Product[]): Product[] {
 }
 
 // ----------------- Products SWR Caching Architecture -----------------
-const PRODUCTS_CACHE_KEY = 'chembros_products_cache_v4'
-const PRODUCTS_CACHE_TS_KEY = 'chembros_products_cache_ts_v4'
+const PRODUCTS_CACHE_KEY = 'chembros_products_cache_v5'
+const PRODUCTS_CACHE_TS_KEY = 'chembros_products_cache_ts_v5'
 const CACHE_TTL_MS = 60 * 1000 // 60 seconds fresh TTL before silent background revalidation
 
-// Automatically clear legacy corrupted v3 cache if present
+// Automatically clear legacy caches if present
 if (typeof window !== 'undefined') {
   try {
     safeStorage.removeItem('chembros_products_cache_v3')
     safeStorage.removeItem('chembros_products_cache_ts_v3')
+    safeStorage.removeItem('chembros_products_cache_v4')
+    safeStorage.removeItem('chembros_products_cache_ts_v4')
   } catch {}
 }
 

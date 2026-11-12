@@ -245,57 +245,60 @@ export default function HomeProduct() {
             </div>
           ) : (
             <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 2xl:gap-8 justify-items-center">
-              {moleculeProducts.map((prod, idx) => (
-                <div
-                  key={prod.id}
-                  className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[340px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-white border border-black/[0.08] rounded-[22px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 flex flex-col justify-between items-center p-3.5 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
-                >
-                  {/* Title */}
-                  <Link
-                    to={`/fragrances/${prod.slug || prod.id}`}
-                    className="w-full text-center text-black text-[11px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Montserrat',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-70 transition-opacity cursor-pointer truncate px-1"
+              {moleculeProducts.map((prod, idx) => {
+                const productSlug = (prod.slug === 'molecule-k' ? 'molecule-r' : prod.slug) || prod.id
+                return (
+                  <div
+                    key={prod.id}
+                    className="w-full max-w-[310px] lg:max-w-[270px] xl:max-w-[340px] 2xl:max-w-[380px] h-[340px] sm:h-[460px] lg:h-[470px] xl:h-[540px] 2xl:h-[587px] relative bg-white border border-black/[0.08] rounded-[22px] sm:rounded-[34px] lg:rounded-[36px] xl:rounded-[44px] 2xl:rounded-[50px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.04),0_2px_6px_rgba(0,0,0,0.02)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.08)] hover:border-black/20 flex flex-col justify-between items-center p-3.5 sm:p-5 lg:p-5 xl:p-7 2xl:p-8"
                   >
-                    {prod.name}
-                  </Link>
-
-                  {/* Bottle Presentation Slot */}
-                  <Link
-                    to={`/fragrances/${prod.slug || prod.id}`}
-                    className="my-auto flex items-center justify-center relative w-full h-[140px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px] cursor-pointer"
-                  >
-                    <CleanProductImage
-                      id={idx === 0 ? 'target-product-slot-1' : undefined}
-                      className="w-auto h-full max-h-[130px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
-                      src={getProductImage(prod, idx)}
-                      alt={`${prod.name} Bottle`}
-                      draggable={false}
-                    />
-                  </Link>
-
-                  {/* Price and CTA */}
-                  <div className="w-full flex flex-col items-center gap-2 sm:gap-2.5 lg:gap-2.5 xl:gap-3 pb-0.5 sm:pb-1">
-                    <div className="flex flex-col items-center">
-                      <div className="text-black text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Montserrat',sans-serif] tracking-wider">
-                        ₹{prod.price.toLocaleString('en-IN')}
-                      </div>
-                      <span className="text-[9px] sm:text-[10px] text-black/45 tracking-wider uppercase font-sans mt-0.5">
-                        Inclusive of GST
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => addToCart(prod)}
-                      className="w-full max-w-[135px] sm:max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-8 sm:h-10 md:h-10 lg:h-10 xl:h-12 2xl:h-13 bg-black hover:bg-neutral-800 active:scale-[0.98] rounded-full overflow-hidden transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.25)]"
-                      aria-label={`Add ${prod.name} to Cart`}
+                    {/* Title */}
+                    <Link
+                      to={`/fragrances/${productSlug}`}
+                      className="w-full text-center text-black text-[11px] sm:text-sm lg:text-[13px] xl:text-base 2xl:text-lg font-normal font-['Montserrat',sans-serif] tracking-wider sm:tracking-widest uppercase pt-0.5 sm:pt-1 hover:opacity-70 transition-opacity cursor-pointer truncate px-1"
                     >
-                      <span className="text-white text-[9px] sm:text-[11px] md:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-sans tracking-wide transition-transform group-hover/btn:scale-105">
-                        Add to cart
-                      </span>
-                    </button>
+                      {prod.name}
+                    </Link>
+
+                    {/* Bottle Presentation Slot */}
+                    <Link
+                      to={`/fragrances/${productSlug}`}
+                      className="my-auto flex items-center justify-center relative w-full h-[140px] sm:h-[200px] lg:h-[210px] xl:h-[250px] 2xl:h-[280px] cursor-pointer"
+                    >
+                      <CleanProductImage
+                        id={idx === 0 ? 'target-product-slot-1' : undefined}
+                        className="w-auto h-full max-h-[130px] sm:max-h-[190px] lg:max-h-[195px] xl:max-h-[235px] 2xl:max-h-[265px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)] group-hover:scale-105 transition-transform duration-500 select-none pointer-events-none"
+                        src={getProductImage(prod, idx)}
+                        alt={`${prod.name} Bottle`}
+                        draggable={false}
+                      />
+                    </Link>
+
+                    {/* Price and CTA */}
+                    <div className="w-full flex flex-col items-center gap-2 sm:gap-2.5 lg:gap-2.5 xl:gap-3 pb-0.5 sm:pb-1">
+                      <div className="flex flex-col items-center">
+                        <div className="text-black text-xs sm:text-base md:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-normal font-['Montserrat',sans-serif] tracking-wider">
+                          ₹{prod.price.toLocaleString('en-IN')}
+                        </div>
+                        <span className="text-[9px] sm:text-[10px] text-black/45 tracking-wider uppercase font-sans mt-0.5">
+                          Inclusive of GST
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => addToCart(prod)}
+                        className="w-full max-w-[135px] sm:max-w-[210px] lg:max-w-[200px] xl:max-w-[250px] 2xl:max-w-[280px] h-8 sm:h-10 md:h-10 lg:h-10 xl:h-12 2xl:h-13 bg-black hover:bg-neutral-800 active:scale-[0.98] rounded-full overflow-hidden transition-all duration-300 flex items-center justify-center cursor-pointer group/btn shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.25)]"
+                        aria-label={`Add ${prod.name} to Cart`}
+                      >
+                        <span className="text-white text-[9px] sm:text-[11px] md:text-xs lg:text-[11px] xl:text-sm 2xl:text-base font-medium font-sans tracking-wide transition-transform group-hover/btn:scale-105">
+                          Add to cart
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
