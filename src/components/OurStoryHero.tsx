@@ -87,21 +87,21 @@ const STORY_ITEMS: StoryCardItem[] = [
     id: 8,
     tag: '08 CHEMISTRY',
     title: 'BEYOND THE FIRST IMPRESSION',
-    body: 'We explored fragrance at a molecular level, studying how science and botanical ingredients could come together to create a new olfactive architecture.',
+    body: 'Every fragrance begins with an idea. Through chemistry, botanical exploration and careful composition, we transform that idea into a distinctive olfactory experience.',
     img: Chemistry,
   },
   {
     id: 9,
     tag: '09 METHODOLOGY',
     title: 'A UNIFIED APPROACH',
-    body: 'Two years of research, molecular exploration and botanical extraction came together to form a unified methodology for creating fine fragrance.',
+    body: 'Two years of research brought together our backgrounds in chemical engineering, botanical extraction and perfumery to shape the foundation of CHEM BROS.',
     img: Method,
   },
   {
     id: 10,
     tag: '10 THE MANIFESTATION',
     title: 'FROM VISION TO REALITY',
-    body: 'In 2026, we proudly introduce a redefined architecture of fine fragrance, engineered by us and crafted by Pranav.',
+    body: 'In 2026, we introduced the CHEM BROS Molecule Series — four original fragrances developed through the intersection of science, nature and perfumery.',
     img: Ten,
   },
 ];
@@ -338,7 +338,7 @@ export const OurStoryHero: React.FC = () => {
                               “We didn’t set out to make another perfume brand. We set out to prove that Indian chemical engineering and pure botanical extraction can redefine global fine perfumery.”
                             </blockquote>
                             <p className="mt-2.5 sm:mt-4 text-[9px] sm:text-xs font-mono tracking-wider sm:tracking-widest uppercase text-black/50">
-                              — Sriram &amp; Srinivas Ganesh, Chemical Engineers
+                              — SRIRAM &amp; SRINIVAS GANESH, CHEMICAL ENGINEERS &amp; CO-FOUNDERS
                             </p>
                           </div>
                         );
@@ -412,7 +412,7 @@ export const OurStoryHero: React.FC = () => {
                               MOLECULAR ARCHITECTURE
                             </span>
                             <blockquote className="font-['FONTSPRING_DEMO_-_Pockota_Light','serif'] text-[13px] sm:text-2xl lg:text-3xl xl:text-4xl italic text-black/90 leading-relaxed sm:leading-snug">
-                              “We explored fragrance at a molecular level, studying how science and botanical ingredients could come together to create a new olfactive architecture.”
+                              “We approached perfumery through the lens of chemistry — exploring how botanical extracts, individual aroma molecules and the art of composition could come together to create something distinctive.”
                             </blockquote>
                             <p className="mt-2.5 sm:mt-4 text-[9px] sm:text-xs font-mono tracking-wider sm:tracking-widest uppercase text-black/50">
                               — Sriram &amp; Srinivas Ganesh, Chemical Engineers
@@ -513,10 +513,10 @@ export const OurStoryHero: React.FC = () => {
               <div className="space-y-1.5 sm:space-y-2">
                 <span className="text-[9px] sm:text-[10px] font-mono tracking-widest text-black/50 uppercase">PILLAR 02</span>
                 <h3 className="font-['Montserrat',sans-serif] text-base sm:text-lg uppercase tracking-wider text-black">
-                  Molecular Isolation
+                  MOLECULAR PRECISION
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
-                  Chemical engineering provides molecular stability. We isolate scent accords and bond them so volatile natural notes do not degrade over time.
+                  Our understanding of chemical engineering guides the selection, balance and interaction of fragrance materials. Every composition is developed with attention to its structure, character and performance.
                 </p>
               </div>
             </div>
@@ -528,10 +528,10 @@ export const OurStoryHero: React.FC = () => {
               <div className="space-y-1.5 sm:space-y-2">
                 <span className="text-[9px] sm:text-[10px] font-mono tracking-widest text-black/50 uppercase">PILLAR 03</span>
                 <h3 className="font-['Montserrat',sans-serif] text-base sm:text-lg uppercase tracking-wider text-black">
-                  Extrait Concentration
+                  EXTRAIT DE PARFUM
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed">
-                  We formulate exclusively in pure Extrait de Parfum at a high 25% fragrance oil load, ensuring an enduring 8 to 12 hour projection on skin.
+                  Every fragrance in the Molecule Series is formulated at a 25% fragrance oil concentration. Carefully composed for depth, character and lasting presence, each fragrance unfolds differently on the skin.
                 </p>
               </div>
             </div>
@@ -550,11 +550,11 @@ export const OurStoryHero: React.FC = () => {
 
             <div className="relative z-10 max-w-lg sm:max-w-md lg:max-w-lg space-y-3.5 sm:space-y-5 text-left">
               <h2 className="font-['Montserrat',sans-serif] text-xl sm:text-3xl lg:text-4xl font-semibold uppercase tracking-tight text-black leading-[1.08]">
-                From Southern Flora to Global Extraits
+                ROOTED IN TAMIL NADU. CRAFTED FOR THE WORLD.
               </h2>
 
               <p className="text-[11px] sm:text-[13px] text-neutral-700 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] leading-relaxed max-w-sm sm:max-w-none">
-                Most luxury perfume labels license third-party formulas and re-bottle them. Chembros controls the entire synthesis chain: botanical cultivation, laboratory fractional separation, maturation, and climate-controlled packaging in Madurai.
+                Rooted in the floral heritage of Tamil Nadu, our journey begins much before a fragrance takes shape. Through our connection with Chennai Bio Flora, we bring the art of botanical extraction closer to the heart of perfumery. From working with floral materials to developing fragrance compositions, we maintain a close connection with the ingredients that inspire our creations. Born in Madurai, crafted through science and expressed through perfumery.
               </p>
 
               <div className="pt-2 flex flex-wrap items-center gap-2 sm:gap-4 text-[9px] sm:text-[11px] font-mono tracking-wider text-black/85 uppercase font-medium">

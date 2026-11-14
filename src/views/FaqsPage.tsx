@@ -29,12 +29,12 @@ const FAQ_DATA: FaqItem[] = [
     id: 'returns-cancellations',
     num: '01',
     category: 'orders',
-    question: 'Returns, Cancellations & Final Sale Policy',
-    summary: 'Due to the hygienic, pure-oil concentration and batch-serialized compounding of our extraits, all acquisitions are strictly final.',
+    question: 'Orders, Cancellations & Returns',
+    summary: 'Each CHEM BROS fragrance is carefully prepared and packaged before dispatch. As fragrances are personal-use products, we generally do not accept returns or exchanges for reasons of preference. However, if your order arrives damaged, defective or incorrect, please contact us with supporting photographs so our team can assist you in accordance with our applicable policies.',
     highlights: [
-      'Zero Returns & Exchanges: We do not accept returns or offer refunds once a flacon has been dispatched.',
-      'Instant Production Lock: Orders immediately enter nitrogen-sealed packaging at our Madurai facility; cancellations or modifications cannot be accommodated once checkout completes.',
-      'Transit Damage Coverage: In the rare event of transit breakage, notify our desk within 24 hours of delivery with unboxing footage for an expedited replacement.'
+      'Carefully Prepared: Each fragrance is prepared and packaged before dispatch from our Madurai facility.',
+      'Personal-Use Products: As fragrances are personal-use products, we generally do not accept returns or exchanges for reasons of preference.',
+      'Damaged or Incorrect Orders: If your order arrives damaged, defective or incorrect, please contact us with supporting photographs so our team can assist you.'
     ]
   },
   {
@@ -68,11 +68,11 @@ const FAQ_DATA: FaqItem[] = [
     num: '04',
     category: 'shipping',
     question: 'Shipping Tariffs & Free Delivery Threshold',
-    summary: 'We provide complimentary express shipping across all serviceable pin codes in India on qualifying orders.',
+    summary: 'We offer complimentary shipping across India on qualifying orders. Every order is carefully packed and dispatched from our base in Madurai',
     highlights: [
-      'Complimentary Airway: Orders of ₹1,500 and above qualify for free standard air express shipping.',
-      'Standard Tariff: A flat logistics fee of ₹100 applies to orders below ₹1,500.',
-      'Tax Inclusion: All listed product prices and shipping calculations are inclusive of GST.'
+      'Complimentary Shipping: Orders of ₹1,500 and above qualify for free standard shipping.',
+      'Standard Shipping: A flat shipping fee of ₹100 applies to orders below ₹1,500.',
+      'Delivery Timeline: Standard orders are typically delivered within 3 to 5 business days across India. ,'
     ]
   },
 
@@ -151,15 +151,15 @@ export default function FaqPage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-neutral-600 font-normal leading-relaxed max-w-xl mx-auto">
-            Essential directives concerning our small-batch organic extraits, prepaid-only checkout, and final sale policies.
+            Everything you need to know about our fragrances, ingredients, orders and delivery.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-[10px] sm:text-[11px] font-mono tracking-wider text-black/50 uppercase">
-            <span>FINAL SALE</span>
+            <span>CRAFTED IN MADURAI</span>
             <span>•</span>
-            <span>PREPAID ONLY</span>
+            <span>25% CONCENTRATION</span>
             <span>•</span>
-            <span>MADURAI COMPOUNDED</span>
+            <span>FOUR DISTINCT COMPOSITIONS</span>
           </div>
         </div>
 
@@ -174,10 +174,10 @@ export default function FaqPage() {
             <div className="space-y-1.5 text-left">
               <span className="text-[10px] font-mono tracking-widest uppercase text-black/40 block">COMMERCIAL POLICY</span>
               <h2 className="text-sm sm:text-base font-semibold uppercase tracking-tight text-black">
-                Final Sale Protocol
+              ORDERS, CANCELLATIONS & RETURNS
               </h2>
               <p className="text-xs text-neutral-600 font-normal leading-relaxed pt-1">
-                Zero cancellations or returns once confirmed. Every flacon is packaged to order in nitrogen-sealed boxes.
+                Each CHEM BROS fragrance is carefully prepared and packaged before dispatch. As fragrances are personal-use products, we generally do not accept returns or exchanges for reasons of preference. However, if your order arrives damaged, defective or incorrect, please contact us with supporting photographs so our team can assist you in accordance with our applicable policies.
               </p>
             </div>
           </div>
@@ -303,14 +303,11 @@ export default function FaqPage() {
             ========================================================================= */}
         <div className="w-full max-w-5xl mt-12 p-8 sm:p-10 rounded-[32px] bg-black text-white flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left shadow-xl">
           <div className="space-y-1.5">
-            <span className="text-[10px] font-mono tracking-widest text-white/50 uppercase block">
-              RECOMMENDED INITIATION
-            </span>
             <h3 className="text-xl sm:text-2xl font-semibold uppercase tracking-tight">
-              Test Before You Commit
+              DISCOVER BEFORE YOU DECIDE
             </h3>
             <p className="text-xs text-white/70 max-w-md font-normal leading-relaxed">
-              Because all acquisitions are final, test our complete 4-formula series with The Discovery Archive on your skin at home first.
+              Four compositions. One discovery. Experience all four fragrances from the CHEM BROS Molecule Series on your skin before choosing your full-size fragrance.
             </p>
           </div>
 
@@ -318,7 +315,7 @@ export default function FaqPage() {
             to="/fragrances/the-discovery-archive"
             className="px-7 py-3.5 rounded-full bg-white hover:bg-neutral-100 active:scale-95 text-black text-xs font-mono uppercase tracking-widest font-semibold transition-all shrink-0 shadow-sm flex items-center gap-2"
           >
-            <span>Acquire Archive</span>
+            <span>get it now</span>
             <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
