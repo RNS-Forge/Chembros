@@ -1013,10 +1013,10 @@ export default function ProfileModal() {
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-500 font-mono text-[11px]">Email Concierge:</span>
                     <a
-                      href="mailto:support@chembros.com"
+                      href="mailto:connect@thechemicalbrothers.in"
                       className="font-semibold text-black hover:underline"
                     >
-                      support@chembros.com
+                      connect@thechemicalbrothers.in
                     </a>
                   </div>
 

@@ -87,7 +87,7 @@ const POLICY_SECTIONS: PolicyClause[] = [
     points: [
       'Legal Entity: Chembros Archive / Chemical Brothers',
       'Compounding Facility: Madurai, Tamil Nadu, India',
-      'Direct Concierge: support@chembros.com'
+      'Direct Concierge: connect@thechemicalbrothers.in'
     ]
   }
 ]
@@ -267,7 +267,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <a
-            href="mailto:support@chembros.com"
+            href="mailto:connect@thechemicalbrothers.in"
             className="px-7 py-3.5 rounded-full bg-white hover:bg-neutral-100 active:scale-95 text-black text-xs font-mono uppercase tracking-widest font-semibold transition-all shrink-0 shadow-sm flex items-center gap-2"
           >
             <span>Contact Desk</span>

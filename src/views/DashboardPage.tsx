@@ -1801,8 +1801,8 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                         <p className="text-xs text-neutral-500 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif]">
                           Reach out for order tracking, address changes, and delivery assistance.
                         </p>
-                        <a href="mailto:support@chembros.com" className="inline-block text-xs font-mono font-semibold text-black hover:underline pt-1">
-                          support@chembros.com
+                        <a href="mailto:connect@thechemicalbrothers.in" className="inline-block text-xs font-mono font-semibold text-black hover:underline pt-1">
+                          connect@thechemicalbrothers.in
                         </a>
                       </div>
 

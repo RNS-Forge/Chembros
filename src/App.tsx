@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
@@ -19,6 +20,13 @@ import PrivacyPolicy from './views/PrivacyPolicy'
 import AuthPage from './views/AuthPage'
 import SmoothScroll from './components/SmoothScroll'
 import PrivacyPolicyPage from './views/PrivacyPolicy'
+
+function ContactRedirect() {
+  useEffect(() => {
+    window.location.href = 'mailto:connect@thechemicalbrothers.in'
+  }, [])
+  return null
+}
 
 export default function App() {
   return (
@@ -45,6 +53,7 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/our-story" element={<OurStoryPage />} />
+                <Route path="/contact" element={<ContactRedirect />} />
                 <Route path="/faqs" element={<FaqsPage />} />
                 <Route path="/faq" element={<FaqsPage />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />

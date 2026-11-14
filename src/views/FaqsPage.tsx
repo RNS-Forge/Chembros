@@ -142,12 +142,10 @@ export default function FaqPage() {
             ========================================================================= */}
         <div className="w-full max-w-4xl flex flex-col items-center text-center space-y-4 mb-14 sm:mb-20">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 border border-black/10 text-[10px] font-mono tracking-[0.25em] uppercase text-black/70">
-            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-            <span>CLIENT CONCIERGE & PROTOCOLS</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight uppercase text-black leading-[1.05]">
-            Frequently Asked
+            Frequently Asked Questions
           </h1>
 
           <p className="text-xs sm:text-sm text-neutral-600 font-normal leading-relaxed max-w-xl mx-auto">

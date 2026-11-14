@@ -36,7 +36,7 @@ export const Footer = ({
               CHEMBROS
             </h2>
             <p className="mt-3 text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-xs">
-              Pure organic extrait concentrations crafted in Madurai.
+              Science led perfumery. Rooted in Madurai.
             </p>
           </div>
 
@@ -56,13 +56,12 @@ export const Footer = ({
                 >
                   Our Story
                 </Link>
-                <button
-                  type="button"
-                  onClick={onOpenContact}
+                <a
+                  href="mailto:connect@thechemicalbrothers.in"
                   className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors cursor-pointer text-left"
                 >
                   Contact
-                </button>
+                </a>
                 <Link
                   to="/fragrances"
                   className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors"
