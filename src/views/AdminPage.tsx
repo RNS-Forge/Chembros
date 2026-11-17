@@ -2374,17 +2374,28 @@ export default function AdminPage() {
                           </td>
                           <td className="py-4 px-5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
-                              {/* Download Invoice PDF */}
+                              {/* Official Tax Invoice - Opens verified invoice in new tab */}
+                              <a
+                                href={`/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-semibold shadow-2xs"
+                                title="View & Print Official Tax Invoice"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                                <span className="text-[11px] font-mono">Invoice</span>
+                              </a>
+
+                              {/* Direct PDF Download */}
                               <a
                                 href={`/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}&format=pdf`}
                                 download={`Invoice-${o.order_number}.pdf`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-2 py-1 text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-semibold shadow-2xs"
+                                className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100/70 rounded-lg transition-colors cursor-pointer"
                                 title="Download PDF Tax Invoice"
                               >
-                                <FileText className="w-3.5 h-3.5 text-emerald-700" />
-                                <span className="text-[11px] font-mono">Invoice</span>
+                                <Download className="w-3.5 h-3.5" />
                               </a>
 
                               {/* Edit Shipment & Tracking */}

@@ -296,7 +296,7 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false):
   <div class="toolbar-title">CHEM BROS TAX INVOICE // ${order.order_number}</div>
   <div class="toolbar-actions">
     <button type="button" class="toolbar-btn" onclick="window.print()">Print Invoice</button>
-    <a href="?format=pdf" class="toolbar-btn toolbar-btn-ghost">Download PDF</a>
+    <a href="/api/orders/invoice?order_number=${encodeURIComponent(order.order_number)}&format=pdf" class="toolbar-btn toolbar-btn-ghost">Download PDF</a>
     <a href="/dashboard?tab=orders" class="toolbar-btn toolbar-btn-ghost">Back to Orders</a>
   </div>
 </div>
@@ -427,7 +427,7 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   const titleWidth = fontBold.widthOfTextAtSize(titleText, 22)
   page.drawText(titleText, { x: rightX - titleWidth, y: height - 50, size: 22, font: fontBold, color: black })
 
-  const invoiceId = `CB${order.id || 42}`
+  const invoiceId = `CB${order.id || order.order_number.replace(/\D/g, '').slice(-4) || '42'}`
   const invIdWidth = fontRegular.widthOfTextAtSize(invoiceId, 9.5)
   page.drawText(invoiceId, { x: rightX - invIdWidth, y: height - 68, size: 9.5, font: fontRegular, color: gray })
 
@@ -477,10 +477,36 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
     color: black,
   })
 
+  // Wrap delivery address lines cleanly without cutting words
+  const rawAddr = (order.shipping_address || 'Customer Delivery Address').trim()
+  const addrParts = rawAddr.split(',').map((s) => s.trim()).filter(Boolean)
+  const addrLines: string[] = []
+  let currentAddrLine = ''
+
+  for (const part of addrParts) {
+    if (!currentAddrLine) {
+      currentAddrLine = part
+    } else if ((currentAddrLine + ', ' + part).length <= 38) {
+      currentAddrLine = currentAddrLine + ', ' + part
+    } else {
+      addrLines.push(currentAddrLine + ',')
+      currentAddrLine = part
+    }
+  }
+  if (currentAddrLine) {
+    addrLines.push(currentAddrLine)
+  }
+  // Ensure India is included
+  const lastLine = addrLines[addrLines.length - 1] || ''
+  if (!lastLine.toLowerCase().includes('india')) {
+    addrLines.push('India')
+  }
+
   // Billed To & Delivery Address Box
-  y -= 80
+  const lineSpacing = 12.5
+  const boxHeight = Math.max(86, 16 + 14 + addrLines.length * lineSpacing + 6)
+  y -= (boxHeight + 5)
   const boxY = y
-  const boxHeight = 75
   const boxWidth = rightX - leftX
 
   page.drawRectangle({
@@ -503,9 +529,9 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   let colLeftY = boxY + boxHeight - 16
   page.drawText('BILLED TO', { x: leftX + 16, y: colLeftY, size: 8.5, font: fontBold, color: gray })
   colLeftY -= 15
-  page.drawText(order.customer_name || 'Valued Client', { x: leftX + 16, y: colLeftY, size: 11, font: fontBold, color: black })
+  page.drawText(order.customer_name || 'Valued Client', { x: leftX + 16, y: colLeftY, size: 10.5, font: fontBold, color: black })
   colLeftY -= 13
-  page.drawText(order.customer_email || '', { x: leftX + 16, y: colLeftY, size: 9, font: fontRegular, color: gray })
+  page.drawText(order.customer_email || 'client@chembros.com', { x: leftX + 16, y: colLeftY, size: 9, font: fontRegular, color: gray })
   colLeftY -= 13
   page.drawText(order.customer_phone || '', { x: leftX + 16, y: colLeftY, size: 9, font: fontRegular, color: gray })
 
@@ -514,14 +540,18 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   let colRightY = boxY + boxHeight - 16
   page.drawText('DELIVERY ADDRESS', { x: colRightX, y: colRightY, size: 8.5, font: fontBold, color: gray })
   colRightY -= 15
-  const addr = (order.shipping_address || 'Customer Delivery Address').split(',').map((s) => s.trim())
-  const addrLine1 = addr.slice(0, 3).join(', ')
-  const addrLine2 = addr.slice(3).join(', ') || 'India'
-  page.drawText(addrLine1.slice(0, 42), { x: colRightX, y: colRightY, size: 9, font: fontRegular, color: black })
-  colRightY -= 13
-  page.drawText(addrLine2.slice(0, 42), { x: colRightX, y: colRightY, size: 9, font: fontRegular, color: black })
-  colRightY -= 13
-  page.drawText('India', { x: colRightX, y: colRightY, size: 9, font: fontRegular, color: gray })
+
+  for (let i = 0; i < addrLines.length; i++) {
+    const isCountry = i === addrLines.length - 1 && addrLines[i] === 'India'
+    page.drawText(addrLines[i], {
+      x: colRightX,
+      y: colRightY,
+      size: 9,
+      font: fontRegular,
+      color: isCountry ? gray : black,
+    })
+    colRightY -= lineSpacing
+  }
 
   // Items Table
   y = boxY - 25
@@ -594,12 +624,13 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   }
 
   // Summary Calculations
+  const calcSubtotal = Number(order.subtotal) || subtotal
   const shippingFee = Number(order.shipping_fee) || 0
-  const taxableValue = Math.round((subtotal / 1.18) * 100) / 100
-  const totalGst = Math.round((subtotal - taxableValue) * 100) / 100
+  const taxableValue = Math.round((calcSubtotal / 1.18) * 100) / 100
+  const totalGst = Math.round((calcSubtotal - taxableValue) * 100) / 100
   const cgst = Math.round((totalGst / 2) * 100) / 100
   const sgst = Math.round((totalGst - cgst) * 100) / 100
-  const total = subtotal + shippingFee
+  const total = Number(order.total_amount) || calcSubtotal + shippingFee
 
   const sumX = rightX - 190
   y -= 22
