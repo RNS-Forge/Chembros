@@ -158,7 +158,7 @@ export const Footer = ({
       {/* Layer 3: Minimal Bottom Metadata Outside the Card in Solid Black */}
       <div className="w-full max-w-[1583px] px-2 sm:px-4 pt-4 sm:pt-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <span className="text-black font-mono text-[10px] tracking-wider uppercase">
-          © 2026 CHEMBROS ARCHIVE. ALL RIGHTS RESERVED.
+          © 2026 CHEMBROS. ALL RIGHTS RESERVED.
         </span>
         <a
           href="https://www.behindbrief.in/"
