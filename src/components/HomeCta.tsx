@@ -47,7 +47,7 @@ export default function HomeCta({ className = '', style, onCtaClick }: HomeCtaPr
               FIND YOUR MOLECULE
             </h2>
             <p className="text-white/90 text-[clamp(13px,1.0vw,16px)] font-medium font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] tracking-normal drop-shadow-[0_1px_4px_rgba(0,0,0,0.15)]">
-              Distinctive brand language that connects science and fragrance.
+              Experience pure extrait de parfum crafted through science, nature and formulation.
             </p>
           </div>
 

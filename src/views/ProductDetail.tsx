@@ -627,7 +627,7 @@ export default function ProductDetail() {
                   <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
                 </span>
                 <span className="flex items-center gap-1.5">
-                 Long lasting Wear Time
+                Long-lasting Wear Time
                 </span>
               </div>
             </div>

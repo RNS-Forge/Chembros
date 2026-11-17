@@ -38,7 +38,7 @@ const STORY_ITEMS: StoryCardItem[] = [
     id: 1,
     tag: '01 THE BEGINNING',
     title: 'WHERE IT BEGAN',
-    body: 'In 2024, our journey began in Kannauj, Indias fragrance capital, where an unexpected meeting would shape the future of fine perfumery.',
+    body: "In 2024, our journey began in Kannauj, India's fragrance capital, where an unexpected meeting would shape the future of fine perfumery.",
     img: Image1,
   },
   {
@@ -59,7 +59,7 @@ const STORY_ITEMS: StoryCardItem[] = [
     id: 4,
     tag: '04 THE ENCOUNTER',
     title: 'MEETING PRANAV',
-    body: 'When modern chemical engineering met Pranavs ancestral intuition, two different worlds of fragrance came together to imagine something entirely new.',
+    body: "When modern chemical engineering met Pranav's ancestral intuition, two different worlds of fragrance came together to imagine something entirely new.",
     img: Image4,
   },
   {

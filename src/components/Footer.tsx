@@ -33,7 +33,7 @@ export const Footer = ({
           {/* Top Left: Bold Brand Wordmark */}
           <div className="flex flex-col items-start max-w-sm">
             <h2 className="text-black text-3xl sm:text-4xl lg:text-5xl font-semibold font-['Montserrat',sans-serif] tracking-wider uppercase leading-none">
-              CHEMBROS
+              CHEM BROS
             </h2>
             <p className="mt-3 text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-neutral-600 leading-relaxed max-w-xs">
               Science led perfumery. Rooted in Madurai.
@@ -158,7 +158,7 @@ export const Footer = ({
       {/* Layer 3: Minimal Bottom Metadata Outside the Card in Solid Black */}
       <div className="w-full max-w-[1583px] px-2 sm:px-4 pt-4 sm:pt-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <span className="text-black font-mono text-[10px] tracking-wider uppercase">
-          © 2026 CHEMBROS. ALL RIGHTS RESERVED.
+          © 2026 CHEM BROS. ALL RIGHTS RESERVED.
         </span>
         <a
           href="https://www.behindbrief.in/"

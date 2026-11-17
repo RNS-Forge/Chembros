@@ -693,29 +693,12 @@ export default function AdminPage() {
           removeBlackBackgroundFromCanvas(ctx, width, height)
 
           // 2. Strict format resolution preserving 100% alpha transparency
-          // NEVER force background-removed images into image/jpeg, which discards alpha and bakes a black box!
+          // Always output to PNG or WebP with alpha channel, never baking a black background
           const lowerName = file.name.toLowerCase()
           const isWebp = file.type === 'image/webp' || lowerName.endsWith('.webp')
-          const isPng = file.type === 'image/png' || lowerName.endsWith('.png')
 
-          let outputType = 'image/png'
+          let outputType = isWebp ? 'image/webp' : 'image/png'
           let quality = 0.92
-
-          if (isWebp) {
-            outputType = 'image/webp'
-            quality = 0.92
-          } else if (isPng) {
-            outputType = 'image/png'
-          } else if (file.type === 'image/jpeg' || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
-            // For JPEGs, if drawn on transparent canvas, ensure transparent areas are white rather than black
-            ctx.globalCompositeOperation = 'destination-over'
-            ctx.fillStyle = '#ffffff'
-            ctx.fillRect(0, 0, width, height)
-            outputType = 'image/webp'
-            quality = 0.90
-          } else {
-            outputType = 'image/png'
-          }
 
           const compressed = canvas.toDataURL(outputType, quality)
           resolve(compressed)

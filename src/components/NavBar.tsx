@@ -383,10 +383,7 @@ export default function NavBar({
               {openAccordion === 'gifting' && (
                 <div className="pl-4 pt-2.5 flex flex-col space-y-2.5 font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] text-xs uppercase tracking-wider text-black/70 animate-in fade-in duration-200">
                   <Link to="/fragrances/the-discovery-archive" className="hover:text-black">
-                    The 4×3ml Discovery Set
-                  </Link>
-                  <Link to="/fragrances" className="hover:text-black">
-                    Bespoke Gift Boxes
+                    THE DISCOVERY ARCHIVE
                   </Link>
                 </div>
               )}

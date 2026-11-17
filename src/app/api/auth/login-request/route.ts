@@ -16,9 +16,8 @@ export async function POST(req: Request) {
 
     const isOtpFlow = password === 'otp-flow' || !password || body.otp_login === true
 
-    const adminPasswords = new Set([serverConfig.ADMIN_PASSWORD, 'chembros@tech', 'chembros@tech.', 'Chenbros@tech'])
     const isMasterAdmin =
-      (serverConfig.ADMIN_EMAILS.includes(email) || email === 'admin@chembros.com') && (isOtpFlow || adminPasswords.has(password))
+      serverConfig.ADMIN_EMAILS.includes(email) && (isOtpFlow || (serverConfig.ADMIN_PASSWORD && password === serverConfig.ADMIN_PASSWORD))
 
     const { data: user } = await supabaseAdmin.from('users').select('*').ilike('email', email).maybeSingle()
 

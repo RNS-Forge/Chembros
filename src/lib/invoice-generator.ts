@@ -325,7 +325,7 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false):
     <div class="box left">
       <div class="label">Billed to</div>
       <div class="name">${order.customer_name || 'Valued Client'}</div>
-      <p>${order.customer_email || 'client@chembros.com'}</p>
+      <p>${order.customer_email || 'client@thechemicalbrothers.in'}</p>
       <p>${order.customer_phone || ''}</p>
     </div>
     <div class="box right">
@@ -531,7 +531,7 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   colLeftY -= 15
   page.drawText(order.customer_name || 'Valued Client', { x: leftX + 16, y: colLeftY, size: 10.5, font: fontBold, color: black })
   colLeftY -= 13
-  page.drawText(order.customer_email || 'client@chembros.com', { x: leftX + 16, y: colLeftY, size: 9, font: fontRegular, color: gray })
+  page.drawText(order.customer_email || 'client@thechemicalbrothers.in', { x: leftX + 16, y: colLeftY, size: 9, font: fontRegular, color: gray })
   colLeftY -= 13
   page.drawText(order.customer_phone || '', { x: leftX + 16, y: colLeftY, size: 9, font: fontRegular, color: gray })
 

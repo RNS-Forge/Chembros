@@ -19,21 +19,34 @@ export function removeBlackBackgroundFromCanvas(
     const data = imgData.data
     const totalPixels = width * height
 
-    // Check if outer corners have black pixels (r,g,b < 30, alpha > 180)
-    const corners = [0, width - 1, (height - 1) * width, (height - 1) * width + (width - 1)]
-    let hasBlackCorners = false
-    for (const c of corners) {
-      const r = data[c * 4]
-      const g = data[c * 4 + 1]
-      const b = data[c * 4 + 2]
-      const a = data[c * 4 + 3]
-      if (a > 180 && r < 35 && g < 35 && b < 35) {
-        hasBlackCorners = true
-        break
+    // Sample edge perimeter to detect black background boxes reliably even with 1-2px margins or compression noise
+    let darkEdgePixelCount = 0
+    let sampledEdgeCount = 0
+    const sampleStep = Math.max(1, Math.floor(Math.min(width, height) / 40))
+
+    for (let x = 0; x < width; x += sampleStep) {
+      const topIdx = x
+      const bottomIdx = (height - 1) * width + x
+      for (const idx of [topIdx, bottomIdx]) {
+        sampledEdgeCount++
+        if (data[idx * 4 + 3] > 150 && data[idx * 4] < 45 && data[idx * 4 + 1] < 45 && data[idx * 4 + 2] < 45) {
+          darkEdgePixelCount++
+        }
+      }
+    }
+    for (let y = 0; y < height; y += sampleStep) {
+      const leftIdx = y * width
+      const rightIdx = y * width + (width - 1)
+      for (const idx of [leftIdx, rightIdx]) {
+        sampledEdgeCount++
+        if (data[idx * 4 + 3] > 150 && data[idx * 4] < 45 && data[idx * 4 + 1] < 45 && data[idx * 4 + 2] < 45) {
+          darkEdgePixelCount++
+        }
       }
     }
 
-    if (!hasBlackCorners) return false
+    const hasBlackEdges = darkEdgePixelCount / Math.max(1, sampledEdgeCount) > 0.2
+    if (!hasBlackEdges) return false
 
     const visited = new Uint8Array(totalPixels)
     const queue: number[] = []

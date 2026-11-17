@@ -486,7 +486,7 @@ export default function AuthModal() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="client@chembros.com"
+                      placeholder="client@thechemicalbrothers.in"
                       className="w-full pl-10 pr-4 py-3 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs sm:text-sm text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-['Inter',sans-serif]"
                     />
                   </div>
@@ -650,7 +650,7 @@ export default function AuthModal() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="client@chembros.com"
+                      placeholder="client@thechemicalbrothers.in"
                       className="w-full pl-10 pr-4 py-3 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/10 focus:border-black rounded-2xl text-xs sm:text-sm text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all font-['Inter',sans-serif]"
                     />
                   </div>
@@ -869,7 +869,7 @@ export default function AuthModal() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="client@chembros.com"
+                      placeholder="client@thechemicalbrothers.in"
                       className="w-full pl-10 pr-3 py-2.5 bg-[#FAFBFB] hover:bg-white focus:bg-white border border-black/15 focus:border-black rounded-2xl text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-black transition-all"
                     />
                   </div>

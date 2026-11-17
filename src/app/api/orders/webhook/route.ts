@@ -22,12 +22,15 @@ export async function POST(req: Request) {
     const timestamp = req.headers.get('x-webhook-timestamp') || req.headers.get('x-cf-timestamp') || ''
 
     // 1. Strict Cryptographic Signature Verification
-    if (signature && timestamp) {
-      const isValid = cashfreeService.verifyWebhookSignature(rawBody, signature, timestamp)
-      if (!isValid) {
-        console.warn('Unauthorized webhook signature mismatch from Cashfree gateway.')
-        return NextResponse.json({ detail: 'Invalid webhook signature' }, { status: 401 })
-      }
+    if (!signature || !timestamp) {
+      console.warn('Rejected webhook: missing Cashfree signature or timestamp headers.')
+      return NextResponse.json({ detail: 'Missing required webhook signature headers' }, { status: 401 })
+    }
+
+    const isValid = cashfreeService.verifyWebhookSignature(rawBody, signature, timestamp)
+    if (!isValid) {
+      console.warn('Unauthorized webhook signature mismatch from Cashfree gateway.')
+      return NextResponse.json({ detail: 'Invalid webhook signature' }, { status: 401 })
     }
 
     let payload: any = {}

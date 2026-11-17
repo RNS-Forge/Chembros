@@ -14,7 +14,7 @@ export const serverConfig = {
   SMTP_FROM: process.env.SMTP_FROM || '',
 
   JWT_SECRET: process.env.JWT_SECRET || 'chembros_secret_key_haute_parfumerie_2026_jwt_token_secure_98471',
-  ADMIN_EMAILS: (process.env.ADMIN_EMAILS || 'admin@chembros.com,sanjay.n.ihub@snsgroups.com')
+  ADMIN_EMAILS: (process.env.ADMIN_EMAILS || 'connect@thechemicalbrothers.in,sanjay.n.ihub@snsgroups.com')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean),

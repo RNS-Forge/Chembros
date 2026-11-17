@@ -96,7 +96,7 @@ export class CashfreeService {
       .replace(/\D/g, '')
       .slice(-10) || '9999999999'
 
-    const cleanEmail = (params.customer_email || 'concierge@chembros.com').trim().toLowerCase()
+    const cleanEmail = (params.customer_email || 'concierge@thechemicalbrothers.in').trim().toLowerCase()
     const cleanName = (params.customer_name || 'Valued Chembros Client').trim().slice(0, 100)
 
     if (!isPlaceholder) {

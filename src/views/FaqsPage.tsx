@@ -72,7 +72,7 @@ const FAQ_DATA: FaqItem[] = [
     highlights: [
       'Complimentary Shipping: Orders of ₹1,500 and above qualify for free standard shipping.',
       'Standard Shipping: A flat shipping fee of ₹100 applies to orders below ₹1,500.',
-      'Delivery Timeline: Standard orders are typically delivered within 3 to 5 business days across India. ,'
+      'Delivery Timeline: Standard orders are typically delivered within 3 to 5 business days across India.'
     ]
   },
 
