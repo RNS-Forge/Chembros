@@ -659,30 +659,36 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   page.drawText(totalValStr, { x: rightX - totalValW, y, size: 13, font: fontBold, color: black })
 
   y -= 18
-  page.drawText('GST is included in the prices shown.', { x: rightX - 175, y, size: 8.5, font: fontRegular, color: gray })
+  const gstNote = 'GST is included in the prices shown.'
+  const gstNoteW = fontRegular.widthOfTextAtSize(gstNote, 8.5)
+  page.drawText(gstNote, { x: rightX - gstNoteW, y, size: 8.5, font: fontRegular, color: gray })
 
-  // Payment Box
-  y -= 35
+  // Payment Box (y is the bottom-left coordinate in pdf-lib, so offset by gap + height)
   const payBoxHeight = 58
+  const gapAbovePayBox = 26
+  y -= (gapAbovePayBox + payBoxHeight)
+  const payBoxY = y
+
   page.drawRectangle({
     x: leftX,
-    y: y,
+    y: payBoxY,
     width: boxWidth,
     height: payBoxHeight,
     borderColor: lightGray,
     borderWidth: 1,
   })
 
-  let pY = y + payBoxHeight - 16
+  let pY = payBoxY + payBoxHeight - 16
   page.drawText('Payment', { x: leftX + 16, y: pY, size: 10.5, font: fontBold, color: black })
-  pY -= 13
+  pY -= 14
   page.drawText(`Method: ${order.payment_method || 'UPI / Cashfree PG'}`, { x: leftX + 16, y: pY, size: 9, font: fontRegular, color: gray })
-  pY -= 12
+  pY -= 13
   page.drawText(`Received: ${dateStr}`, { x: leftX + 16, y: pY, size: 9, font: fontRegular, color: gray })
-  page.drawText(`Reference: ${order.cashfree_payment_id || order.order_number}`, { x: leftX + 240, y: pY, size: 9, font: fontMono, color: gray })
+  const paymentRef = order.cashfree_payment_id || order.cashfree_order_id || order.order_number
+  page.drawText(`Reference: ${paymentRef}`, { x: leftX + 220, y: pY, size: 9, font: fontMono, color: gray })
 
   // Footer
-  y -= 35
+  y = payBoxY - 30
   page.drawLine({ start: { x: leftX, y }, end: { x: rightX, y }, thickness: 0.5, color: lightGray })
   y -= 16
 
