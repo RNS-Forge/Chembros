@@ -12,17 +12,18 @@ export async function GET(
     const autoPrint = searchParams.get('print') === 'true'
     const wantsPdf = searchParams.get('format') === 'pdf' || searchParams.get('download') === 'true'
 
-    if (!id) {
+    if (!id || !id.trim()) {
       return NextResponse.json({ detail: 'Order ID or order number is required.' }, { status: 400 })
     }
 
-    const orderIdNum = Number(id)
+    const cleanNumber = decodeURIComponent(id).replace(/^#/, '').trim()
+    const orderIdNum = Number(cleanNumber)
     let query = supabaseAdmin.from('orders').select('*')
 
-    if (isNaN(orderIdNum)) {
-      query = query.eq('order_number', id)
+    if (!isNaN(orderIdNum) && orderIdNum > 0 && String(orderIdNum) === cleanNumber) {
+      query = query.or(`id.eq.${orderIdNum},order_number.eq.${cleanNumber},order_number.eq.#${cleanNumber}`)
     } else {
-      query = query.or(`id.eq.${orderIdNum},order_number.eq.${id}`)
+      query = query.or(`order_number.eq.${cleanNumber},order_number.eq.#${cleanNumber}`)
     }
 
     const { data: order, error } = await query.maybeSingle()

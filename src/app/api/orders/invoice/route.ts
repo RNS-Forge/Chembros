@@ -5,28 +5,29 @@ import { generateInvoiceHtml, generateInvoicePdfBuffer, InvoiceOrderData } from 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const orderNumber = searchParams.get('order_number') || searchParams.get('order_id') || searchParams.get('id')
+    const rawOrderNumber = searchParams.get('order_number') || searchParams.get('order_id') || searchParams.get('id') || ''
     const autoPrint = searchParams.get('print') === 'true'
     const wantsPdf = searchParams.get('format') === 'pdf' || searchParams.get('download') === 'true'
 
-    if (!orderNumber) {
+    if (!rawOrderNumber.trim()) {
       return NextResponse.json({ detail: 'order_number or id is required.' }, { status: 400 })
     }
 
-    const orderIdNum = Number(orderNumber)
+    const cleanNumber = decodeURIComponent(rawOrderNumber).replace(/^#/, '').trim()
+    const orderIdNum = Number(cleanNumber)
     let query = supabaseAdmin.from('orders').select('*')
 
-    if (isNaN(orderIdNum)) {
-      query = query.eq('order_number', orderNumber)
+    if (!isNaN(orderIdNum) && orderIdNum > 0 && String(orderIdNum) === cleanNumber) {
+      query = query.or(`id.eq.${orderIdNum},order_number.eq.${cleanNumber},order_number.eq.#${cleanNumber}`)
     } else {
-      query = query.or(`id.eq.${orderIdNum},order_number.eq.${orderNumber}`)
+      query = query.or(`order_number.eq.${cleanNumber},order_number.eq.#${cleanNumber}`)
     }
 
     const { data: order, error } = await query.maybeSingle()
 
     if (error || !order) {
       return new Response(
-        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Order Not Found</h2><p>Could not locate order #${orderNumber}.</p></body></html>`,
+        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Order Not Found</h2><p>Could not locate order #${cleanNumber}.</p></body></html>`,
         { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
       )
     }

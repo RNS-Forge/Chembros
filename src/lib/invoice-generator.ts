@@ -112,13 +112,13 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false):
         })
         .join('\n')
     : `      <tr>
-        <td class="item">Luxury Eau de Parfum</td>
+        <td class="item">CHEM BROS Extrait de Parfum</td>
         <td>33030050</td>
         <td>₹${subtotal.toLocaleString('en-IN')}</td>
         <td>1</td>
         <td>₹${subtotal.toLocaleString('en-IN')}</td>
       </tr>
-      <tr class="sub"><td colspan="5">Signature Chembros Perfume</td></tr>`
+      <tr class="sub"><td colspan="5">Signature Extrait de Parfum · 50ml</td></tr>`
 
   const statusBadge = isPaid
     ? '<span class="paid">Paid</span>'
@@ -537,20 +537,40 @@ export async function generateInvoicePdfBuffer(order: InvoiceOrderData): Promise
   y -= 8
   page.drawLine({ start: { x: leftX, y }, end: { x: rightX, y }, thickness: 1, color: black })
 
-  const rawItems = Array.isArray(order.items)
-    ? order.items
+  let rawItems = Array.isArray(order.items)
+    ? [...order.items]
     : typeof order.items === 'string'
-    ? JSON.parse(order.items)
+    ? (() => {
+        try {
+          const parsed = JSON.parse(order.items)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      })()
     : []
+
+  if (rawItems.length === 0) {
+    const fallbackPrice =
+      Number(order.subtotal) > 0
+        ? Number(order.subtotal)
+        : Math.max(0, Number(order.total_amount) - (Number(order.shipping_fee) || 0))
+    rawItems.push({
+      name: 'CHEM BROS Extrait de Parfum',
+      volume_ml: 50,
+      price: fallbackPrice > 0 ? fallbackPrice : Number(order.total_amount) || 0,
+      quantity: 1,
+    })
+  }
 
   let subtotal = 0
 
   for (const item of rawItems) {
     y -= 22
-    const itemName = item.name || 'Extrait de Parfum'
+    const itemName = item.name || 'CHEM BROS Extrait de Parfum'
     const itemSub = item.name?.toLowerCase().includes('discovery')
       ? 'The Molecule Series · 4 × 3ml Extrait'
-      : `Extrait de Parfum · ${item.volume_ml || 30}ml`
+      : `Extrait de Parfum · ${item.volume_ml || 50}ml`
     const hsn = item.hsn || '33030050'
     const price = Number(item.price) || 0
     const qty = Number(item.quantity) || 1

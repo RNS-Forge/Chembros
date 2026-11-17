@@ -59,6 +59,7 @@ import {
   UserX,
   RefreshCw,
   KeyRound,
+  Download,
   FileText,
   FileSpreadsheet,
   ChevronDown,
@@ -2372,14 +2373,30 @@ export default function AdminPage() {
                             )}
                           </td>
                           <td className="py-4 px-5 text-right whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => openDispatchModal(o)}
-                              className="p-1.5 text-neutral-600 hover:text-[#4a2e70] hover:bg-[#f4effc] rounded transition-colors cursor-pointer"
-                              title="Edit Shipment & Tracking"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Download Invoice PDF */}
+                              <a
+                                href={`/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}&format=pdf`}
+                                download={`Invoice-${o.order_number}.pdf`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-semibold shadow-2xs"
+                                title="Download PDF Tax Invoice"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                                <span className="text-[11px] font-mono">Invoice</span>
+                              </a>
+
+                              {/* Edit Shipment & Tracking */}
+                              <button
+                                type="button"
+                                onClick={() => openDispatchModal(o)}
+                                className="p-1.5 text-neutral-600 hover:text-[#4a2e70] hover:bg-[#f4effc] rounded-lg transition-colors cursor-pointer"
+                                title="Edit Shipment & Tracking"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -4293,6 +4310,42 @@ export default function AdminPage() {
                 <div className="flex justify-between items-start text-neutral-500 pt-1 border-t border-neutral-200">
                   <span className="shrink-0 mr-2">Shipping Address:</span>
                   <span className="text-right text-neutral-800 leading-snug">{dispatchModalOrder.shipping_address}</span>
+                </div>
+              </div>
+
+              {/* Tax Invoice Quick Actions */}
+              <div className="flex items-center justify-between p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-emerald-950">Official Customer Invoice</p>
+                    <p className="text-[11px] text-emerald-700 font-mono">Invoice-{dispatchModalOrder.order_number}.pdf</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/api/orders/invoice?order_number=${encodeURIComponent(dispatchModalOrder.order_number)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 hover:bg-emerald-100 rounded-xl text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    title="View & Print Invoice in new tab"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>View / Print</span>
+                  </a>
+                  <a
+                    href={`/api/orders/invoice?order_number=${encodeURIComponent(dispatchModalOrder.order_number)}&format=pdf`}
+                    download={`Invoice-${dispatchModalOrder.order_number}.pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Download PDF"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF</span>
+                  </a>
                 </div>
               </div>
 
