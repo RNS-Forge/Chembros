@@ -1540,6 +1540,7 @@ export async function createOrderApi(payload: CreateOrderPayload): Promise<{
   cf_environment?: string
   payment_method?: string
   status?: string
+  payment_bypass?: boolean
   pending_order?: any
 }> {
   const res = await request<{
@@ -1550,6 +1551,7 @@ export async function createOrderApi(payload: CreateOrderPayload): Promise<{
     cf_environment?: string
     payment_method?: string
     status?: string
+    payment_bypass?: boolean
     pending_order?: any
   }>('/api/orders/create', {
     method: 'POST',

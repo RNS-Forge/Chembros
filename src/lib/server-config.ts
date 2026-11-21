@@ -24,6 +24,7 @@ export const serverConfig = {
   CASHFREE_SECRET_KEY: process.env.CASHFREE_SECRET_KEY || '',
   CASHFREE_ENV: (process.env.CASHFREE_ENV || process.env.NEXT_PUBLIC_CASHFREE_ENV || 'PRODUCTION').toUpperCase(),
   CASHFREE_API_VERSION: '2023-08-01',
+  PAYMENT: (process.env.PAYMENT ?? process.env.payment ?? process.env['[ayment'] ?? process.env.NEXT_PUBLIC_PAYMENT ?? '').trim(),
 
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   RESEND_FROM: process.env.RESEND_FROM || 'Chembros <onboarding@resend.dev>',
@@ -34,4 +35,36 @@ export const serverConfig = {
     process.env.FRONTEND_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   ).trim().replace(/\/+$/, ''),
+}
+
+/**
+ * Checks whether Cashfree / online payment is enabled based on environment variables.
+ *
+ * Rules:
+ * - If PAYMENT (or variations) is not defined in env: returns true (Cashfree works by default).
+ * - If PAYMENT is set to 'true' (or 1): returns true (Cashfree works).
+ * - If PAYMENT is set to 'false' (or 0/disabled/off): returns false (Cashfree does not work).
+ */
+export function isPaymentGatewayEnabled(): boolean {
+  const raw = (
+    process.env.PAYMENT ??
+    process.env.payment ??
+    process.env['[ayment'] ??
+    process.env.NEXT_PUBLIC_PAYMENT ??
+    serverConfig.PAYMENT ??
+    ''
+  ).trim().toLowerCase()
+
+  // If the variable is not set in env or empty, it should work cash free (default true)
+  if (!raw) {
+    return true
+  }
+
+  // When false, payment/cashfree does not work
+  if (raw === 'false' || raw === '0' || raw === 'no' || raw === 'off' || raw === 'disabled') {
+    return false
+  }
+
+  // Otherwise truthy (e.g. 'true', '1') -> works
+  return true
 }

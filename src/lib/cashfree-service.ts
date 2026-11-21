@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { serverConfig } from './server-config'
+import { serverConfig, isPaymentGatewayEnabled } from './server-config'
 
 export interface CashfreeOrderParams {
   order_id: string
@@ -31,6 +31,14 @@ export interface CashfreeVerifyResult {
 }
 
 export class CashfreeService {
+  /**
+   * Returns true if Cashfree online payment is enabled via env config.
+   * If PAYMENT is not defined in env, defaults to true.
+   */
+  get isPaymentEnabled(): boolean {
+    return isPaymentGatewayEnabled()
+  }
+
   private get credentials() {
     const appId = (process.env.CASHFREE_APP_ID || serverConfig.CASHFREE_APP_ID || '').trim()
     const secretKey = (process.env.CASHFREE_SECRET_KEY || serverConfig.CASHFREE_SECRET_KEY || '').trim()
@@ -82,6 +90,13 @@ export class CashfreeService {
    * Create an authorized Cashfree order session on the payment gateway
    */
   async createOrder(params: CashfreeOrderParams): Promise<CashfreeOrderResult> {
+    if (!this.isPaymentEnabled) {
+      return {
+        success: false,
+        error: 'Cashfree payment gateway is currently disabled by configuration (PAYMENT=false).',
+      }
+    }
+
     const { appId, secretKey, baseUrl, env } = this.credentials
 
     const isPlaceholder = !appId || !secretKey || appId.includes('TEST_APP_ID') || secretKey.includes('TEST_SECRET')
@@ -181,6 +196,14 @@ export class CashfreeService {
    * Verify order payment status directly with Cashfree servers
    */
   async verifyPayment(orderId: string): Promise<CashfreeVerifyResult> {
+    if (!this.isPaymentEnabled) {
+      return {
+        isPaid: false,
+        paymentStatus: 'PAYMENT_DISABLED',
+        raw: { message: 'Cashfree payment gateway is currently disabled by configuration (PAYMENT=false).' },
+      }
+    }
+
     const { baseUrl, env } = this.credentials
 
     // Allow simulated tokens only in development / non-production

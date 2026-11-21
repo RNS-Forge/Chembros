@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  transpilePackages: ['lucide-react'],
   serverExternalPackages: ['bcryptjs', 'jsonwebtoken'],
   outputFileTracingRoot: path.resolve(__dirname),
   images: {
