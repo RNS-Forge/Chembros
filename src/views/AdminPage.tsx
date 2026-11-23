@@ -2358,28 +2358,31 @@ export default function AdminPage() {
                           <td className="py-4 px-5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {/* Official Tax Invoice - Opens verified invoice in new tab */}
-                              <a
-                                href={`/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                onClick={() => {
+                                  const tk = typeof window !== 'undefined' ? (localStorage.getItem('chembros_token') || '') : ''
+                                  const url = `/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}${tk ? `&token=${encodeURIComponent(tk)}` : ''}`
+                                  window.open(url, '_blank', 'noopener,noreferrer')
+                                }}
                                 className="px-2 py-1 text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-semibold shadow-2xs"
                                 title="View & Print Official Tax Invoice"
                               >
                                 <FileText className="w-3.5 h-3.5 text-emerald-700" />
                                 <span className="text-[11px] font-mono">Invoice</span>
-                              </a>
+                              </button>
 
                               {/* Direct PDF Download */}
-                              <a
-                                href={`/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}&format=pdf`}
-                                download={`Invoice-${o.order_number}.pdf`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                onClick={() => {
+                                  const tk = typeof window !== 'undefined' ? (localStorage.getItem('chembros_token') || '') : ''
+                                  const url = `/api/orders/invoice?order_number=${encodeURIComponent(o.order_number)}&format=pdf${tk ? `&token=${encodeURIComponent(tk)}` : ''}`
+                                  window.open(url, '_blank', 'noopener,noreferrer')
+                                }}
                                 className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100/70 rounded-lg transition-colors cursor-pointer"
                                 title="Download PDF Tax Invoice"
                               >
                                 <Download className="w-3.5 h-3.5" />
-                              </a>
+                              </button>
 
                               {/* Edit Shipment & Tracking */}
                               <button
@@ -4319,27 +4322,30 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={`/api/orders/invoice?order_number=${encodeURIComponent(dispatchModalOrder.order_number)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => {
+                      const tk = typeof window !== 'undefined' ? (localStorage.getItem('chembros_token') || '') : ''
+                      const url = `/api/orders/invoice?order_number=${encodeURIComponent(dispatchModalOrder.order_number)}${tk ? `&token=${encodeURIComponent(tk)}` : ''}`
+                      window.open(url, '_blank', 'noopener,noreferrer')
+                    }}
                     className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 hover:bg-emerald-100 rounded-xl text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     title="View & Print Invoice in new tab"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>View / Print</span>
-                  </a>
-                  <a
-                    href={`/api/orders/invoice?order_number=${encodeURIComponent(dispatchModalOrder.order_number)}&format=pdf`}
-                    download={`Invoice-${dispatchModalOrder.order_number}.pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  </button>
+                  <button
+                    onClick={() => {
+                      const tk = typeof window !== 'undefined' ? (localStorage.getItem('chembros_token') || '') : ''
+                      const url = `/api/orders/invoice?order_number=${encodeURIComponent(dispatchModalOrder.order_number)}&format=pdf${tk ? `&token=${encodeURIComponent(tk)}` : ''}`
+                      window.open(url, '_blank', 'noopener,noreferrer')
+                    }}
                     className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                     title="Download PDF"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Download PDF</span>
-                  </a>
+                  </button>
                 </div>
               </div>
 

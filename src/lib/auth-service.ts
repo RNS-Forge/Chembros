@@ -157,10 +157,31 @@ export async function enrichUserAddress(user: any) {
 
 export async function getUserFromAuthHeader(req: Request): Promise<any | null> {
   try {
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return null
+    let token = ''
 
-    const token = authHeader.replace(/^Bearer\s+/, '').trim()
+    // 1. Authorization header (primary)
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.replace(/^Bearer\s+/, '').trim()
+    }
+
+    // 2. Query param ?token= (for browser tabs / anchor links)
+    if (!token) {
+      try {
+        const url = new URL(req.url)
+        token = url.searchParams.get('token') || ''
+      } catch {}
+    }
+
+    // 3. Cookie fallback
+    if (!token) {
+      const cookieHeader = req.headers.get('cookie') || ''
+      const match = cookieHeader.match(/chembros_token=([^;]+)/)
+      if (match) token = decodeURIComponent(match[1])
+    }
+
+    if (!token) return null
+
     const payload = verifyAccessToken(token)
     if (!payload) return null
 
