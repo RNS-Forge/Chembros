@@ -26,7 +26,7 @@ export interface InvoiceOrderData {
   tracking_number?: string
 }
 
-export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false): string {
+export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, token = ''): string {
   const items: InvoiceItem[] = Array.isArray(order.items)
     ? order.items
     : typeof order.items === 'string'
@@ -296,7 +296,7 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false):
   <div class="toolbar-title">CHEM BROS TAX INVOICE // ${order.order_number}</div>
   <div class="toolbar-actions">
     <button type="button" class="toolbar-btn" onclick="window.print()">Print Invoice</button>
-    <a href="/api/orders/invoice?order_number=${encodeURIComponent(order.order_number)}&format=pdf" class="toolbar-btn toolbar-btn-ghost">Download PDF</a>
+    <a href="/api/orders/invoice?order_number=${encodeURIComponent(order.order_number)}&format=pdf${token ? `&token=${encodeURIComponent(token)}` : ''}" class="toolbar-btn toolbar-btn-ghost">Download PDF</a>
     <a href="/dashboard?tab=orders" class="toolbar-btn toolbar-btn-ghost">Back to Orders</a>
   </div>
 </div>

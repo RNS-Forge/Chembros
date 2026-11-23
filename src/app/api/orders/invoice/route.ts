@@ -33,18 +33,17 @@ export async function GET(req: Request) {
       )
     }
 
-    // Authenticate: Allow if user is admin, owner of the order, or matching token/customer email
+    // Authenticate: Allow only if user is admin or verified owner of the order (via Authorization header or valid ?token= JWT)
     const currentUser = await getUserFromAuthHeader(req)
-    const customerToken = searchParams.get('token') || ''
     const isOwner = currentUser && (
       currentUser.role === 'admin' ||
       (order.user_id && Number(currentUser.id) === Number(order.user_id)) ||
       (currentUser.email && order.customer_email && currentUser.email.toLowerCase() === order.customer_email.toLowerCase())
     )
 
-    if (!isOwner && !customerToken) {
+    if (!isOwner) {
       return new Response(
-        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Access Denied</h2><p>Please log in or open the invoice link directly from your order confirmation email.</p></body></html>`,
+        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Access Denied</h2><p>Please log in or access the official tax invoice attached to your order confirmation email.</p></body></html>`,
         { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
       )
     }
@@ -87,7 +86,7 @@ export async function GET(req: Request) {
       })
     }
 
-    const html = generateInvoiceHtml(orderData, autoPrint)
+    const html = generateInvoiceHtml(orderData, autoPrint, searchParams.get('token') || '')
 
     return new Response(html, {
       status: 200,
