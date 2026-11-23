@@ -142,7 +142,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addToCart } = useCart()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const { settings } = usePlatformSettings()
 
   const normalizedId = id === 'molecule-k' ? 'molecule-r' : id
@@ -266,6 +266,10 @@ export default function ProductDetail() {
   }
 
   const handleOpenReviewModal = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
     setReviewAuthor(user?.name || '')
     setReviewLocation(user?.city || 'Verified Buyer')
     setReviewRating(5)

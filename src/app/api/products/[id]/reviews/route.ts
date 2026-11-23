@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserFromAuthHeader } from '@/lib/auth-service'
 
 export async function GET(
   req: Request,
@@ -64,8 +65,17 @@ export async function POST(
       return NextResponse.json({ detail: 'Target product not found.' }, { status: 404 })
     }
 
+    // Require authentication to submit reviews (prevents spam / bot rating manipulation)
+    const currentUser = await getUserFromAuthHeader(req)
+    if (!currentUser) {
+      return NextResponse.json(
+        { detail: 'Authentication required. Please sign in to submit a fragrance review.' },
+        { status: 401 }
+      )
+    }
+
     const body = await req.json()
-    const authorName = (body.author_name || body.author || '').trim()
+    const authorName = (body.author_name || body.author || currentUser.name || '').trim()
     const title = (body.title || '').trim()
     const comment = (body.comment || '').trim()
 
@@ -77,9 +87,7 @@ export async function POST(
     }
 
     const rating = Math.max(1, Math.min(5, Number(body.rating) || 5))
-    const location = (body.location || 'Verified Buyer').trim()
-    const longevity = body.longevity || '10+ Hours'
-    const sillage = body.sillage || 'Clean & Radiant'
+    const location = (body.location || currentUser.city || 'Verified Client').trim()
 
     const insertPayload: Record<string, any> = {
       product_id: targetId,
@@ -88,12 +96,12 @@ export async function POST(
       rating,
       title,
       comment,
-      longevity,
-      sillage,
       created_at: new Date().toISOString(),
     }
 
-    if (body.user_id) insertPayload.user_id = Number(body.user_id)
+    if (currentUser.id || body.user_id) {
+      insertPayload.user_id = Number(currentUser.id || body.user_id)
+    }
 
     let { data, error } = await supabaseAdmin
       .from('reviews')
