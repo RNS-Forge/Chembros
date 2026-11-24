@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { randomInt } from 'crypto'
 import { serverConfig } from './server-config'
 import { supabaseAdmin } from './supabase-admin'
 
@@ -33,7 +34,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000))
+  return String(randomInt(100000, 1000000))
 }
 
 export function createAccessToken(payload: { sub: string | number; email: string; role: string }): string {
