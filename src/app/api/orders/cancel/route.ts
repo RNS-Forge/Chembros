@@ -50,15 +50,19 @@ export async function POST(req: Request) {
       )
     }
 
-    // If client, ensure they own the order
+    // If client, ensure they own the order (or provide matching customer email for guest orders)
     if (!isAdmin) {
       const isOwner = currentUser && (
         (order.user_id && Number(currentUser.id) === Number(order.user_id)) ||
         (currentUser.email && order.customer_email && currentUser.email.toLowerCase() === order.customer_email.toLowerCase())
       )
-      if (!isOwner && action !== 'request_otp' && action !== 'verify_otp') {
+
+      const providedEmail = (body.customer_email || body.email || '').trim().toLowerCase()
+      const isGuestMatch = !order.user_id && providedEmail && order.customer_email && (providedEmail === order.customer_email.toLowerCase())
+
+      if (!isOwner && !isGuestMatch) {
         return NextResponse.json(
-          { detail: 'Unauthorized. You do not have permission to cancel this order.' },
+          { detail: 'Unauthorized. You do not have permission to request cancellation for this order.' },
           { status: 403 }
         )
       }
