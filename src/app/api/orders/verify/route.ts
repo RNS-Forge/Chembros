@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { cashfreeService } from '@/lib/cashfree-service'
-import { confirmPaidOrder, type PendingOrderPayload } from '@/lib/order-service'
+import { confirmPaidOrder, persistPaidOrder, type PendingOrderPayload } from '@/lib/order-service'
 
 export async function POST(req: Request) {
   try {
@@ -13,10 +13,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Order number is required.' }, { status: 400 })
     }
 
-    // 1. If the order already exists (e.g. created in test mode or webhook beat us to it), it's already paid & recorded.
+    // 1. Check existing order row (either already PAID or Awaiting Payment)
     const { data: existing } = await supabaseAdmin
       .from('orders')
-      .select('order_number, total_amount, payment_status')
+      .select('order_number, total_amount, payment_status, cashfree_order_id')
       .eq('order_number', order_number)
       .maybeSingle()
 
@@ -31,20 +31,22 @@ export async function POST(req: Request) {
 
     // 2. Testing / Checking Mode: When PAYMENT=false, Cashfree verification is bypassed
     if (!cashfreeService.isPaymentEnabled) {
-      if (pendingOrder) {
-        await persistPaidOrder(pendingOrder)
-      }
+      const res = existing
+        ? await confirmPaidOrder(order_number)
+        : pendingOrder
+        ? await persistPaidOrder({ ...pendingOrder, order_number })
+        : { created: false, alreadyExisted: false, order: null }
       return NextResponse.json({
         status: 'success',
         message: 'Order confirmed in test mode (Cashfree bypassed).',
         order_number: order_number,
-        total_amount: pendingOrder?.total_amount || 0,
+        total_amount: res.order?.total_amount ?? pendingOrder?.total_amount ?? 0,
       })
     }
 
     // Confirm the payment directly with Cashfree before recording anything.
-    const cfOrderId = cashfree_order_id || pendingOrder?.cashfree_order_id || `cf_${order_number}`
-    const { isPaid, paymentStatus } = await cashfreeService.verifyPayment(cfOrderId)
+    const cfOrderId = existing?.cashfree_order_id || cashfree_order_id || pendingOrder?.cashfree_order_id || `cf_${order_number}`
+    const { isPaid, paymentStatus, orderAmount } = await cashfreeService.verifyPayment(cfOrderId)
 
     if (!isPaid) {
       const stillOpen = ['ACTIVE', 'PENDING', 'NOT_ATTEMPTED', 'INCOMPLETE', ''].includes(paymentStatus)
@@ -54,6 +56,15 @@ export async function POST(req: Request) {
             ? `Payment is not complete yet. Cashfree status: ${paymentStatus || 'ACTIVE'}`
             : `Payment verification failed: status is ${paymentStatus}`,
         },
+        { status: 400 }
+      )
+    }
+
+    // Verify paid amount matches server-recorded order total (prevents partial/tampered payment confirmation)
+    if (existing && orderAmount !== undefined && orderAmount > 0 && orderAmount + 0.01 < Number(existing.total_amount)) {
+      console.error(`Amount mismatch for ${order_number}: Cashfree paid ${orderAmount}, expected ${existing.total_amount}`)
+      return NextResponse.json(
+        { detail: 'Payment amount mismatch detected. Please contact support.' },
         { status: 400 }
       )
     }

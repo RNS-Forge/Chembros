@@ -38,6 +38,9 @@ export function generateOtp(): string {
 }
 
 export function createAccessToken(payload: { sub: string | number; email: string; role: string }): string {
+  if (!serverConfig.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not configured.')
+  }
   return jwt.sign(
     {
       sub: String(payload.sub),
@@ -51,6 +54,7 @@ export function createAccessToken(payload: { sub: string | number; email: string
 
 export function verifyAccessToken(token: string): { sub: string; email: string; role: string } | null {
   try {
+    if (!serverConfig.JWT_SECRET) return null
     return jwt.verify(token, serverConfig.JWT_SECRET) as any
   } catch {
     return null

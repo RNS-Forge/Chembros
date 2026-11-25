@@ -26,6 +26,15 @@ export interface InvoiceOrderData {
   tracking_number?: string
 }
 
+function escapeHtml(val: unknown): string {
+  return String(val ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, token = ''): string {
   const items: InvoiceItem[] = Array.isArray(order.items)
     ? order.items
@@ -69,7 +78,7 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, 
   if (paymentMethod.toLowerCase().includes('upi')) paymentMethod = 'Upi'
   else if (paymentMethod.toLowerCase().includes('cashfree')) paymentMethod = 'Cashfree PG / Online'
 
-  // Format customer address lines cleanly
+  // Format customer address lines cleanly (HTML-escaped)
   const rawAddress = (order.shipping_address || '').trim()
   let addressLinesHtml = ''
   if (!rawAddress) {
@@ -77,12 +86,12 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, 
   } else {
     const parts = rawAddress.split(',').map((p) => p.trim()).filter(Boolean)
     if (parts.length <= 2) {
-      addressLinesHtml = parts.map((p) => `<p>${p}</p>`).join('') + '<p>India</p>'
+      addressLinesHtml = parts.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + '<p>India</p>'
     } else {
       const mid = Math.ceil(parts.length / 2)
       const line1 = parts.slice(0, mid).join(', ')
       const line2 = parts.slice(mid).join(', ')
-      addressLinesHtml = `<p>${line1}</p><p>${line2}</p><p>India</p>`
+      addressLinesHtml = `<p>${escapeHtml(line1)}</p><p>${escapeHtml(line2)}</p><p>India</p>`
     }
   }
 
@@ -90,13 +99,14 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, 
   const itemsHtml = items.length > 0
     ? items
         .map((item) => {
-          const name = item.name || 'Extrait de Parfum'
-          const subtitle =
+          const name = escapeHtml(item.name || 'Extrait de Parfum')
+          const subtitle = escapeHtml(
             item.subtitle ||
-            (item.name.toLowerCase().includes('discovery')
+            ((item.name || '').toLowerCase().includes('discovery')
               ? 'The Molecule Series · 4 × 3ml Extrait'
               : `Extrait de Parfum · ${item.volume_ml || 50}ml`)
-          const hsn = item.hsn || '33030050'
+          )
+          const hsn = escapeHtml(item.hsn || '33030050')
           const price = Number(item.price) || 0
           const qty = Number(item.quantity) || 1
           const amount = price * qty
@@ -293,7 +303,7 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, 
 <body>
 
 <div class="toolbar">
-  <div class="toolbar-title">CHEM BROS TAX INVOICE // ${order.order_number}</div>
+  <div class="toolbar-title">CHEM BROS TAX INVOICE // ${escapeHtml(order.order_number)}</div>
   <div class="toolbar-actions">
     <button type="button" class="toolbar-btn" onclick="window.print()">Print Invoice</button>
     <a href="/api/orders/invoice?order_number=${encodeURIComponent(order.order_number)}&format=pdf${token ? `&token=${encodeURIComponent(token)}` : ''}" class="toolbar-btn toolbar-btn-ghost">Download PDF</a>
@@ -314,9 +324,9 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, 
     </div>
     <div class="doc">
       <h1>TAX INVOICE</h1>
-      <div class="meta">${invoiceId}</div>
-      <div class="meta">Order ${order.order_number}</div>
-      <div class="meta">${formattedDate}</div>
+      <div class="meta">${escapeHtml(invoiceId)}</div>
+      <div class="meta">Order ${escapeHtml(order.order_number)}</div>
+      <div class="meta">${escapeHtml(formattedDate)}</div>
       ${statusBadge}
     </div>
   </header>
@@ -324,9 +334,9 @@ export function generateInvoiceHtml(order: InvoiceOrderData, autoPrint = false, 
   <section class="parties">
     <div class="box left">
       <div class="label">Billed to</div>
-      <div class="name">${order.customer_name || 'Valued Client'}</div>
-      <p>${order.customer_email || 'client@thechemicalbrothers.in'}</p>
-      <p>${order.customer_phone || ''}</p>
+      <div class="name">${escapeHtml(order.customer_name || 'Valued Client')}</div>
+      <p>${escapeHtml(order.customer_email || 'client@thechemicalbrothers.in')}</p>
+      <p>${escapeHtml(order.customer_phone || '')}</p>
     </div>
     <div class="box right">
       <div class="label">Delivery address</div>
@@ -359,9 +369,9 @@ ${itemsHtml}
 
   <div class="payment">
     <strong>Payment</strong>
-    <div>Method: ${paymentMethod}</div>
-    <div>Received: ${formattedDateTime}</div>
-    <div>Reference: ${paymentRef}</div>
+    <div>Method: ${escapeHtml(paymentMethod)}</div>
+    <div>Received: ${escapeHtml(formattedDateTime)}</div>
+    <div>Reference: ${escapeHtml(paymentRef)}</div>
   </div>
 
   <footer>
