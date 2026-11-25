@@ -197,3 +197,20 @@ export async function getUserFromAuthHeader(req: Request): Promise<any | null> {
     return null
   }
 }
+
+/**
+ * Link any prior guest orders (where user_id is null) matching the verified user's email
+ * directly to their user_id so past guest orders automatically appear in their account.
+ */
+export async function linkGuestOrdersToUser(userId: number | string, email?: string | null): Promise<void> {
+  if (!userId || !email) return
+  try {
+    await supabaseAdmin
+      .from('orders')
+      .update({ user_id: Number(userId), updated_at: new Date().toISOString() })
+      .is('user_id', null)
+      .ilike('customer_email', email.trim().toLowerCase())
+  } catch (err) {
+    console.warn('Could not link guest orders to user:', err)
+  }
+}

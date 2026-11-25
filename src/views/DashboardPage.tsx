@@ -31,6 +31,7 @@ import {
   Building,
   Home as HomeIcon,
   Briefcase,
+  FileText,
 } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
@@ -688,12 +689,20 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                 Sign in to check your order status, manage delivery addresses, and view your details.
               </p>
             </div>
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="px-8 py-3.5 bg-black hover:bg-neutral-800 text-white rounded-full text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shadow-md active:scale-95"
-            >
-              Sign In
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="px-8 py-3.5 bg-black hover:bg-neutral-800 text-white rounded-full text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shadow-md active:scale-95"
+              >
+                Sign In
+              </button>
+              <Link
+                to="/track-order"
+                className="px-6 py-3.5 bg-white border border-neutral-300 hover:border-black text-black rounded-full text-xs font-semibold uppercase tracking-widest transition-all"
+              >
+                Track Guest Order
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8">
@@ -1125,10 +1134,26 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                                   ))}
                                 </div>
 
-                                {/* Non-cancellable notice badge */}
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-500 text-[10px] font-mono uppercase tracking-wider">
-                                  Non-Cancellable
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  {order.payment_status === 'PAID' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const tk = typeof window !== 'undefined' ? (localStorage.getItem('chembros_token') || '') : ''
+                                        const url = `/api/orders/invoice?order_number=${encodeURIComponent(order.order_number)}&format=pdf${tk ? `&token=${encodeURIComponent(tk)}` : ''}`
+                                        window.open(url, '_blank', 'noopener,noreferrer')
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-mono font-semibold uppercase tracking-wider cursor-pointer transition-colors"
+                                    >
+                                      <FileText className="w-3 h-3" />
+                                      <span>Tax Invoice</span>
+                                    </button>
+                                  )}
+                                  {/* Non-cancellable notice badge */}
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-500 text-[10px] font-mono uppercase tracking-wider">
+                                    Non-Cancellable
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           )

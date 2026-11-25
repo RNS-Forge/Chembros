@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendOrderStatusEmail } from '@/lib/email-service'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 function formatItemsSummary(items: any[]): string {
   return items
@@ -87,6 +88,14 @@ export async function PATCH(
     } catch (emailErr) {
       console.warn('Status update email dispatch note:', emailErr)
     }
+
+    await recordAuditLog({
+      action: 'ORDER_STATUS_UPDATED',
+      category: 'ORDER',
+      details: `Order #${updatedOrder.order_number} status updated from '${order.order_status}' to '${updatedOrder.order_status}'${updatedOrder.tracking_number ? ` (Tracking: ${updatedOrder.tracking_number})` : ''}.`,
+      user_email: user.email,
+      status: 'INFO',
+    })
 
     return NextResponse.json({
       id: updatedOrder.id,

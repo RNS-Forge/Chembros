@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 async function isAuthorizedAdmin(req: Request): Promise<boolean> {
   const user = await getUserFromAuthHeader(req)
@@ -58,6 +59,15 @@ export async function DELETE(
           .eq('id', rev.product_id)
       } catch {}
     }
+
+    const adminUser = await getUserFromAuthHeader(req)
+    await recordAuditLog({
+      action: 'REVIEW_DELETED',
+      category: 'CATALOG',
+      details: `Deleted customer review #${reviewId}${rev?.product_id ? ` on product #${rev.product_id}` : ''}.`,
+      user_email: adminUser?.email,
+      status: 'WARNING',
+    })
 
     return NextResponse.json({ status: 'success', message: 'Review deleted successfully.' })
   } catch (err: unknown) {

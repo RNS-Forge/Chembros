@@ -17,7 +17,28 @@ export async function GET(req: Request) {
 
     const logs: AdminLogItem[] = []
 
-    // 1. System Infrastructure Operational Logs
+    // 1. Persistent Audit Logs from `audit_logs` table
+    const { data: persistedLogs, error: auditErr } = await supabaseAdmin
+      .from('audit_logs')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(100)
+
+    if (!auditErr && persistedLogs && persistedLogs.length > 0) {
+      for (const row of persistedLogs) {
+        logs.push({
+          id: `audit-${row.id}`,
+          timestamp: row.created_at || new Date().toISOString(),
+          action: row.action || 'SYSTEM_EVENT',
+          category: (row.category || 'SYSTEM') as AdminLogItem['category'],
+          details: row.details || '',
+          user_email: row.user_email || undefined,
+          status: (row.status || 'INFO') as AdminLogItem['status'],
+        })
+      }
+    }
+
+    // 2. System Infrastructure Operational Logs
     logs.push({
       id: 'sys-smtp',
       timestamp: new Date().toISOString(),
@@ -37,10 +58,11 @@ export async function GET(req: Request) {
       status: 'SUCCESS',
     })
 
-    // 2. Orders Activity
+    // 3. Orders Activity
     const { data: recentOrders } = await supabaseAdmin
       .from('orders')
       .select('id, order_number, customer_email, customer_name, total_amount, order_status, payment_status, created_at, updated_at')
+      .not('order_status', 'ilike', 'Awaiting Payment')
       .order('id', { ascending: false })
       .limit(20)
 
@@ -58,7 +80,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // 3. User Registration & Security Activity
+    // 4. User Registration & Security Activity
     const { data: recentUsers } = await supabaseAdmin
       .from('users')
       .select('id, email, name, role, is_active, created_at, updated_at')
@@ -72,7 +94,7 @@ export async function GET(req: Request) {
           timestamp: u.created_at || new Date().toISOString(),
           action: 'CLIENT_ACCOUNT',
           category: 'USER',
-          details: `Specimen client account registered for ${u.name || 'Client'} (${u.email}). Role: ${u.role === 'admin' ? 'Master Admin' : 'Member'}, Status: ${u.is_active !== false ? 'Active' : 'Deactivated'}`,
+          details: `Client account registered for ${u.name || 'Client'} (${u.email}). Role: ${u.role === 'admin' ? 'Master Admin' : 'Member'}, Status: ${u.is_active !== false ? 'Active' : 'Deactivated'}`,
           user_email: u.email,
           status: u.is_active !== false ? 'SUCCESS' : 'WARNING',
         })

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 async function isAuthorizedAdmin(req: Request): Promise<boolean> {
   const user = await getUserFromAuthHeader(req)
@@ -104,6 +105,15 @@ export async function POST(req: Request) {
       console.error('Create product error:', error)
       return NextResponse.json({ detail: error.message }, { status: 500 })
     }
+
+    const adminUser = await getUserFromAuthHeader(req)
+    await recordAuditLog({
+      action: 'PRODUCT_CREATED',
+      category: 'CATALOG',
+      details: `Created product "${data?.name}" (₹${data?.price}, stock=${data?.stock}).`,
+      user_email: adminUser?.email,
+      status: 'SUCCESS',
+    })
 
     return NextResponse.json(data, { status: 201 })
   } catch (err: unknown) {

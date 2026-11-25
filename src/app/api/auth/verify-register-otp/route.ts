@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { serverConfig } from '@/lib/server-config'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { createAccessToken, hashPassword, enrichUserAddress } from '@/lib/auth-service'
+import { createAccessToken, hashPassword, enrichUserAddress, linkGuestOrdersToUser } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 export async function POST(req: Request) {
   try {
@@ -83,7 +84,16 @@ export async function POST(req: Request) {
       throw new Error(insErr?.message || 'Failed to create user record.')
     }
 
+    await linkGuestOrdersToUser(newUser.id, newUser.email)
     const enriched = await enrichUserAddress(newUser)
+
+    await recordAuditLog({
+      action: 'USER_REGISTERED',
+      category: 'USER',
+      details: `New client account registered for ${enriched.name || enriched.email} (${enriched.email}).`,
+      user_email: enriched.email,
+      status: 'SUCCESS',
+    })
 
     const token = createAccessToken({
       sub: enriched.id,
