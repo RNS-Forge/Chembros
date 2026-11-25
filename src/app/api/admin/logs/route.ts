@@ -26,12 +26,13 @@ export async function GET(req: Request) {
 
     if (!auditErr && persistedLogs && persistedLogs.length > 0) {
       for (const row of persistedLogs) {
+        const cleanDetails = String(row.details || '').replace(/\s*<!--PENDING:[\s\S]*?-->/g, '').trim()
         logs.push({
           id: `audit-${row.id}`,
           timestamp: row.created_at || new Date().toISOString(),
           action: row.action || 'SYSTEM_EVENT',
           category: (row.category || 'SYSTEM') as AdminLogItem['category'],
-          details: row.details || '',
+          details: cleanDetails,
           user_email: row.user_email || undefined,
           status: (row.status || 'INFO') as AdminLogItem['status'],
         })

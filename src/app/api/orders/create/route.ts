@@ -207,8 +207,9 @@ export async function POST(req: Request) {
       payment_method: 'Cashfree PG',
     }
 
-    // Persist in `Awaiting Payment` state so Cashfree webhooks can confirm it
-    // even if the customer closes the browser after UPI/mobile payment.
+    // Log Awaiting Payment checkout in `audit_logs` ONLY (do NOT insert into `orders`).
+    // Only paid & confirmed orders are written to `orders`. Cashfree webhooks read this
+    // audit log entry if a customer closes their browser after UPI payment.
     await saveAwaitingPaymentOrder(pendingOrder)
 
     return NextResponse.json({

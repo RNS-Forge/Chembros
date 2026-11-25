@@ -38,60 +38,72 @@ export interface PersistPaidOrderResult {
 }
 
 /**
- * Save an order in `Awaiting Payment` state at checkout initiation (/api/orders/create).
- * Hidden from admin orders, stats, and customer my-orders until payment is confirmed.
- * Guarantees that if the customer completes UPI/mobile payment and closes the browser,
- * the Cashfree webhook still has the full items & shipping address to confirm the order.
+ * Log an `Awaiting Payment` checkout attempt in `audit_logs` (NOT in `orders`).
+ * The `orders` table strictly stores ONLY paid & confirmed orders.
+ * Storing the serialized payload inside `audit_logs` lets Cashfree webhooks
+ * recover and confirm the paid order even if a customer closes their browser after UPI payment.
  */
 export async function saveAwaitingPaymentOrder(payload: PendingOrderPayload): Promise<{ saved: boolean; error?: string }> {
   if (!payload || !payload.order_number) {
     return { saved: false, error: 'Missing order payload.' }
   }
 
-  const { data: existing } = await supabaseAdmin
-    .from('orders')
-    .select('id')
-    .eq('order_number', payload.order_number)
-    .maybeSingle()
+  try {
+    const summary = formatItemsSummary(payload.items || []).replace(/\n/g, '; ')
+    const readable = `Order #${payload.order_number} awaiting payment (₹${Number(payload.total_amount).toLocaleString('en-IN')}) by ${payload.customer_name} (${payload.customer_phone}) — ${summary} | Ship to: ${payload.shipping_address}`
+    const detailsWithPayload = `${readable} <!--PENDING:${JSON.stringify(payload)}-->`
 
-  if (existing) {
-    return { saved: true }
-  }
-
-  const { error: insErr } = await supabaseAdmin
-    .from('orders')
-    .insert({
-      order_number: payload.order_number,
-      user_id: payload.user_id || null,
-      customer_name: payload.customer_name,
-      customer_email: payload.customer_email,
-      customer_phone: payload.customer_phone,
-      shipping_address: payload.shipping_address,
-      items: JSON.stringify(payload.items || []),
-      subtotal: payload.subtotal,
-      shipping_fee: payload.shipping_fee,
-      total_amount: payload.total_amount,
-      payment_status: 'PENDING',
-      order_status: 'Awaiting Payment',
-      cashfree_order_id: payload.cashfree_order_id,
-      cashfree_payment_session_id: payload.cashfree_payment_session_id || '',
-      payment_method: payload.payment_method || 'Cashfree PG',
+    const { error: insErr } = await supabaseAdmin.from('audit_logs').insert({
+      action: 'ORDER_AWAITING_PAYMENT',
+      category: 'ORDER',
+      details: detailsWithPayload,
+      user_email: payload.customer_email,
+      status: 'INFO',
       created_at: new Date().toISOString(),
     })
 
-  if (insErr) {
-    console.error('saveAwaitingPaymentOrder insert failed:', insErr)
-    return { saved: false, error: insErr.message }
-  }
+    if (insErr) {
+      console.warn('saveAwaitingPaymentOrder audit_logs note:', insErr.message)
+      return { saved: false, error: insErr.message }
+    }
 
-  return { saved: true }
+    return { saved: true }
+  } catch (err: any) {
+    console.warn('saveAwaitingPaymentOrder exception:', err?.message || err)
+    return { saved: false, error: err?.message || 'Audit log error' }
+  }
+}
+
+/**
+ * Retrieve the server-recorded pending checkout payload from `audit_logs` for webhook/verify confirmation.
+ */
+export async function getAwaitingPaymentOrderFromAuditLog(orderNumber: string): Promise<PendingOrderPayload | null> {
+  if (!orderNumber) return null
+  try {
+    const cleanNum = orderNumber.replace(/^#/, '').trim()
+    const { data, error } = await supabaseAdmin
+      .from('audit_logs')
+      .select('details')
+      .eq('action', 'ORDER_AWAITING_PAYMENT')
+      .ilike('details', `%Order #${cleanNum} %`)
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data?.details) return null
+    const match = String(data.details).match(/<!--PENDING:([\s\S]*?)-->/)
+    if (!match || !match[1]) return null
+    return JSON.parse(match[1]) as PendingOrderPayload
+  } catch (err) {
+    console.warn('Could not parse pending order from audit_logs:', err)
+    return null
+  }
 }
 
 /**
  * Confirm a paid order by order_number (and optional fallback payload).
- * Atomically transitions an `Awaiting Payment` row to `PAID` / `Placed`,
- * or inserts a new `PAID` row if none existed.
- * Idempotent: confirmation email is dispatched exactly once.
+ * Resolves the authoritative pending payload from `audit_logs` (or fallbackPayload),
+ * inserts the confirmed `PAID` / `Placed` row into `orders`, and sends the confirmation email once.
  */
 export async function confirmPaidOrder(
   orderNumber: string,
@@ -107,68 +119,18 @@ export async function confirmPaidOrder(
     .or(`order_number.eq.${orderNumber},cashfree_order_id.eq.cf_${orderNumber}`)
     .maybeSingle()
 
-  if (existing) {
-    if (existing.payment_status === 'PAID') {
-      return { created: false, alreadyExisted: true, order: existing }
-    }
-
-    const { data: claimed, error: claimErr } = await supabaseAdmin
-      .from('orders')
-      .update({
-        payment_status: 'PAID',
-        order_status: 'Placed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existing.id)
-      .neq('payment_status', 'PAID')
-      .select()
-
-    if (claimErr) {
-      console.error('confirmPaidOrder update failed:', claimErr)
-      return { created: false, alreadyExisted: false, error: claimErr.message }
-    }
-
-    if (!claimed || claimed.length === 0) {
-      return { created: false, alreadyExisted: true, order: existing }
-    }
-
-    const confirmedOrder = claimed[0]
-    let itemsList: any[] = []
-    try {
-      itemsList = typeof confirmedOrder.items === 'string' ? JSON.parse(confirmedOrder.items) : confirmedOrder.items || []
-    } catch {
-      itemsList = []
-    }
-
-    try {
-      await sendOrderPlacedEmail({
-        toEmail: confirmedOrder.customer_email,
-        customerName: confirmedOrder.customer_name,
-        orderNumber: confirmedOrder.order_number,
-        totalAmount: confirmedOrder.total_amount,
-        itemsSummary: formatItemsSummary(itemsList),
-        shippingAddress: confirmedOrder.shipping_address,
-      })
-    } catch (emailErr) {
-      console.warn('Order placed email dispatch note:', emailErr)
-    }
-
-    await recordAuditLog({
-      action: 'ORDER_PAID_CONFIRMED',
-      category: 'ORDER',
-      details: `Order #${confirmedOrder.order_number} confirmed (₹${Number(confirmedOrder.total_amount).toLocaleString('en-IN')}) for ${confirmedOrder.customer_name || confirmedOrder.customer_email}.`,
-      user_email: confirmedOrder.customer_email,
-      status: 'SUCCESS',
-    })
-
-    return { created: true, alreadyExisted: false, order: confirmedOrder }
+  if (existing && existing.payment_status === 'PAID') {
+    return { created: false, alreadyExisted: true, order: existing }
   }
 
-  if (!fallbackPayload) {
-    return { created: false, alreadyExisted: false, error: 'Order record not found and no fallback payload provided.' }
+  const serverPayload = await getAwaitingPaymentOrderFromAuditLog(orderNumber)
+  const payloadToPersist = serverPayload || fallbackPayload
+
+  if (!payloadToPersist) {
+    return { created: false, alreadyExisted: false, error: 'Order record not found and no pending checkout payload available.' }
   }
 
-  return persistPaidOrder({ ...fallbackPayload, order_number: orderNumber })
+  return persistPaidOrder({ ...payloadToPersist, order_number: orderNumber })
 }
 
 /**
