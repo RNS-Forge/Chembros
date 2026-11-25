@@ -113,6 +113,25 @@ export function decodeJwt(token: string): { sub?: string; email?: string; role?:
   }
 }
 
+export async function requestSessionToken(email: string, name?: string): Promise<{ access_token: string; user: User } | null> {
+  try {
+    const res = await request<{ access_token: string; user: User }>('/api/auth/session-token', {
+      method: 'POST',
+      body: JSON.stringify({ email, name }),
+    })
+    if (res?.access_token) {
+      safeStorage.setItem('chembros_token', res.access_token)
+      if (res.user) {
+        safeStorage.setItem('chembros_user', JSON.stringify(res.user))
+      }
+      return res
+    }
+  } catch (e) {
+    console.warn('requestSessionToken fallback note:', e)
+  }
+  return null
+}
+
 export function createLocalToken(user: User): string {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = btoa(
@@ -395,10 +414,11 @@ export async function verifyLoginOtpApi(
       }
 
       resolvedUser = await enrichUserAddress(resolvedUser)
-      const token = supaAuth.session?.access_token || createLocalToken(resolvedUser)
+      const sessionRes = await requestSessionToken(resolvedUser.email, resolvedUser.name)
+      const token = sessionRes?.access_token || supaAuth.session?.access_token || createLocalToken(resolvedUser)
       safeStorage.setItem('chembros_token', token)
-      safeStorage.setItem('chembros_user', JSON.stringify(resolvedUser))
-      return { access_token: token, user: resolvedUser }
+      safeStorage.setItem('chembros_user', JSON.stringify(sessionRes?.user || resolvedUser))
+      return { access_token: token, user: sessionRes?.user || resolvedUser }
     }
 
     throw err
@@ -515,10 +535,11 @@ export async function verifyRegisterOtpApi(data: {
       }
 
       resolvedUser = await enrichUserAddress(resolvedUser)
-      const token = supaAuth.session?.access_token || createLocalToken(resolvedUser)
+      const sessionRes = await requestSessionToken(resolvedUser.email, resolvedUser.name)
+      const token = sessionRes?.access_token || supaAuth.session?.access_token || createLocalToken(resolvedUser)
       safeStorage.setItem('chembros_token', token)
-      safeStorage.setItem('chembros_user', JSON.stringify(resolvedUser))
-      return { access_token: token, user: resolvedUser }
+      safeStorage.setItem('chembros_user', JSON.stringify(sessionRes?.user || resolvedUser))
+      return { access_token: token, user: sessionRes?.user || resolvedUser }
     }
 
     throw err
@@ -618,10 +639,11 @@ export async function verifyOtpApi(
       }
 
       resolvedUser = await enrichUserAddress(resolvedUser)
-      const token = supaAuth.session?.access_token || createLocalToken(resolvedUser)
+      const sessionRes = await requestSessionToken(resolvedUser.email, resolvedUser.name)
+      const token = sessionRes?.access_token || supaAuth.session?.access_token || createLocalToken(resolvedUser)
       safeStorage.setItem('chembros_token', token)
-      safeStorage.setItem('chembros_user', JSON.stringify(resolvedUser))
-      return { access_token: token, user: resolvedUser }
+      safeStorage.setItem('chembros_user', JSON.stringify(sessionRes?.user || resolvedUser))
+      return { access_token: token, user: sessionRes?.user || resolvedUser }
     }
 
     throw err
@@ -748,82 +770,17 @@ export async function resetPasswordApi(data: {
 export async function loginApi(email: string, password: string): Promise<{ access_token: string; user: User }> {
   const cleanEmail = email.trim().toLowerCase()
   const cleanPassword = password.trim()
-  const adminPasswords = new Set(['chembros@tech', 'chembros@tech.', 'Chenbros@tech'])
-  const adminEmails = new Set(['admin@chembros.com', 'sanjay.n.ihub@snsgroups.com'])
-
-  try {
-    const { data: userRow } = await supabase
-      .from('users')
-      .select('*')
-      .ilike('email', cleanEmail)
-      .maybeSingle()
-
-    const isMasterAdmin = adminEmails.has(cleanEmail) && adminPasswords.has(cleanPassword)
-    const hashed = await hashPassword(cleanPassword)
-
-    let matchedUser = userRow
-
-    if (isMasterAdmin) {
-      if (!matchedUser) {
-        const { data: created } = await supabase
-          .from('users')
-          .insert({
-            email: cleanEmail,
-            name: 'Chembros Administrator',
-            role: 'admin',
-            password_hash: hashed,
-            phone: '+91 9999999999',
-            city: 'Mumbai',
-            state: 'Maharashtra',
-            created_at: new Date().toISOString(),
-          })
-          .select()
-          .single()
-        matchedUser = created
-      } else if (matchedUser.role !== 'admin') {
-        const { data: updated } = await supabase
-          .from('users')
-          .update({ role: 'admin', updated_at: new Date().toISOString() })
-          .eq('id', matchedUser.id)
-          .select()
-          .single()
-        matchedUser = updated
-      }
-    } else if (matchedUser && matchedUser.password_hash === hashed) {
-      // Valid password match
-    } else {
-      matchedUser = null
-    }
-
-    if (matchedUser) {
-      const userObj: User = {
-        id: matchedUser.id,
-        email: matchedUser.email,
-        name: matchedUser.name,
-        role: matchedUser.role,
-        phone: matchedUser.phone,
-        shipping_address: matchedUser.shipping_address,
-        city: matchedUser.city,
-        state: matchedUser.state,
-        pincode: matchedUser.pincode,
-        avatar_url: matchedUser.avatar_url,
-      }
-      const enrichedUser = await enrichUserAddress(userObj)
-      const token = createLocalToken(enrichedUser)
-      safeStorage.setItem('chembros_token', token)
-      safeStorage.setItem('chembros_user', JSON.stringify(enrichedUser))
-      return { access_token: token, user: enrichedUser }
-    }
-  } catch (err) {
-    console.warn('Direct Supabase login fallback to backend:', err)
-  }
 
   const res = await request<{ access_token: string; user: User }>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
   })
-  if (res.user) {
+  if (res?.access_token) {
+    safeStorage.setItem('chembros_token', res.access_token)
+  }
+  if (res?.user) {
     res.user = await enrichUserAddress(res.user)
+    safeStorage.setItem('chembros_user', JSON.stringify(res.user))
   }
   return res
 }
@@ -1583,6 +1540,7 @@ export async function createOrderApi(payload: CreateOrderPayload): Promise<{
   cf_environment?: string
   payment_method?: string
   status?: string
+  payment_bypass?: boolean
   pending_order?: any
 }> {
   const res = await request<{
@@ -1593,6 +1551,7 @@ export async function createOrderApi(payload: CreateOrderPayload): Promise<{
     cf_environment?: string
     payment_method?: string
     status?: string
+    payment_bypass?: boolean
     pending_order?: any
   }>('/api/orders/create', {
     method: 'POST',
@@ -1837,9 +1796,9 @@ export async function createAdminProductApi(product: Partial<Product>): Promise<
       original_price: Number(product.original_price) || Number(product.price) || 0,
       delivery_fee: Number(product.delivery_fee) || 0,
       stock: product.stock ?? 50,
-      category: product.category || 'Eau de Parfum',
+      category: product.category || 'Extrait de Parfum',
       fragrance_family: product.fragrance_family || 'Woody',
-      concentration: product.concentration || 'Eau de Parfum (EDP)',
+      concentration: product.concentration || 'Extrait de Parfum',
       volume_ml: product.volume_ml ?? 50,
       top_notes: product.top_notes,
       heart_notes: product.heart_notes,

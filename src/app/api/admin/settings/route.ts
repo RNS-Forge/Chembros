@@ -1,27 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getPlatformSettingsServer, savePlatformSettingsServer } from '@/lib/settings-service'
-import { serverConfig } from '@/lib/server-config'
+import { getUserFromAuthHeader } from '@/lib/auth-service'
 
-function isAuthorizedAdmin(req: Request): boolean {
-  const authHeader = req.headers.get('authorization') || ''
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
-  if (!token) return true
-
-  try {
-    const parts = token.split('.')
-    if (parts.length >= 2) {
-      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-      const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'))
-      if (payload?.role === 'admin') return true
-      if (payload?.email && serverConfig.ADMIN_EMAILS.includes(payload.email.toLowerCase())) return true
-    }
-  } catch {}
-  return true
+async function isAuthorizedAdmin(req: Request): Promise<boolean> {
+  const user = await getUserFromAuthHeader(req)
+  return user?.role === 'admin'
 }
 
 export async function GET(req: Request) {
   try {
-    if (!isAuthorizedAdmin(req)) {
+    if (!(await isAuthorizedAdmin(req))) {
       return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
     }
     const settings = await getPlatformSettingsServer()
@@ -36,7 +24,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    if (!isAuthorizedAdmin(req)) {
+    if (!(await isAuthorizedAdmin(req))) {
       return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
     }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { generateInvoiceHtml, generateInvoicePdfBuffer, InvoiceOrderData } from '@/lib/invoice-generator'
+import { getUserFromAuthHeader } from '@/lib/auth-service'
 
 export async function GET(req: Request) {
   try {
@@ -29,6 +30,21 @@ export async function GET(req: Request) {
       return new Response(
         `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Order Not Found</h2><p>Could not locate order #${cleanNumber}.</p></body></html>`,
         { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      )
+    }
+
+    // Authenticate: Allow only if user is admin or verified owner of the order (via Authorization header or valid ?token= JWT)
+    const currentUser = await getUserFromAuthHeader(req)
+    const isOwner = currentUser && (
+      currentUser.role === 'admin' ||
+      (order.user_id && Number(currentUser.id) === Number(order.user_id)) ||
+      (currentUser.email && order.customer_email && currentUser.email.toLowerCase() === order.customer_email.toLowerCase())
+    )
+
+    if (!isOwner) {
+      return new Response(
+        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Access Denied</h2><p>Please log in or access the official tax invoice attached to your order confirmation email.</p></body></html>`,
+        { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
       )
     }
 
@@ -70,7 +86,7 @@ export async function GET(req: Request) {
       })
     }
 
-    const html = generateInvoiceHtml(orderData, autoPrint)
+    const html = generateInvoiceHtml(orderData, autoPrint, searchParams.get('token') || '')
 
     return new Response(html, {
       status: 200,

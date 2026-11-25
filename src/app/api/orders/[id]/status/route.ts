@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendOrderStatusEmail } from '@/lib/email-service'
+import { getUserFromAuthHeader } from '@/lib/auth-service'
 
 function formatItemsSummary(items: any[]): string {
   return items
@@ -19,6 +20,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getUserFromAuthHeader(req)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
+    }
     const { id } = await params
     const body = await req.json()
     const { order_status, tracking_number } = body

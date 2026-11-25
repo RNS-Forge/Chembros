@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendOrderStatusEmail, sendOrderCancelledEmail, sendOtpEmail } from '@/lib/email-service'
 import { getUserFromAuthHeader, generateOtp } from '@/lib/auth-service'
+import { getPlatformSettingsServer } from '@/lib/settings-service'
 
 function formatItemsSummary(items: any[]): string {
   return items
@@ -37,14 +38,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Order not found.' }, { status: 404 })
     }
 
-    // Optional user authorization check if bearer token is present
+    // User authorization check and platform settings check
     const currentUser = await getUserFromAuthHeader(req)
     const isAdmin = currentUser?.role === 'admin'
-    if (!isAdmin) {
+    const settings = await getPlatformSettingsServer()
+
+    if (!isAdmin && !settings.allow_client_cancellation) {
       return NextResponse.json(
-        { detail: 'Orders cannot be cancelled once placed. All sales are final with no return or refund policy.' },
+        { detail: 'Order cancellation is currently disabled by store policy.' },
         { status: 403 }
       )
+    }
+
+    // If client, ensure they own the order (or provide matching customer email for guest orders)
+    if (!isAdmin) {
+      const isOwner = currentUser && (
+        (order.user_id && Number(currentUser.id) === Number(order.user_id)) ||
+        (currentUser.email && order.customer_email && currentUser.email.toLowerCase() === order.customer_email.toLowerCase())
+      )
+
+      const providedEmail = (body.customer_email || body.email || '').trim().toLowerCase()
+      const isGuestMatch = !order.user_id && providedEmail && order.customer_email && (providedEmail === order.customer_email.toLowerCase())
+
+      if (!isOwner && !isGuestMatch) {
+        return NextResponse.json(
+          { detail: 'Unauthorized. You do not have permission to request cancellation for this order.' },
+          { status: 403 }
+        )
+      }
     }
 
     const currentStatusUpper = (order.order_status || '').toUpperCase()

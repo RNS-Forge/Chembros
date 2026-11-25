@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Order number is required.' }, { status: 400 })
     }
 
-    // If the order already exists (e.g. webhook beat us to it), it's already paid & recorded.
+    // 1. If the order already exists (e.g. created in test mode or webhook beat us to it), it's already paid & recorded.
     const { data: existing } = await supabaseAdmin
       .from('orders')
       .select('order_number, total_amount, payment_status')
@@ -26,6 +26,19 @@ export async function POST(req: Request) {
         message: 'Order payment is already confirmed.',
         order_number: existing.order_number,
         total_amount: existing.total_amount,
+      })
+    }
+
+    // 2. Testing / Checking Mode: When PAYMENT=false, Cashfree verification is bypassed
+    if (!cashfreeService.isPaymentEnabled) {
+      if (pendingOrder) {
+        await persistPaidOrder(pendingOrder)
+      }
+      return NextResponse.json({
+        status: 'success',
+        message: 'Order confirmed in test mode (Cashfree bypassed).',
+        order_number: order_number,
+        total_amount: pendingOrder?.total_amount || 0,
       })
     }
 

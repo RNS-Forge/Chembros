@@ -1,27 +1,15 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { serverConfig } from '@/lib/server-config'
+import { getUserFromAuthHeader } from '@/lib/auth-service'
 
-function isAuthorizedAdmin(req: Request): boolean {
-  const authHeader = req.headers.get('authorization') || ''
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
-  if (!token) return true
-
-  try {
-    const parts = token.split('.')
-    if (parts.length >= 2) {
-      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-      const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'))
-      if (payload?.role === 'admin') return true
-      if (payload?.email && serverConfig.ADMIN_EMAILS.includes(payload.email)) return true
-    }
-  } catch {}
-  return true
+async function isAuthorizedAdmin(req: Request): Promise<boolean> {
+  const user = await getUserFromAuthHeader(req)
+  return user?.role === 'admin'
 }
 
 export async function GET(req: Request) {
   try {
-    if (!isAuthorizedAdmin(req)) {
+    if (!(await isAuthorizedAdmin(req))) {
       return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
     }
 
@@ -52,7 +40,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    if (!isAuthorizedAdmin(req)) {
+    if (!(await isAuthorizedAdmin(req))) {
       return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
     }
 
@@ -72,9 +60,9 @@ export async function POST(req: Request) {
       original_price: Number(body.original_price) || Number(body.price) || 0,
       delivery_fee: Number(body.delivery_fee) || 0,
       stock: body.stock !== undefined ? Number(body.stock) : 50,
-      category: body.category || 'Eau de Parfum',
+      category: body.category || 'Extrait de Parfum',
       fragrance_family: body.fragrance_family || 'Woody',
-      concentration: body.concentration || 'Eau de Parfum (EDP)',
+      concentration: body.concentration || 'Extrait de Parfum',
       volume_ml: Number(body.volume_ml) || 50,
       top_notes: body.top_notes || '',
       heart_notes: body.heart_notes || '',

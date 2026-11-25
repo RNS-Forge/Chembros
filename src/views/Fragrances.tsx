@@ -169,7 +169,7 @@ export default function Fragrances() {
                       </span>
 
                       <span className="text-[9px] sm:text-[10px] font-mono text-black/70 bg-black/5 px-2 py-0.5 rounded-full border border-black/10">
-                        {prod.volume_ml ? `${prod.volume_ml}ml` : isArchive ? '4 × 3ml' : '30ml'}
+                        {prod.volume_ml ? `${prod.volume_ml}ml` : isArchive ? '4 × 3ml' : '50ml'}
                       </span>
                     </div>
 

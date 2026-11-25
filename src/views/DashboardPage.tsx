@@ -1818,7 +1818,7 @@ export default function DashboardPage({ initialTab }: DashboardPageProps) {
                     </div>
 
                     <div className="p-4 rounded-2xl bg-neutral-50 border border-black/5 text-xs text-neutral-600 font-mono leading-relaxed">
-                      <strong>Final Sale & No Cancellation Policy:</strong> Due to hygiene and exclusive luxury formulation standards, orders placed with Chembros are strictly non-cancellable and non-refundable once confirmed. All sales are final.
+                      <strong>Order & Care Policy:</strong> Each CHEM BROS fragrance is carefully prepared and packaged before dispatch. As fragrances are personal-use products, we generally do not accept returns or exchanges for reasons of preference. However, if your order arrives damaged, defective or incorrect, please contact us with supporting photographs so our team can assist you.
                     </div>
                   </div>
                 )}

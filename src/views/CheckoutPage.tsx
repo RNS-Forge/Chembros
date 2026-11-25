@@ -276,7 +276,14 @@ export default function CheckoutPage() {
         })),
       })
 
-      // Online Cashfree Gateway Processing
+      // 1. Direct Order Placement (Test Mode: when PAYMENT=false, Cashfree API is bypassed)
+      if (orderRes.payment_bypass || (!orderRes.payment_session_id && orderRes.order_number)) {
+        clearCart()
+        navigate(`/order-confirmation?order_number=${orderRes.order_number}&status=PAID`)
+        return
+      }
+
+      // 2. Online Cashfree Gateway Processing
       let cashfreeLoaded = false
       if (typeof window.Cashfree === 'function' && orderRes.payment_session_id && orderRes.cashfree_order_id) {
         try {

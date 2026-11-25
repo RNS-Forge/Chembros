@@ -1,7 +1,7 @@
 {
   "enable_online_payment": true,
-  "enable_cod": true,
-  "enforce_online_only": false,
+  "enable_cod": false,
+  "enforce_online_only": true,
   "cod_handling_fee": 0,
   "cod_max_order_limit": 15000,
   "max_cart_value": 50000,

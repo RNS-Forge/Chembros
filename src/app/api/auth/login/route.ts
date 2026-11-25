@@ -13,9 +13,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'Email and password are required.' }, { status: 400 })
     }
 
-    const adminPasswords = new Set([serverConfig.ADMIN_PASSWORD, 'chembros@tech', 'chembros@tech.', 'Chenbros@tech'])
     const isMasterAdmin =
-      (serverConfig.ADMIN_EMAILS.includes(email) || email === 'admin@chembros.com') && adminPasswords.has(password)
+      serverConfig.ADMIN_EMAILS.includes(email) && Boolean(serverConfig.ADMIN_PASSWORD && password === serverConfig.ADMIN_PASSWORD)
 
     let { data: user } = await supabaseAdmin.from('users').select('*').ilike('email', email).maybeSingle()
 

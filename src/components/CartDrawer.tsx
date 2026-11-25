@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePlatformSettings } from '../context/PlatformSettingsContext'
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag, AlertCircle } from 'lucide-react'
 import bottleImg from '../assets/bottle.png'
+import { CleanProductImage } from '../lib/image-cleaner'
 
 const defaultBottleImg = (bottleImg as any)?.src || bottleImg
 
@@ -87,7 +88,7 @@ export default function CartDrawer() {
                 <div key={product.id} className="py-4 flex gap-4 items-center">
                   {/* Flacon Base64 Thumbnail */}
                   <div className="w-20 h-24 bg-neutral-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1.5 border border-neutral-200">
-                    <img
+                    <CleanProductImage
                       src={product.image_base64 || defaultBottleImg}
                       alt={product.name}
                       className="w-full h-full object-contain"

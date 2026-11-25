@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserFromAuthHeader } from '@/lib/auth-service'
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getUserFromAuthHeader(req)
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
+    }
     const { id } = await params
     const body = await req.json()
     const updatePayload: Record<string, any> = {

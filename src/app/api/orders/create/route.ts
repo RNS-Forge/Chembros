@@ -5,6 +5,7 @@ import { cashfreeService } from '@/lib/cashfree-service'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
 import { getPlatformSettingsServer } from '@/lib/settings-service'
 import { saveAwaitingPaymentOrder } from '@/lib/order-service'
+import { persistPaidOrder } from '@/lib/order-service'
 
 function generateOrderNumber(): string {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -78,6 +79,41 @@ export async function POST(req: Request) {
     const orderNumber = generateOrderNumber()
     const cfOrderId = `cf_${orderNumber}`
     const customerId = currentUser?.id ? `cust_${currentUser.id}` : `guest_${orderNumber}`
+
+    // 3. Testing / Checking Mode: When PAYMENT=false, bypass Cashfree API completely
+    // Allows placing and verifying orders without invoking external Cashfree endpoints.
+    if (!cashfreeService.isPaymentEnabled) {
+      const testPendingOrder = {
+        order_number: orderNumber,
+        user_id: currentUser?.id || body.user_id || null,
+        customer_name: cleanName,
+        customer_email: cleanEmail,
+        customer_phone: cleanPhone,
+        shipping_address: cleanAddress,
+        items: itemsJsonList,
+        subtotal,
+        shipping_fee: shippingFee,
+        total_amount: totalAmount,
+        cashfree_order_id: `test_${orderNumber}`,
+        cashfree_payment_session_id: `test_session_${orderNumber}`,
+        payment_method: 'Test Mode (Cashfree Bypassed)',
+      }
+
+      const persistRes = await persistPaidOrder(testPendingOrder)
+      if (persistRes.error) {
+        return NextResponse.json({ detail: persistRes.error }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        order_number: orderNumber,
+        cashfree_order_id: `test_${orderNumber}`,
+        payment_session_id: '',
+        total_amount: totalAmount,
+        status: 'PAID',
+        payment_bypass: true,
+        message: 'Order created in test mode without calling Cashfree API.',
+      })
+    }
 
     // Handle Online Pre-Payment via Cashfree PG
     // Resolve the canonical frontend URL — FRONTEND_URL env var must be set to your custom domain

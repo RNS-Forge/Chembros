@@ -41,7 +41,7 @@ const POLICY_SECTIONS: PolicyClause[] = [
     title: 'Prepaid Protocol & Payment Security',
     summary: 'Chembros operates on a 100% online prepaid basis to ensure express transit speed, quality verification, and seamless order fulfillment.',
     points: [
-      'All transactions are routed through RBI-licensed, PCI-DSS Level 1 compliant payment gateways (Razorpay / Stripe).',
+      'All transactions are routed through RBI-licensed, PCI-DSS Level 1 compliant payment gateways (Cashfree Payments).',
       'Chembros servers never view, capture, or store your credit/debit card numbers, CVVs, or UPI MPINs.',
       'All gateway sessions are protected via end-to-end 256-bit TLS encryption.'
     ]

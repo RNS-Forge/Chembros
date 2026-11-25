@@ -142,7 +142,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { addToCart } = useCart()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const { settings } = usePlatformSettings()
 
   const normalizedId = id === 'molecule-k' ? 'molecule-r' : id
@@ -266,6 +266,10 @@ export default function ProductDetail() {
   }
 
   const handleOpenReviewModal = () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
     setReviewAuthor(user?.name || '')
     setReviewLocation(user?.city || 'Verified Buyer')
     setReviewRating(5)
@@ -627,7 +631,7 @@ export default function ProductDetail() {
                   <Truck className="w-3.5 h-3.5" /> Free Dispatch Across India
                 </span>
                 <span className="flex items-center gap-1.5">
-                 Long lasting Wear Time
+                Long-lasting Wear Time
                 </span>
               </div>
             </div>
