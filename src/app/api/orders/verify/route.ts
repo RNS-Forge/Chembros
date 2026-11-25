@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { cashfreeService } from '@/lib/cashfree-service'
-import { persistPaidOrder, type PendingOrderPayload } from '@/lib/order-service'
+import { confirmPaidOrder, type PendingOrderPayload } from '@/lib/order-service'
 
 export async function POST(req: Request) {
   try {
@@ -58,16 +58,12 @@ export async function POST(req: Request) {
       )
     }
 
-    // Payment confirmed. Persist the order now (only paid orders ever reach the DB).
-    if (!pendingOrder) {
-      return NextResponse.json(
-        { detail: 'Payment confirmed, but order details were missing. Please contact support with your order number.' },
-        { status: 400 }
-      )
-    }
-
-    // Trust the server-verified amount/number; keep the client payload for the rest.
-    const result = await persistPaidOrder({ ...pendingOrder, order_number })
+    // Payment confirmed. Atomically promote the Awaiting Payment row to PAID / Placed
+    // (or insert using pendingOrder if no row existed).
+    const result = await confirmPaidOrder(
+      order_number,
+      pendingOrder ? { ...pendingOrder, order_number } : undefined
+    )
 
     if (result.error) {
       return NextResponse.json({ detail: 'Payment received, but the order could not be recorded.' }, { status: 500 })
@@ -77,7 +73,7 @@ export async function POST(req: Request) {
       status: 'success',
       message: 'Payment verified and order confirmed successfully.',
       order_number,
-      total_amount: pendingOrder.total_amount,
+      total_amount: result.order?.total_amount ?? pendingOrder?.total_amount ?? 0,
     })
   } catch (err: any) {
     console.error('Error in verify payment API:', err)

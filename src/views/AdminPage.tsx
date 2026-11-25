@@ -2280,8 +2280,8 @@ export default function AdminPage() {
                             <p className="text-xs text-neutral-500 font-mono">{o.customer_email}</p>
                             <p className="text-xs text-neutral-500 font-mono">{o.customer_phone}</p>
                           </td>
-                          <td className="py-4 px-5 max-w-sm text-xs text-neutral-600" title={o.shipping_address}>
-                            <p className="line-clamp-2 leading-relaxed">{o.shipping_address}</p>
+                          <td className="py-4 px-5 min-w-[240px] max-w-sm text-xs text-neutral-600 align-top">
+                            <p className="whitespace-normal break-words leading-relaxed">{o.shipping_address}</p>
                           </td>
                           <td className="py-4 px-5 font-mono text-sm text-neutral-700 whitespace-nowrap">
                             ₹{o.subtotal?.toLocaleString('en-IN') ?? 0}

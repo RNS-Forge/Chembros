@@ -13,6 +13,7 @@ export async function GET(req: Request) {
       supabaseAdmin
         .from('orders')
         .select('id, order_number, customer_name, customer_email, total_amount, payment_status, order_status, created_at')
+        .not('order_status', 'ilike', 'Awaiting Payment')
         .order('created_at', { ascending: false }),
       supabaseAdmin.from('products').select('id, stock'),
     ])
