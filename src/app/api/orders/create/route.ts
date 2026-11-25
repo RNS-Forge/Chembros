@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { cashfreeService } from '@/lib/cashfree-service'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
 import { getPlatformSettingsServer } from '@/lib/settings-service'
+import { saveAwaitingPaymentOrder } from '@/lib/order-service'
 
 function generateOrderNumber(): string {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -105,13 +106,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // IMPORTANT: We do NOT write the order to the database here.
-    // An order row is persisted ONLY after payment is confirmed (see /api/orders/verify
-    // and /api/orders/webhook). This guarantees abandoned / unpaid checkouts never appear
-    // in the admin panel, overview stats, or customer dashboard.
-    //
-    // The full order payload is returned to the client, which holds it until the customer
-    // returns from Cashfree and the confirmation page calls /api/orders/verify with it.
     const pendingOrder = {
       order_number: orderNumber,
       user_id: currentUser?.id || body.user_id || null,
@@ -127,6 +121,10 @@ export async function POST(req: Request) {
       cashfree_payment_session_id: cfResult.data.payment_session_id || '',
       payment_method: 'Cashfree PG',
     }
+
+    // Persist in `Awaiting Payment` state so Cashfree webhooks can confirm it
+    // even if the customer closes the browser after UPI/mobile payment.
+    await saveAwaitingPaymentOrder(pendingOrder)
 
     return NextResponse.json({
       order_number: orderNumber,

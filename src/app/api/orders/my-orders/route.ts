@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ detail: 'Authentication required' }, { status: 401 })
     }
 
-    let query = supabaseAdmin.from('orders').select('*')
+    let query = supabaseAdmin.from('orders').select('*').not('order_status', 'ilike', 'Awaiting Payment')
     if (user.id && user.email) {
       query = query.or(`user_id.eq.${user.id},customer_email.ilike.${user.email}`)
     } else if (user.id) {
