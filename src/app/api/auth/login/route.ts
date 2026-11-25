@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { serverConfig } from '@/lib/server-config'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { verifyPassword, hashPassword, createAccessToken, enrichUserAddress } from '@/lib/auth-service'
+import { verifyPassword, hashPassword, createAccessToken, enrichUserAddress, linkGuestOrdersToUser } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 export async function POST(req: Request) {
   try {
@@ -56,6 +57,13 @@ export async function POST(req: Request) {
     }
 
     if (!isValid || !user) {
+      await recordAuditLog({
+        action: 'LOGIN_FAILED',
+        category: 'AUTH',
+        details: `Failed login attempt for ${email}.`,
+        user_email: email,
+        status: 'WARNING',
+      })
       return NextResponse.json({ detail: 'Invalid email or password.' }, { status: 401 })
     }
 
@@ -63,7 +71,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ detail: 'This account has been deactivated by administration. Please contact concierge support.' }, { status: 403 })
     }
 
+    await linkGuestOrdersToUser(user.id, user.email)
     user = await enrichUserAddress(user)
+
+    await recordAuditLog({
+      action: user.role === 'admin' ? 'ADMIN_LOGIN' : 'USER_LOGIN',
+      category: 'AUTH',
+      details: `${user.role === 'admin' ? 'Administrator' : 'Client'} signed in: ${user.email}.`,
+      user_email: user.email,
+      status: 'SUCCESS',
+    })
 
     const token = createAccessToken({
       sub: user.id,

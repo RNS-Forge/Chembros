@@ -567,6 +567,8 @@ async function getInvoiceAttachment(params: {
 // 5. PUBLIC E-COMMERCE EMAIL DISPATCHERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+const ADMIN_INVOICE_COPY_EMAIL = 'connect@thechemicalbrothers.in'
+
 export async function sendOrderPlacedEmail(params: {
   toEmail: string
   customerName: string
@@ -589,7 +591,35 @@ export async function sendOrderPlacedEmail(params: {
     shippingAddress: params.shippingAddress,
   })
   const attachments = await getInvoiceAttachment(params)
-  return await sendEmail({ to: params.toEmail, subject, html, attachments })
+  const sent = await sendEmail({ to: params.toEmail, subject, html, attachments })
+
+  // Send a store copy with the exact PDF invoice attachment to connect@thechemicalbrothers.in
+  if (params.toEmail.trim().toLowerCase() !== ADMIN_INVOICE_COPY_EMAIL) {
+    try {
+      const adminSubject = `[Store Copy] Order Confirmed #${cleanText(params.orderNumber)} — ${cleanText(params.customerName)}`
+      const adminHtml = buildOrderHtml({
+        titleBadge: 'Store Copy · Order Confirmed',
+        headline: `New Order from ${cleanText(params.customerName)}`,
+        messageText: `Customer Email: ${cleanText(params.toEmail)}. A copy of the generated tax invoice is attached below.`,
+        stageNum: 1,
+        orderNumber: params.orderNumber,
+        customerName: params.customerName,
+        totalAmount: params.totalAmount,
+        itemsSummary: params.itemsSummary,
+        shippingAddress: params.shippingAddress,
+      })
+      await sendEmail({
+        to: ADMIN_INVOICE_COPY_EMAIL,
+        subject: adminSubject,
+        html: adminHtml,
+        attachments,
+      })
+    } catch (copyErr) {
+      console.warn('Admin invoice copy email dispatch note:', copyErr)
+    }
+  }
+
+  return sent
 }
 
 export async function sendOrderProcessingEmail(params: {

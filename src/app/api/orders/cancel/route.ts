@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendOrderStatusEmail, sendOrderCancelledEmail, sendOtpEmail } from '@/lib/email-service'
 import { getUserFromAuthHeader, generateOtp } from '@/lib/auth-service'
 import { getPlatformSettingsServer } from '@/lib/settings-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 function formatItemsSummary(items: any[]): string {
   return items
@@ -186,6 +187,14 @@ export async function POST(req: Request) {
     } catch (emailErr) {
       console.warn('Cancellation email notification note:', emailErr)
     }
+
+    await recordAuditLog({
+      action: 'ORDER_CANCELLED',
+      category: 'ORDER',
+      details: `Order #${updatedOrder.order_number} cancelled${typeof reason === 'string' && reason.trim() ? ` (${reason.trim()})` : ''}.`,
+      user_email: currentUser?.email || updatedOrder.customer_email,
+      status: 'WARNING',
+    })
 
     return NextResponse.json({
       success: true,

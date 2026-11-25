@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useSearchParams, useParams, Link } from 'react-router-dom'
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom'
 import NavBar from '../components/NavBar'
 import Footer from '../components/Footer'
 import type { Order } from '../types'
@@ -14,6 +14,7 @@ import {
   CreditCard,
   Copy,
   Check,
+  Search,
 } from 'lucide-react'
 
 // Cleans corrupted characters (like ±) and normalizes hyphens/digits
@@ -28,6 +29,7 @@ function cleanText(text?: string): string {
 
 export default function OrderConfirmationPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { orderNumber: paramOrderNumber } = useParams<{ orderNumber?: string }>()
   const orderNumber =
     paramOrderNumber ||
@@ -38,6 +40,16 @@ export default function OrderConfirmationPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [copiedTrack, setCopiedTrack] = useState(false)
+  const [lookupInput, setLookupInput] = useState('')
+
+  const handleLookupSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const clean = lookupInput.trim().replace(/^#/, '')
+    if (!clean) return
+    setLoading(true)
+    setOrder(null)
+    navigate(`/order-confirmation?order_id=${encodeURIComponent(clean)}`)
+  }
 
   useEffect(() => {
     async function loadOrder() {
@@ -104,7 +116,7 @@ export default function OrderConfirmationPage() {
               {!order ? 'ORDER LOOKUP' : isPaid ? 'PAYMENT VERIFIED' : 'PAYMENT PENDING'}
             </span>
             <h1 className="text-2xl sm:text-4xl font-normal font-['Montserrat',sans-serif] uppercase tracking-wide text-black">
-              {!order ? 'Order not found' : isPaid ? 'Order Confirmed' : 'Payment not completed'}
+              {!orderNumber ? 'Track Your Order' : !order ? 'Order not found' : isPaid ? 'Order Confirmed' : 'Payment not completed'}
             </h1>
             <p className="text-xs sm:text-sm text-neutral-600 mt-2 font-sans leading-relaxed">
               {isPaid ? (
@@ -121,8 +133,10 @@ export default function OrderConfirmationPage() {
                     {cleanText(order.customer_email) || 'your email'}
                   </strong>.
                 </>
+              ) : !orderNumber ? (
+                <>Enter your CHEM BROS order number (from your confirmation email) to check live shipment and delivery status.</>
               ) : (
-                <>No matching order was found for this link.</>
+                <>No matching order was found for #{cleanText(orderNumber)}. Please double-check your order number below.</>
               )}
             </p>
           </div>
@@ -325,13 +339,36 @@ export default function OrderConfirmationPage() {
 
           </div>
         ) : (
-          <div className="text-center py-16 bg-[#FAF9F6] border border-black/5 rounded-3xl p-8 max-w-md w-full font-sans">
-            <p className="text-xs font-mono text-neutral-500 uppercase">
-              No matching order record was found.
+          <div className="text-center py-10 sm:py-12 bg-[#FAF9F6] border border-black/5 rounded-3xl p-6 sm:p-8 max-w-md w-full font-sans space-y-5">
+            <form onSubmit={handleLookupSubmit} className="space-y-3 text-left">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 block">
+                Order Number Lookup
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={lookupInput}
+                    onChange={(e) => setLookupInput(e.target.value)}
+                    placeholder="e.g. CB-20261124-7557"
+                    className="w-full pl-10 pr-3 py-3 bg-white border border-neutral-200 rounded-xl text-xs font-mono text-black focus:outline-none focus:border-black"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-5 py-3 bg-black text-white text-xs font-mono uppercase tracking-wider rounded-xl hover:bg-neutral-800 transition-all cursor-pointer shrink-0"
+                >
+                  Track
+                </button>
+              </div>
+            </form>
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
+              Ordered as a guest? Sign in anytime with the same email address to automatically view your full order history and tax invoices in <Link to="/my-orders" className="underline text-black font-medium">My Orders</Link>.
             </p>
             <Link
               to="/fragrances"
-              className="inline-block mt-4 px-6 py-2.5 bg-black text-white text-xs font-mono uppercase tracking-wider rounded-full hover:bg-neutral-800 transition-all"
+              className="inline-block px-6 py-2.5 bg-white border border-neutral-300 text-black text-xs font-mono uppercase tracking-wider rounded-full hover:border-black transition-all"
             >
               Return to Store
             </Link>

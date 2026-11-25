@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 async function isAuthorizedAdmin(req: Request): Promise<boolean> {
   const user = await getUserFromAuthHeader(req)
@@ -61,7 +62,8 @@ export async function GET(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    if (!(await isAuthorizedAdmin(req))) {
+    const adminUser = await getUserFromAuthHeader(req)
+    if (adminUser?.role !== 'admin') {
       return NextResponse.json({ detail: 'Unauthorized. Admin privileges required.' }, { status: 403 })
     }
 
@@ -93,6 +95,14 @@ export async function PATCH(req: Request) {
       console.error('Supabase update user error:', error)
       return NextResponse.json({ detail: error.message }, { status: 500 })
     }
+
+    await recordAuditLog({
+      action: 'USER_ACCOUNT_UPDATED',
+      category: 'USER',
+      details: `User #${userId} (${updated?.email || 'client'}) updated${typeof is_active === 'boolean' ? ` [active=${is_active}]` : ''}${role ? ` [role=${role}]` : ''} by ${adminUser.email}.`,
+      user_email: adminUser.email,
+      status: 'WARNING',
+    })
 
     return NextResponse.json({
       status: 'success',

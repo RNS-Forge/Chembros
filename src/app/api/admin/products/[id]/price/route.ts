@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 export async function PATCH(
   req: Request,
@@ -30,6 +31,13 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ detail: error.message }, { status: 500 })
     }
+    await recordAuditLog({
+      action: 'PRODUCT_PRICE_UPDATED',
+      category: 'CATALOG',
+      details: `Updated pricing for product #${id} (${data?.name || ''}) to ₹${data?.price}.`,
+      user_email: user.email,
+      status: 'INFO',
+    })
     return NextResponse.json(data)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error'

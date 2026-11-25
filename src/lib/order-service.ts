@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './supabase-admin'
 import { sendOrderPlacedEmail } from './email-service'
+import { recordAuditLog } from './audit-log-service'
 
 export interface PendingOrderPayload {
   order_number: string
@@ -152,6 +153,14 @@ export async function confirmPaidOrder(
       console.warn('Order placed email dispatch note:', emailErr)
     }
 
+    await recordAuditLog({
+      action: 'ORDER_PAID_CONFIRMED',
+      category: 'ORDER',
+      details: `Order #${confirmedOrder.order_number} confirmed (₹${Number(confirmedOrder.total_amount).toLocaleString('en-IN')}) for ${confirmedOrder.customer_name || confirmedOrder.customer_email}.`,
+      user_email: confirmedOrder.customer_email,
+      status: 'SUCCESS',
+    })
+
     return { created: true, alreadyExisted: false, order: confirmedOrder }
   }
 
@@ -239,6 +248,14 @@ export async function persistPaidOrder(payload: PendingOrderPayload): Promise<Pe
   } catch (emailErr) {
     console.warn('Order placed email dispatch note:', emailErr)
   }
+
+  await recordAuditLog({
+    action: 'ORDER_PAID_CONFIRMED',
+    category: 'ORDER',
+    details: `Order #${payload.order_number} confirmed (₹${Number(payload.total_amount).toLocaleString('en-IN')}) for ${payload.customer_name || payload.customer_email}.`,
+    user_email: payload.customer_email,
+    status: 'SUCCESS',
+  })
 
   return { created: true, alreadyExisted: false, order: inserted }
 }

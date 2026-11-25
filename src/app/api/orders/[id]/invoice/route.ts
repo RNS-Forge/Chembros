@@ -30,8 +30,9 @@ export async function GET(
     const { data: order, error } = await query.maybeSingle()
 
     if (error || !order) {
+      const safeId = cleanNumber.replace(/[<>&"']/g, '')
       return new Response(
-        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Order Not Found</h2><p>Could not locate order #${id}. Please verify the order number.</p></body></html>`,
+        `<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Order Not Found</h2><p>Could not locate order #${safeId}. Please verify the order number.</p></body></html>`,
         { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
       )
     }

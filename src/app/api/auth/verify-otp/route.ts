@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { serverConfig } from '@/lib/server-config'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { createAccessToken, enrichUserAddress } from '@/lib/auth-service'
+import { createAccessToken, enrichUserAddress, linkGuestOrdersToUser } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 export async function POST(req: Request) {
   try {
@@ -86,7 +87,16 @@ export async function POST(req: Request) {
       }
     }
 
+    await linkGuestOrdersToUser(user.id, user.email)
     user = await enrichUserAddress(user)
+
+    await recordAuditLog({
+      action: 'USER_OTP_VERIFIED',
+      category: 'AUTH',
+      details: `Account verified via OTP: ${user.email}.`,
+      user_email: user.email,
+      status: 'SUCCESS',
+    })
 
     const token = createAccessToken({
       sub: user.id,

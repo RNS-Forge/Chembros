@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserFromAuthHeader } from '@/lib/auth-service'
+import { recordAuditLog } from '@/lib/audit-log-service'
 
 async function isAuthorizedAdmin(req: Request): Promise<boolean> {
   const user = await getUserFromAuthHeader(req)
@@ -114,6 +115,15 @@ async function handleUpdate(
       return NextResponse.json({ detail: error.message }, { status: 500 })
     }
 
+    const adminUser = await getUserFromAuthHeader(req)
+    await recordAuditLog({
+      action: 'PRODUCT_UPDATED',
+      category: 'CATALOG',
+      details: `Updated product #${targetId} ("${data?.name || updatePayload.name || ''}").`,
+      user_email: adminUser?.email,
+      status: 'INFO',
+    })
+
     return NextResponse.json(data)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error'
@@ -141,6 +151,15 @@ export async function DELETE(
       console.error('Delete product error:', error)
       return NextResponse.json({ detail: error.message }, { status: 500 })
     }
+
+    const adminUser = await getUserFromAuthHeader(req)
+    await recordAuditLog({
+      action: 'PRODUCT_DELETED',
+      category: 'CATALOG',
+      details: `Deleted product #${targetId}.`,
+      user_email: adminUser?.email,
+      status: 'WARNING',
+    })
 
     return NextResponse.json({ status: 'success', message: 'Product deleted successfully.' })
   } catch (err: unknown) {

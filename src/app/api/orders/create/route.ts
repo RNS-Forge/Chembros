@@ -18,12 +18,21 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { items, customer_name, customer_email, customer_phone, shipping_address } = body
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ detail: 'Order must contain at least one fragrance item.' }, { status: 400 })
+    if (!items || !Array.isArray(items) || items.length === 0 || items.length > 50) {
+      return NextResponse.json({ detail: 'Order must contain between 1 and 50 fragrance items.' }, { status: 400 })
     }
 
     if (!customer_name || !customer_email || !customer_phone || !shipping_address) {
       return NextResponse.json({ detail: 'Customer name, email, phone, and shipping address are required.' }, { status: 400 })
+    }
+
+    if (
+      String(customer_name).length > 200 ||
+      String(customer_email).length > 254 ||
+      String(customer_phone).length > 30 ||
+      String(shipping_address).length > 1000
+    ) {
+      return NextResponse.json({ detail: 'One or more customer fields exceed maximum allowed length.' }, { status: 400 })
     }
 
     const settings = await getPlatformSettingsServer()
@@ -42,20 +51,56 @@ export async function POST(req: Request) {
     const cleanPhone = customer_phone.trim()
     const cleanAddress = shipping_address.trim()
 
+    // 2. Authoritative Server-Side Product Price & Stock Lookup
+    const productIds = Array.from(
+      new Set(
+        items
+          .map((item: any) => Number(item.product_id))
+          .filter((id: number) => Number.isInteger(id) && id > 0)
+      )
+    )
+
+    if (productIds.length === 0) {
+      return NextResponse.json({ detail: 'Valid product IDs are required for all order items.' }, { status: 400 })
+    }
+
+    const { data: dbProducts, error: prodErr } = await supabaseAdmin
+      .from('products')
+      .select('id, name, price, volume_ml, stock')
+      .in('id', productIds)
+
+    if (prodErr || !dbProducts) {
+      return NextResponse.json({ detail: 'Unable to verify product pricing.' }, { status: 500 })
+    }
+
+    const productMap = new Map<number, any>(dbProducts.map((p: any) => [Number(p.id), p]))
+
     let subtotal = 0
-    const itemsJsonList = items.map((item) => {
-      const price = Number(item.price) || 0
-      const quantity = Math.max(1, Number(item.quantity) || 1)
+    const itemsJsonList: any[] = []
+    for (const item of items) {
+      const pid = Number(item.product_id)
+      const dbProd = productMap.get(pid)
+      if (!dbProd) {
+        return NextResponse.json({ detail: `Product #${item.product_id} could not be found.` }, { status: 400 })
+      }
+      const quantity = Math.min(99, Math.max(1, Math.floor(Number(item.quantity) || 1)))
+      if (dbProd.stock !== null && dbProd.stock !== undefined && Number(dbProd.stock) < quantity) {
+        return NextResponse.json(
+          { detail: `Insufficient stock for ${dbProd.name}. Available: ${dbProd.stock}` },
+          { status: 400 }
+        )
+      }
+      const price = Number(dbProd.price)
       subtotal += price * quantity
-      return {
-        product_id: item.product_id,
-        name: item.name || 'Extrait de Parfum',
+      itemsJsonList.push({
+        product_id: dbProd.id,
+        name: dbProd.name || 'Extrait de Parfum',
         price,
         quantity,
-        volume_ml: item.volume_ml || 50,
-        image_base64: item.image_base64 || null,
-      }
-    })
+        volume_ml: Number(dbProd.volume_ml) || 50,
+        image_base64: null,
+      })
+    }
 
     // 2. Max Cart Order Limit Enforcement
     if (settings.max_cart_value > 0 && subtotal > settings.max_cart_value) {
@@ -73,7 +118,11 @@ export async function POST(req: Request) {
       )
     }
 
-    const shippingFee = body.shipping_fee !== undefined ? Number(body.shipping_fee) : (settings.enable_free_shipping && subtotal >= settings.free_shipping_threshold ? 0 : settings.default_delivery_fee)
+    // Server-side shipping fee calculation (never trust client-supplied shipping_fee)
+    const shippingFee =
+      settings.enable_free_shipping && subtotal >= settings.free_shipping_threshold
+        ? 0
+        : settings.default_delivery_fee
     const totalAmount = Math.round((subtotal + shippingFee) * 100) / 100
 
     const orderNumber = generateOrderNumber()
@@ -85,7 +134,7 @@ export async function POST(req: Request) {
     if (!cashfreeService.isPaymentEnabled) {
       const testPendingOrder = {
         order_number: orderNumber,
-        user_id: currentUser?.id || body.user_id || null,
+        user_id: currentUser?.id || null,
         customer_name: cleanName,
         customer_email: cleanEmail,
         customer_phone: cleanPhone,
@@ -144,7 +193,7 @@ export async function POST(req: Request) {
 
     const pendingOrder = {
       order_number: orderNumber,
-      user_id: currentUser?.id || body.user_id || null,
+      user_id: currentUser?.id || null,
       customer_name: cleanName,
       customer_email: cleanEmail,
       customer_phone: cleanPhone,

@@ -13,12 +13,12 @@ export const serverConfig = {
   SMTP_PASS: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
   SMTP_FROM: process.env.SMTP_FROM || '',
 
-  JWT_SECRET: process.env.JWT_SECRET || 'chembros_secret_key_haute_parfumerie_2026_jwt_token_secure_98471',
+  JWT_SECRET: process.env.JWT_SECRET || '',
   ADMIN_EMAILS: (process.env.ADMIN_EMAILS || 'connect@thechemicalbrothers.in,sanjay.n.ihub@snsgroups.com')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean),
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'chembros@tech',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '',
 
   CASHFREE_APP_ID: process.env.CASHFREE_APP_ID || '',
   CASHFREE_SECRET_KEY: process.env.CASHFREE_SECRET_KEY || '',

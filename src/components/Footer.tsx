@@ -74,6 +74,12 @@ export const Footer = ({
                 >
                   FAQs
                 </Link>
+                <Link
+                  to="/track-order"
+                  className="text-neutral-700 hover:text-black text-xs sm:text-[13px] font-['FONTSPRING_DEMO_-_Lufga_Medium','Poppins',sans-serif] transition-colors"
+                >
+                  Track Order
+                </Link>
               </div>
             </div>
 
