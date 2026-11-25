@@ -118,11 +118,58 @@ export async function POST(req: Request) {
       )
     }
 
-    // Server-side shipping fee calculation (never trust client-supplied shipping_fee)
+    // Server-side shipping fee calculation (mirrors CheckoutPage location rates + thresholds; never trusts client shipping_fee)
+    // Extract state from shipping_address (format: "address, city, state - pincode")
+    const addrWithoutPin = cleanAddress.replace(/\s*[-–,]?\s*\b\d{6}\b\s*$/, '').trim()
+    const addrParts = addrWithoutPin.split(',').map((p: string) => p.trim().toLowerCase()).filter(Boolean)
+    const extractedState = addrParts.length > 0 ? addrParts[addrParts.length - 1] : ''
+    const addrLower = cleanAddress.toLowerCase()
+
+    let matchedLocationFee: number | null = null
+    let defaultZoneFee: number | null = null
+    if (Array.isArray(settings.location_delivery_rates)) {
+      for (const loc of settings.location_delivery_rates) {
+        if (!loc?.states) continue
+        const stateList = String(loc.states)
+          .split(',')
+          .map((s: string) => s.trim().toLowerCase())
+          .filter(Boolean)
+        if (stateList.some((s: string) => s.includes('all other'))) {
+          defaultZoneFee = Number(loc.fee)
+          continue
+        }
+        const stateMatch = extractedState
+          ? stateList.some((s: string) => extractedState.includes(s) || s.includes(extractedState))
+          : stateList.some((s: string) => s.length > 2 && addrLower.includes(s))
+        if (stateMatch) {
+          matchedLocationFee = Number(loc.fee)
+          break
+        }
+      }
+    }
+
+    const baseStandardFee =
+      matchedLocationFee !== null
+        ? matchedLocationFee
+        : defaultZoneFee !== null
+        ? defaultZoneFee
+        : typeof settings.default_delivery_fee === 'number'
+        ? settings.default_delivery_fee
+        : 100
+
+    const freeThreshold =
+      typeof settings.free_shipping_threshold === 'number' ? settings.free_shipping_threshold : 1500
+    const isFreeShipping = settings.enable_free_shipping !== false && subtotal >= freeThreshold
+    const standardShippingCost = isFreeShipping ? 0 : baseStandardFee
+
+    const deliveryMethodsEnabled = settings.enable_delivery_methods !== false
+    const expressEnabled = deliveryMethodsEnabled && Boolean(settings.enable_express_dispatch)
+    const expressAddonFee = typeof settings.express_dispatch_fee === 'number' ? settings.express_dispatch_fee : 150
+
     const shippingFee =
-      settings.enable_free_shipping && subtotal >= settings.free_shipping_threshold
-        ? 0
-        : settings.default_delivery_fee
+      expressEnabled && body.delivery_method === 'EXPRESS'
+        ? standardShippingCost + expressAddonFee
+        : standardShippingCost
     const totalAmount = Math.round((subtotal + shippingFee) * 100) / 100
 
     const orderNumber = generateOrderNumber()

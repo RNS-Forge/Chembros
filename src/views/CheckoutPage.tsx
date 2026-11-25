@@ -133,11 +133,16 @@ export default function CheckoutPage() {
   // Calculate dynamic delivery fee based on location rates and thresholds
   const effectiveState = (!useNewAddress && user?.state ? user.state : stateName).trim().toLowerCase()
   let matchedLocationFee: number | null = null
-  if (effectiveState && Array.isArray(settings.location_delivery_rates)) {
+  let defaultZoneFee: number | null = null
+  if (Array.isArray(settings.location_delivery_rates)) {
     for (const loc of settings.location_delivery_rates) {
       if (!loc.states) continue
-      const stateList = loc.states.split(',').map((s: string) => s.trim().toLowerCase())
-      if (stateList.some((s: string) => s && (effectiveState.includes(s) || s.includes(effectiveState)))) {
+      const stateList = loc.states.split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean)
+      if (stateList.some((s: string) => s.includes('all other'))) {
+        defaultZoneFee = Number(loc.fee)
+        continue
+      }
+      if (effectiveState && stateList.some((s: string) => s && (effectiveState.includes(s) || s.includes(effectiveState)))) {
         matchedLocationFee = Number(loc.fee)
         break
       }
@@ -146,6 +151,8 @@ export default function CheckoutPage() {
 
   const baseStandardFee = matchedLocationFee !== null
     ? matchedLocationFee
+    : defaultZoneFee !== null
+    ? defaultZoneFee
     : (typeof settings.default_delivery_fee === 'number' ? settings.default_delivery_fee : 100)
 
   const freeThreshold = typeof settings.free_shipping_threshold === 'number' ? settings.free_shipping_threshold : 1500
