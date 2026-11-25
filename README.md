@@ -45,42 +45,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Environment Variables
-
-Create a `.env` or `.env.local` file in the `Chembros/` root directory with the following keys:
-
-```env
-# Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-
-# Auth & Admin
-JWT_SECRET=your_secure_jwt_secret
-ADMIN_EMAILS=admin@example.com
-ADMIN_PASSWORD=your_admin_password
-
-# Cashfree Payment Gateway
-CASHFREE_APP_ID=your_cashfree_app_id
-CASHFREE_SECRET_KEY=your_cashfree_secret_key
-CASHFREE_ENV=PRODUCTION
-PAYMENT=true
-
-# Email (SMTP / Resend / Brevo)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@domain.com
-SMTP_PASS=your_app_password
-SMTP_FROM=your_email@domain.com
-RESEND_API_KEY=
-BREVO_API_KEY=
-
-# Application URL
-FRONTEND_URL=http://localhost:3000
-```
-
----
-
 ## Project Structure
 
 ```text
